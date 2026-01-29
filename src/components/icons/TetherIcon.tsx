@@ -2,7 +2,7 @@ import type { SVGProps } from 'react';
 
 export const TetherIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" {...props}>
-    <circle cx="16" cy="16" r="16" fill="#32CD32" />
-    <path fill="#fff" d="M19.34 11.69h-6.68v2.66h2v6.68h2.66v-6.68h2V11.69z" />
+    <circle cx="16" cy="16" r="16" fill="#26A17B" />
+    <path fill="#fff" d="M20.4,11.5h-8.8v2.8h2.8v8.8h3.2v-8.8h2.8V11.5z" />
   </svg>
 );
