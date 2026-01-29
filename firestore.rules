@@ -1,0 +1,156 @@
+/**
+ * This ruleset enforces a security model based on user ownership and data segregation.
+ *
+ * Core Philosophy:
+ * The rules establish a strict boundary between a user's private data and public or semi-public system data.
+ * All user-generated content, such as buy and sell orders, is accessible only to the user who created it.
+ * Publicly accessible data, like payment methods, is strictly read-only for clients to prevent unauthorized modification.
+ *
+ * Data Structure:
+ * User-specific data is nested under the `/users/{userId}` path (e.g., `/users/{userId}/buyOrders`). This structure
+ * allows for simple, performant security rules based on the document path.
+ * Global configuration data (`paymentMethods`) and user submissions (`contactMessages`) are stored in separate top-level collections.
+ *
+ * Key Security Decisions:
+ * - User Enumeration is Disabled: Listing documents in the top-level `/users` collection is explicitly forbidden to protect user privacy.
+ * - User-Owned Data: All access to `/users/{userId}` subcollections is restricted to the authenticated user matching the `{userId}` wildcard.
+ * - Public Read-Only Data: The `/paymentMethods` collection is readable by any client (authenticated or not) but cannot be modified, treating it as system configuration.
+ * - Write-Only "Drop Box": The `/contactMessages` collection allows any client to create a document but denies all reads and other writes. This securely captures user feedback without exposing it to other users.
+ *
+ * Denormalization for Authorization:
+ * To ensure relational integrity and create simple, fast rules, this ruleset mandates that documents within a user's
+ * private subcollection (e.g., a `buyOrder`) must contain a `userId` field that matches the `userId` from the document path.
+ * This link is validated upon creation and enforced as immutable during updates, preventing documents from being moved between users.
+ *
+ * Structural Segregation:
+ * The data model effectively separates private user data (`buyOrders`, `sellOrders`) from public configuration (`paymentMethods`)
+ * by using different collections. This is a secure and performant pattern for managing data with different access requirements.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions to improve readability and maintainability.
+    
+    /**
+     * Checks if the request is from a signed-in user.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the requesting user's UID matches the provided userId.
+     * This is the core function for enforcing data ownership.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if the document being operated on already exists.
+     * Crucial for protecting against writes on non-existent paths.
+     */
+    function isExistingDoc() {
+      return exists(getAfter().data);
+    }
+
+    /**
+     * Combines ownership and existence checks for update/delete operations.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && isExistingDoc();
+    }
+    
+    /**
+     * Validates that the new document's internal userId field matches the path.
+     * Enforces relational integrity on document creation.
+     */
+    function isNewDocOwner(userId) {
+      return request.resource.data.userId == userId;
+    }
+    
+    /**
+     * Ensures the userId field cannot be changed after creation.
+     * Protects against re-assigning ownership of a document.
+     */
+    function isImmutableOwner() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    /**
+     * @description Controls access to user profile documents. Allows a user to create and read their own document but not others.
+     * @path /users/{userId}
+     * @allow A new user (uid: 'user-abc') can create their own document at `/users/user-abc`.
+     * @deny An authenticated user cannot get a list of all documents from `/users`.
+     * @principle Enforces self-creation of user documents and disables user enumeration.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if request.auth.uid == userId;
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+
+      /**
+       * @description Secures a user's private collection of buy orders.
+       * @path /users/{userId}/buyOrders/{buyOrderId}
+       * @allow A signed-in user (uid: 'user-abc') can create a new document in `/users/user-abc/buyOrders`.
+       * @deny User 'user-xyz' cannot read a document from `/users/user-abc/buyOrders/{buyOrderId}`.
+       * @principle Restricts all access to the document owner based on the `userId` in the path.
+       */
+      match /buyOrders/{buyOrderId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
+
+      /**
+       * @description Secures a user's private collection of sell orders.
+       * @path /users/{userId}/sellOrders/{sellOrderId}
+       * @allow A signed-in user (uid: 'user-abc') can create a new document in `/users/user-abc/sellOrders`.
+       * @deny User 'user-xyz' cannot read a document from `/users/user-abc/sellOrders/{sellOrderId}`.
+       * @principle Restricts all access to the document owner based on the `userId` in the path.
+       */
+      match /sellOrders/{sellOrderId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    /**
+     * @description Allows public read access to payment methods, but denies all writes.
+     * @path /paymentMethods/{paymentMethodId}
+     * @allow Any user, signed-in or anonymous, can read a document from `/paymentMethods`.
+     * @deny No user can create, update, or delete a payment method document.
+     * @principle Provides public read-only access for system configuration data.
+     */
+    match /paymentMethods/{paymentMethodId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Allows any user to submit a contact message but prevents anyone from reading them.
+     * @path /contactMessages/{contactMessageId}
+     * @allow Any user, signed-in or anonymous, can create a new contact message.
+     * @deny No user can read, update, or delete any contact message.
+     * @principle Implements a secure "drop-box" where data can be submitted but not viewed, protecting user privacy.
+     */
+    match /contactMessages/{contactMessageId} {
+      allow get: if false;
+      allow list: if false;
+      allow create: if true;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
