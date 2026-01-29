@@ -51,8 +51,9 @@ export function useSettingsStore() {
 
   const setSettings = useCallback((newSettings: Partial<Settings>) => {
     if (settingsRef) {
-      setDocumentNonBlocking(settingsRef, newSettings, { merge: true });
+      return setDocumentNonBlocking(settingsRef, newSettings, { merge: true });
     }
+    return Promise.resolve();
   }, [settingsRef]);
   
   const isInitialized = !isLoading && !!settings;

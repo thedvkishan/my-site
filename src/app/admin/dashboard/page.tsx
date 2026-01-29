@@ -73,10 +73,10 @@ export default function AdminDashboardPage() {
         }));
     };
 
-    const handleSave = (type: 'bank' | 'upi' | 'banners' | 'deposit') => {
+    const handleSave = async (type: 'bank' | 'upi' | 'banners' | 'deposit') => {
         setIsSaving(true);
         
-        let newSettings = {};
+        let newSettings: Partial<Settings> = {};
         let description = '';
 
         switch(type) {
@@ -98,15 +98,22 @@ export default function AdminDashboardPage() {
                 break;
         }
 
-        saveSettings(newSettings);
-
-        setTimeout(() => {
+        try {
+            await saveSettings(newSettings);
             toast({
                 title: 'Settings Saved',
                 description: description,
             });
+        } catch (error) {
+            console.error("Failed to save settings:", error);
+            toast({
+                variant: "destructive",
+                title: 'Save Failed',
+                description: 'Could not save settings. Please try again.',
+            });
+        } finally {
             setIsSaving(false);
-        }, 1000);
+        }
     };
 
     if (!isAuthenticated || isLoading) {
