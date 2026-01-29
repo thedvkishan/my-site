@@ -22,7 +22,7 @@ export default function AdminDashboardPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
-    const { settings: storedSettings, setSettings: saveSettings, isInitialized } = useSettingsStore();
+    const { settings: storedSettings, setSettings: saveSettings, isInitialized, isLoading } = useSettingsStore();
 
     // Local form state, initialized from the settings store
     const [bankDetails, setBankDetails] = useState(storedSettings.bankDetails);
@@ -109,7 +109,7 @@ export default function AdminDashboardPage() {
         }, 1000);
     };
 
-    if (!isAuthenticated || !isInitialized) {
+    if (!isAuthenticated || isLoading) {
         return (
             <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
                  <Loader2 className="h-12 w-12 animate-spin text-primary" />

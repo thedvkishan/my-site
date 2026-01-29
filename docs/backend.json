@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "BuyOrder": {
@@ -223,6 +224,52 @@
         "problemDescription",
         "submissionDate"
       ]
+    },
+    "AppSettings": {
+      "title": "Application Settings",
+      "type": "object",
+      "description": "Stores global application settings managed by the admin.",
+      "properties": {
+        "bankDetails": {
+          "type": "object",
+          "properties": {
+            "holderName": { "type": "string" },
+            "bankName": { "type": "string" },
+            "accountNumber": { "type": "string" },
+            "ifsc": { "type": "string" }
+          }
+        },
+        "upiId": { "type": "string" },
+        "qrCodeUrl": { "type": "string" },
+        "buyBannerUrl": { "type": "string" },
+        "sellBannerUrl": { "type": "string" },
+        "depositDetails": {
+          "type": "object",
+          "properties": {
+            "BEP20": {
+              "type": "object",
+              "properties": {
+                "address": { "type": "string" },
+                "qrCodeUrl": { "type": "string" }
+              }
+            },
+            "TRC20": {
+              "type": "object",
+              "properties": {
+                "address": { "type": "string" },
+                "qrCodeUrl": { "type": "string" }
+              }
+            },
+            "ERC20": {
+              "type": "object",
+              "properties": {
+                "address": { "type": "string" },
+                "qrCodeUrl": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "auth": {
@@ -303,6 +350,16 @@
               "description": "The ID of the contact message document."
             }
           ]
+        }
+      },
+      {
+        "path": "/settings/{settingId}",
+        "definition": {
+          "entityName": "AppSettings",
+          "schema": {
+            "$ref": "#/backend/entities/AppSettings"
+          },
+          "description": "Stores global application settings. This should be a single document, e.g., /settings/appSettings. Publicly readable, admin writable."
         }
       }
     ],

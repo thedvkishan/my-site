@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { CountdownTimer } from '@/components/CountdownTimer';
-import { Copy, Send, TimerIcon } from 'lucide-react';
+import { Copy, Send, TimerIcon, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +29,7 @@ export default function SellDepositPage() {
   const { id } = params;
   const { getTransaction, updateTransactionStatus } = useTransactionStore();
   const { toast } = useToast();
-  const { settings } = useSettingsStore();
+  const { settings, isInitialized } = useSettingsStore();
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [isExpired, setIsExpired] = useState(false);
 
@@ -77,6 +77,14 @@ export default function SellDepositPage() {
         updateTransactionStatus(id, 'expired');
      }
   };
+
+  if (!isInitialized) {
+    return (
+        <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
+             <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    )
+  }
 
   if (isExpired) {
     return (

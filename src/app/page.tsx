@@ -4,13 +4,21 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ShieldCheck, Zap, MessageCircle } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Zap, MessageCircle, Loader2 } from 'lucide-react';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useSettingsStore } from '@/hooks/use-settings-store';
 
 export default function Home() {
-  const { settings } = useSettingsStore();
+  const { settings, isInitialized } = useSettingsStore();
+
+  if (!isInitialized) {
+    return (
+        <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
+             <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    )
+  }
 
   return (
     <>

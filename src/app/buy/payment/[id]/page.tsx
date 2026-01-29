@@ -9,11 +9,10 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { TRANSACTION_LIFETIME } from '@/lib/constants';
 import { CountdownTimer } from '@/components/CountdownTimer';
-import { Banknote, Copy } from 'lucide-react';
+import { Banknote, Copy, Loader2, TimerIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { useSettingsStore } from '@/hooks/use-settings-store';
-import { TimerIcon } from 'lucide-react';
 
 
 type Transaction = {
@@ -31,7 +30,7 @@ export default function BuyPaymentPage() {
   const { id } = params;
   const { getTransaction, updateTransactionStatus } = useTransactionStore();
   const { toast } = useToast();
-  const { settings } = useSettingsStore();
+  const { settings, isInitialized } = useSettingsStore();
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [isExpired, setIsExpired] = useState(false);
 
@@ -73,6 +72,14 @@ export default function BuyPaymentPage() {
         updateTransactionStatus(id, 'expired');
      }
   };
+
+  if (!isInitialized) {
+    return (
+        <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
+             <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    )
+  }
 
   if (isExpired) {
     return (

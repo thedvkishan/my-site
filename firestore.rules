@@ -152,5 +152,19 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if false;
     }
+
+    /**
+     * @description Publicly readable, and for now, publicly writable settings.
+     * @path /settings/{settingId}
+     * @allow Any user can read settings.
+     * @deny Writes should be restricted to admins in production.
+     * @principle Centralized configuration.
+     */
+    match /settings/{settingId} {
+      allow read: if true;
+      // IMPORTANT: This is insecure for production. Anyone can write to settings.
+      // This should be locked down to an admin role.
+      allow write: if true;
+    }
   }
 }
