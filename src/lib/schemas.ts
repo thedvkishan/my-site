@@ -69,3 +69,29 @@ export const adminLoginFormSchema = z.object({
 });
 
 export type AdminLoginFormValues = z.infer<typeof adminLoginFormSchema>;
+
+
+const depositNetworkSchema = z.object({
+  address: z.string().min(1, 'Address is required.'),
+  qrCodeUrl: z.string().min(1, 'QR Code URL is required.'),
+});
+
+export const settingsSchema = z.object({
+  bankDetails: z.object({
+    holderName: z.string().min(1, 'Holder name is required.'),
+    bankName: z.string().min(1, 'Bank name is required.'),
+    accountNumber: z.string().min(1, 'Account number is required.'),
+    ifsc: z.string().min(1, 'IFSC code is required.'),
+  }),
+  upiId: z.string().min(1, 'UPI ID is required.'),
+  qrCodeUrl: z.string().min(1, 'QR Code URL is required.'),
+  buyBannerUrl: z.string().min(1, 'Buy banner URL is required.'),
+  sellBannerUrl: z.string().min(1, 'Sell banner URL is required.'),
+  depositDetails: z.object({
+    BEP20: depositNetworkSchema,
+    TRC20: depositNetworkSchema,
+    ERC20: depositNetworkSchema,
+  }),
+});
+
+export type SettingsFormValues = z.infer<typeof settingsSchema>;

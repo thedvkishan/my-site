@@ -3,18 +3,20 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Loader2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettingsStore, type Settings } from '@/hooks/use-settings-store';
-
-type DepositDetails = Settings['depositDetails'];
+import { settingsSchema, type SettingsFormValues } from '@/lib/schemas';
+import { Label } from '@/components/ui/label';
 
 export default function AdminDashboardPage() {
     const router = useRouter();
@@ -22,10 +24,14 @@ export default function AdminDashboardPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
-    const { settings: storedSettings, setSettings: saveSettings, isLoading } = useSettingsStore();
+    const { settings: storedSettings, setSettings: saveSettings, isInitialized } = useSettingsStore();
 
-    // A single state object for the entire form, initialized to null
-    const [formState, setFormState] = useState<Settings | null>(null);
+    const form = useForm<SettingsFormValues>({
+        resolver: zodResolver(settingsSchema),
+        // The form is initialized with default values from the store,
+        // and then updated via useEffect when the real data loads.
+        defaultValues: storedSettings,
+    });
 
     useEffect(() => {
         try {
@@ -40,12 +46,13 @@ export default function AdminDashboardPage() {
         }
     }, [router]);
     
-    // Effect to initialize/sync form state from the store
+    // This effect is crucial. It resets the form with the new data from Firestore
+    // once it's loaded. This ensures the form is always in sync with the database.
     useEffect(() => {
-        if (storedSettings) {
-            setFormState(storedSettings);
+        if (isInitialized && storedSettings) {
+            form.reset(storedSettings);
         }
-    }, [storedSettings]);
+    }, [isInitialized, storedSettings, form]);
 
     const handleLogout = () => {
         localStorage.removeItem('isAdminAuthenticated');
@@ -53,64 +60,34 @@ export default function AdminDashboardPage() {
         router.push('/admin/login');
     };
 
-    const handleDepositDetailsChange = (network: 'BEP20' | 'TRC20' | 'ERC20', field: 'address' | 'qrCodeUrl', value: string) => {
-        setFormState(prev => {
-            if (!prev) return null;
-            return {
-                ...prev,
-                depositDetails: {
-                    ...prev.depositDetails,
-                    [network]: {
-                        ...prev.depositDetails[network],
-                        [field]: value
-                    }
-                }
-            };
-        });
-    };
-
-     const handleBankDetailsChange = (field: keyof Settings['bankDetails'], value: string) => {
-        setFormState(prev => {
-            if (!prev) return null;
-            return {
-                ...prev,
-                bankDetails: {
-                    ...prev.bankDetails,
-                    [field]: value
-                }
-            }
-        })
-    };
-
-
     const handleSave = async (type: 'bank' | 'upi' | 'banners' | 'deposit') => {
-        if (!formState) return;
-
         setIsSaving(true);
         
+        const values = form.getValues();
         let newSettings: Partial<Settings> = {};
         let description = '';
 
         switch(type) {
             case 'bank':
-                newSettings = { bankDetails: formState.bankDetails };
+                newSettings = { bankDetails: values.bankDetails };
                 description = 'Bank details have been updated.';
                 break;
             case 'upi':
-                newSettings = { upiId: formState.upiId, qrCodeUrl: formState.qrCodeUrl };
+                newSettings = { upiId: values.upiId, qrCodeUrl: values.qrCodeUrl };
                 description = 'UPI and QR code have been updated.';
                 break;
             case 'banners':
-                newSettings = { buyBannerUrl: formState.buyBannerUrl, sellBannerUrl: formState.sellBannerUrl };
+                newSettings = { buyBannerUrl: values.buyBannerUrl, sellBannerUrl: values.sellBannerUrl };
                 description = 'Homepage banners have been updated.';
                 break;
             case 'deposit':
-                newSettings = { depositDetails: formState.depositDetails };
+                newSettings = { depositDetails: values.depositDetails };
                 description = 'USDT deposit details have been updated.';
                 break;
         }
 
         try {
+            // The saveSettings function now correctly awaits the database operation.
             await saveSettings(newSettings);
             toast({
                 title: 'Settings Saved',
@@ -127,8 +104,11 @@ export default function AdminDashboardPage() {
             setIsSaving(false);
         }
     };
+    
+    // form.watch() is used to get live updates from the form for image previews.
+    const watchedValues = form.watch();
 
-    if (!isAuthenticated || isLoading || !formState) {
+    if (!isAuthenticated || !isInitialized) {
         return (
             <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -145,168 +125,173 @@ export default function AdminDashboardPage() {
                 </div>
                 <Button variant="outline" onClick={handleLogout}>Logout</Button>
             </div>
-
-            <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-3">
-                <div className="lg:col-span-2 space-y-8">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Content Management</CardTitle>
-                            <CardDescription>Update images and other content shown on the site.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Accordion type="single" collapsible defaultValue='banners'>
-                                <AccordionItem value="banners">
-                                    <AccordionTrigger className="text-lg">Homepage Banners</AccordionTrigger>
-                                    <AccordionContent className="pt-4 space-y-6">
-                                        <div className="grid md:grid-cols-2 gap-6">
-                                            <div className="space-y-4">
-                                                <h4 className="font-semibold">Buy Banner</h4>
-                                                <div className="relative aspect-video w-full rounded-md overflow-hidden border">
-                                                    <Image src={formState.buyBannerUrl} alt="Buy Banner Preview" fill style={{objectFit: 'cover'}} data-ai-hint="crypto buy"/>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="buyBannerUrl">Image URL</Label>
-                                                    <Input id="buyBannerUrl" value={formState.buyBannerUrl} onChange={(e) => setFormState(prev => prev ? {...prev, buyBannerUrl: e.target.value} : null)} />
-                                                </div>
-                                            </div>
-                                             <div className="space-y-4">
-                                                <h4 className="font-semibold">Sell Banner</h4>
-                                                <div className="relative aspect-video w-full rounded-md overflow-hidden border">
-                                                    <Image src={formState.sellBannerUrl} alt="Sell Banner Preview" fill style={{objectFit: 'cover'}} data-ai-hint="crypto sell"/>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="sellBannerUrl">Image URL</Label>
-                                                    <Input id="sellBannerUrl" value={formState.sellBannerUrl} onChange={(e) => setFormState(prev => prev ? {...prev, sellBannerUrl: e.target.value} : null)} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <Button className="w-full" onClick={() => handleSave('banners')} disabled={isSaving}>
-                                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Save Banners
-                                        </Button>
-                                    </AccordionContent>
-                                </AccordionItem>
-                            </Accordion>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <div className="space-y-8">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Payment Methods</CardTitle>
-                            <CardDescription>Update details for receiving payments from users.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <Accordion type="multiple" className="w-full space-y-4">
-                                <Card>
-                                    <AccordionItem value="bank">
-                                        <AccordionTrigger className='p-6'>Bank (IMPS/NEFT/RTGS)</AccordionTrigger>
-                                        <AccordionContent className="p-6 pt-0 space-y-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="holderName">Account Holder Name</Label>
-                                                <Input id="holderName" value={formState.bankDetails.holderName} onChange={(e) => handleBankDetailsChange('holderName', e.target.value)}/>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="bankName">Bank Name</Label>
-                                                <Input id="bankName" value={formState.bankDetails.bankName} onChange={(e) => handleBankDetailsChange('bankName', e.target.value)}/>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="accountNumber">Account Number</Label>
-                                                <Input id="accountNumber" value={formState.bankDetails.accountNumber} onChange={(e) => handleBankDetailsChange('accountNumber', e.target.value)}/>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="ifsc">IFSC Code</Label>
-                                                <Input id="ifsc" value={formState.bankDetails.ifsc} onChange={(e) => handleBankDetailsChange('ifsc', e.target.value)}/>
-                                            </div>
-                                            <Button className="w-full" onClick={() => handleSave('bank')} disabled={isSaving}>
-                                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                Save Bank Details
-                                            </Button>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                </Card>
-
-                                <Card>
-                                     <AccordionItem value="upi">
-                                        <AccordionTrigger className='p-6'>UPI & QR Code</AccordionTrigger>
-                                        <AccordionContent className="p-6 pt-0 space-y-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="upiId">UPI ID</Label>
-                                                <Input id="upiId" value={formState.upiId} onChange={(e) => setFormState(prev => prev ? {...prev, upiId: e.target.value} : null)}/>
-                                            </div>
-                                            <Separator className="my-4" />
-                                            <div className="space-y-4">
-                                                <Label>Current QR Code Preview</Label>
-                                                <div className="flex justify-center p-2 border rounded-md bg-muted">
-                                                    <Image src={formState.qrCodeUrl} alt="UPI QR Code" width={128} height={128} data-ai-hint="qr code" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="qrCodeUrlInput">QR Code Image URL</Label>
-                                                    <Input id="qrCodeUrlInput" value={formState.qrCodeUrl} onChange={(e) => setFormState(prev => prev ? {...prev, qrCodeUrl: e.target.value} : null)} />
-                                                </div>
-                                            </div>
-                                            <Button className="w-full" onClick={() => handleSave('upi')} disabled={isSaving}>
-                                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                Save UPI Settings
-                                            </Button>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                </Card>
-                             </Accordion>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>USDT Deposit Settings</CardTitle>
-                            <CardDescription>
-                                Manage deposit addresses and QR codes for each network.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <Accordion type="single" collapsible defaultValue="BEP20" className="w-full">
-                                {(['BEP20', 'TRC20', 'ERC20'] as const).map((network) => (
-                                    <AccordionItem value={network} key={network}>
-                                        <AccordionTrigger>{network}</AccordionTrigger>
-                                        <AccordionContent className="space-y-4 pt-4">
-                                            <div className="grid md:grid-cols-1 gap-6">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor={`${network}Address`}>Deposit Address</Label>
-                                                    <Textarea
-                                                        id={`${network}Address`}
-                                                        value={formState.depositDetails[network].address}
-                                                        onChange={(e) => handleDepositDetailsChange(network, 'address', e.target.value)}
-                                                        rows={3}
+            
+            <Form {...form}>
+                <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-3">
+                    <div className="lg:col-span-2 space-y-8">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Content Management</CardTitle>
+                                <CardDescription>Update images and other content shown on the site.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Accordion type="single" collapsible defaultValue='banners'>
+                                    <AccordionItem value="banners">
+                                        <AccordionTrigger className="text-lg">Homepage Banners</AccordionTrigger>
+                                        <AccordionContent className="pt-4 space-y-6">
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div className="space-y-4">
+                                                    <h4 className="font-semibold">Buy Banner</h4>
+                                                    <div className="relative aspect-video w-full rounded-md overflow-hidden border">
+                                                        <Image src={watchedValues.buyBannerUrl || ''} alt="Buy Banner Preview" fill style={{objectFit: 'cover'}} data-ai-hint="crypto buy"/>
+                                                    </div>
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="buyBannerUrl"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                            <FormLabel>Image URL</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                            </FormItem>
+                                                        )}
                                                     />
                                                 </div>
                                                 <div className="space-y-4">
-                                                   <Label>QR Code Preview</Label>
-                                                   <div className="flex justify-center p-2 border rounded-md bg-muted">
-                                                     <Image src={formState.depositDetails[network].qrCodeUrl} alt={`${network} QR Code`} width={128} height={128} data-ai-hint="qr code" />
-                                                   </div>
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor={`${network}QrUrl`}>QR Code Image URL</Label>
-                                                        <Input
-                                                            id={`${network}QrUrl`}
-                                                            value={formState.depositDetails[network].qrCodeUrl}
-                                                            onChange={(e) => handleDepositDetailsChange(network, 'qrCodeUrl', e.target.value)}
+                                                    <h4 className="font-semibold">Sell Banner</h4>
+                                                    <div className="relative aspect-video w-full rounded-md overflow-hidden border">
+                                                        <Image src={watchedValues.sellBannerUrl || ''} alt="Sell Banner Preview" fill style={{objectFit: 'cover'}} data-ai-hint="crypto sell"/>
+                                                    </div>
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="sellBannerUrl"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                            <FormLabel>Image URL</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <Button className="w-full" onClick={() => handleSave('banners')} disabled={isSaving}>
+                                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                Save Banners
+                                            </Button>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                </Accordion>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <div className="space-y-8">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Payment Methods</CardTitle>
+                                <CardDescription>Update details for receiving payments from users.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Accordion type="multiple" className="w-full space-y-4">
+                                    <Card>
+                                        <AccordionItem value="bank">
+                                            <AccordionTrigger className='p-6'>Bank (IMPS/NEFT/RTGS)</AccordionTrigger>
+                                            <AccordionContent className="p-6 pt-0 space-y-4">
+                                                <FormField control={form.control} name="bankDetails.holderName" render={({ field }) => (<FormItem><FormLabel>Account Holder Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                <FormField control={form.control} name="bankDetails.bankName" render={({ field }) => (<FormItem><FormLabel>Bank Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                <FormField control={form.control} name="bankDetails.accountNumber" render={({ field }) => (<FormItem><FormLabel>Account Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                <FormField control={form.control} name="bankDetails.ifsc" render={({ field }) => (<FormItem><FormLabel>IFSC Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                <Button className="w-full" onClick={() => handleSave('bank')} disabled={isSaving}>
+                                                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                    Save Bank Details
+                                                </Button>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    </Card>
+
+                                    <Card>
+                                        <AccordionItem value="upi">
+                                            <AccordionTrigger className='p-6'>UPI & QR Code</AccordionTrigger>
+                                            <AccordionContent className="p-6 pt-0 space-y-4">
+                                                <FormField control={form.control} name="upiId" render={({ field }) => (<FormItem><FormLabel>UPI ID</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                <Separator className="my-4" />
+                                                <div className="space-y-4">
+                                                    <Label>Current QR Code Preview</Label>
+                                                    <div className="flex justify-center p-2 border rounded-md bg-muted">
+                                                        <Image src={watchedValues.qrCodeUrl || ''} alt="UPI QR Code" width={128} height={128} data-ai-hint="qr code" />
+                                                    </div>
+                                                    <FormField control={form.control} name="qrCodeUrl" render={({ field }) => (<FormItem><FormLabel>QR Code Image URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                </div>
+                                                <Button className="w-full" onClick={() => handleSave('upi')} disabled={isSaving}>
+                                                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                    Save UPI Settings
+                                                </Button>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    </Card>
+                                </Accordion>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>USDT Deposit Settings</CardTitle>
+                                <CardDescription>Manage deposit addresses and QR codes for each network.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <Accordion type="single" collapsible defaultValue="BEP20" className="w-full">
+                                    {(['BEP20', 'TRC20', 'ERC20'] as const).map((network) => (
+                                        <AccordionItem value={network} key={network}>
+                                            <AccordionTrigger>{network}</AccordionTrigger>
+                                            <AccordionContent className="space-y-4 pt-4">
+                                                <div className="grid md:grid-cols-1 gap-6">
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`depositDetails.${network}.address`}
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Deposit Address</FormLabel>
+                                                                <FormControl><Textarea {...field} rows={3} /></FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <div className="space-y-4">
+                                                        <Label>QR Code Preview</Label>
+                                                        <div className="flex justify-center p-2 border rounded-md bg-muted">
+                                                          <Image src={watchedValues.depositDetails?.[network]?.qrCodeUrl || ''} alt={`${network} QR Code`} width={128} height={128} data-ai-hint="qr code" />
+                                                        </div>
+                                                        <FormField
+                                                            control={form.control}
+                                                            name={`depositDetails.${network}.qrCodeUrl`}
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>QR Code Image URL</FormLabel>
+                                                                    <FormControl><Input {...field} /></FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
                                                         />
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                ))}
-                            </Accordion>
-                            <Button className="w-full !mt-6" onClick={() => handleSave('deposit')} disabled={isSaving}>
-                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Save Deposit Details
-                            </Button>
-                        </CardContent>
-                    </Card>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    ))}
+                                </Accordion>
+                                <Button className="w-full !mt-6" onClick={() => handleSave('deposit')} disabled={isSaving}>
+                                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Save Deposit Details
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
-            </div>
+            </Form>
         </div>
     );
 }
