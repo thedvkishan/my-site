@@ -28,7 +28,7 @@ export function BuyForm() {
     resolver: zodResolver(buyFormSchema),
     defaultValues: {
       network: 'BEP20',
-      usdtAmount: 100,
+      usdtAmount: 200,
       inrAmount: 0,
       usdtAddress: '',
       paymentMode: 'UPI',
@@ -47,7 +47,7 @@ export function BuyForm() {
       const result = await getConversionRates();
       if (result.success && result.data) {
         setRates(result.data);
-        setValue('inrAmount', parseFloat((100 * result.data.buyRate).toFixed(2)));
+        setValue('inrAmount', parseFloat((200 * result.data.buyRate).toFixed(2)));
       } else {
         toast({
           variant: 'destructive',

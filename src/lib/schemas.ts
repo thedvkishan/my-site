@@ -3,7 +3,7 @@ import { NETWORKS, PAYMENT_METHODS_BUY, PAYMENT_METHODS_SELL, COUNTRIES } from '
 
 export const buyFormSchema = z.object({
   network: z.enum(NETWORKS as [string, ...string[]], { required_error: 'Please select a network.' }),
-  usdtAmount: z.coerce.number().min(1, 'Amount must be at least 1.'),
+  usdtAmount: z.coerce.number().min(200, 'Minimum buy amount is 200 USDT.'),
   inrAmount: z.coerce.number().min(1, 'Amount must be at least 1.'),
   usdtAddress: z.string().min(10, 'Please enter a valid USDT address.'),
   paymentMode: z.enum(PAYMENT_METHODS_BUY as [string, ...string[]], { required_error: 'Please select a payment mode.' }),
