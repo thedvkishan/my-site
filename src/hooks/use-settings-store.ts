@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback } from 'react';
 import { doc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { 
     MOCK_BANK_DETAILS, 
@@ -33,6 +33,7 @@ const getInitialSettings = (): Settings => ({
 
 export function useSettingsStore() {
   const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
   
   const settingsRef = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -41,13 +42,13 @@ export function useSettingsStore() {
 
   const { data: settings, isLoading, error } = useDoc<Settings>(settingsRef);
 
-  // If the settings document doesn't exist, create it with initial values.
+  // If the settings document doesn't exist, create it with initial values, but only if a user is authenticated.
   useEffect(() => {
-    if (!isLoading && !settings && !error && settingsRef) {
+    if (!isLoading && !settings && !error && settingsRef && !isUserLoading && user) {
       const initialSettings = getInitialSettings();
       setDocumentNonBlocking(settingsRef, initialSettings, { merge: true });
     }
-  }, [isLoading, settings, error, settingsRef]);
+  }, [isLoading, settings, error, settingsRef, isUserLoading, user]);
 
   const setSettings = useCallback(async (newSettings: Partial<Settings>) => {
     if (settingsRef) {
