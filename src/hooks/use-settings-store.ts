@@ -49,11 +49,10 @@ export function useSettingsStore() {
     }
   }, [isLoading, settings, error, settingsRef]);
 
-  const setSettings = useCallback((newSettings: Partial<Settings>) => {
+  const setSettings = useCallback(async (newSettings: Partial<Settings>) => {
     if (settingsRef) {
-      return setDocumentNonBlocking(settingsRef, newSettings, { merge: true });
+      await setDocumentNonBlocking(settingsRef, newSettings, { merge: true });
     }
-    return Promise.resolve();
   }, [settingsRef]);
   
   const isInitialized = !isLoading && !!settings;
