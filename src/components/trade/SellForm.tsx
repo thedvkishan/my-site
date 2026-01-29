@@ -1,0 +1,264 @@
+'use client';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState, useRef } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { getConversionRates } from '@/lib/actions';
+import { sellFormSchema, type SellFormValues } from '@/lib/schemas';
+import { COUNTRIES, NETWORKS, PAYMENT_METHODS_SELL } from '@/lib/constants';
+import { Loader2 } from 'lucide-react';
+import { useTransactionStore } from '@/hooks/use-transaction-store';
+
+export function SellForm() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const { setTransaction } = useTransactionStore();
+  const [rates, setRates] = useState<{ buyRate: number; sellRate: number } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const conversionInputSource = useRef<'usdt' | 'inr' | null>(null);
+
+  const form = useForm<SellFormValues>({
+    resolver: zodResolver(sellFormSchema),
+    defaultValues: {
+      network: 'BEP20',
+      usdtAmount: 100,
+      paymentMode: 'UPI',
+      country: 'India',
+    },
+  });
+
+  const { setValue, watch, control } = form;
+  const usdtAmount = watch('usdtAmount');
+  const inrAmount = watch('inrAmount');
+  const paymentMode = watch('paymentMode');
+
+  useEffect(() => {
+    async function fetchRates() {
+      const result = await getConversionRates();
+      if (result.success && result.data) {
+        setRates(result.data);
+        setValue('inrAmount', parseFloat((100 * result.data.sellRate).toFixed(2)));
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: result.error,
+        });
+      }
+    }
+    fetchRates();
+  }, [setValue, toast]);
+
+  useEffect(() => {
+    if (conversionInputSource.current === 'usdt' && rates) {
+      const newInrAmount = usdtAmount * rates.sellRate;
+      if (inrAmount !== newInrAmount) {
+        setValue('inrAmount', parseFloat(newInrAmount.toFixed(2)));
+      }
+    }
+  }, [usdtAmount, rates, setValue, inrAmount]);
+
+  useEffect(() => {
+    if (conversionInputSource.current === 'inr' && rates) {
+      const newUsdtAmount = inrAmount / rates.sellRate;
+      if (usdtAmount !== newUsdtAmount) {
+        setValue('usdtAmount', parseFloat(newUsdtAmount.toFixed(4)));
+      }
+    }
+  }, [inrAmount, rates, setValue, usdtAmount]);
+  
+  async function onSubmit(values: SellFormValues) {
+    setIsLoading(true);
+    const transactionId = `SELL-${Date.now()}`;
+    const transactionData = {
+      ...values,
+      id: transactionId,
+      type: 'sell',
+      status: 'pending_deposit',
+      createdAt: new Date().toISOString(),
+      expiresAt: Date.now() + 3 * 60 * 60 * 1000,
+    };
+
+    setTransaction(transactionId, transactionData);
+
+    toast({
+      title: 'Order Created',
+      description: 'Redirecting to deposit page...',
+    });
+
+    router.push(`/sell/deposit/${transactionId}`);
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={control}
+          name="network"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Network</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger><SelectValue placeholder="Select a network" /></SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {NETWORKS.map(network => (
+                    <SelectItem key={network} value={network}>{network}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+          <FormField
+            control={control}
+            name="usdtAmount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>USDT Amount</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="Enter USDT amount" {...field} 
+                    onChange={(e) => {
+                      conversionInputSource.current = 'usdt';
+                      field.onChange(e);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="inrAmount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>INR Amount You Receive</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="Enter INR amount" {...field} 
+                    onChange={(e) => {
+                      conversionInputSource.current = 'inr';
+                      field.onChange(e);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {rates ? `Current Sell Rate: 1 USDT ≈ ${rates.sellRate.toFixed(2)} INR` : 'Fetching rates...'}
+        </div>
+        
+        <FormField
+          control={control}
+          name="paymentMode"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Payment Receiving Mode</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger><SelectValue placeholder="Select a payment mode" /></SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {PAYMENT_METHODS_SELL.map(method => (
+                    <SelectItem key={method} value={method}>{method}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {paymentMode === 'UPI' && (
+          <div className="space-y-4 p-4 border rounded-md bg-secondary">
+            <FormField control={control} name="upiHolderName" render={({ field }) => (
+              <FormItem><FormLabel>UPI Holder Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
+            )}/>
+            <FormField control={control} name="upiId" render={({ field }) => (
+              <FormItem><FormLabel>UPI ID</FormLabel><FormControl><Input placeholder="yourname@upi" {...field} /></FormControl><FormMessage /></FormItem>
+            )}/>
+          </div>
+        )}
+
+        {(paymentMode === 'IMPS' || paymentMode === 'RTGS' || paymentMode === 'NEFT') && (
+          <div className="space-y-4 p-4 border rounded-md bg-secondary">
+            <FormField control={control} name="bankHolderName" render={({ field }) => (
+              <FormItem><FormLabel>Account Holder Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
+            )}/>
+            <FormField control={control} name="bankName" render={({ field }) => (
+              <FormItem><FormLabel>Bank Name</FormLabel><FormControl><Input placeholder="Your Bank" {...field} /></FormControl><FormMessage /></FormItem>
+            )}/>
+            <FormField control={control} name="accountNumber" render={({ field }) => (
+              <FormItem><FormLabel>Account Number</FormLabel><FormControl><Input placeholder="1234567890" {...field} /></FormControl><FormMessage /></FormItem>
+            )}/>
+            <FormField control={control} name="ifsc" render={({ field }) => (
+              <FormItem><FormLabel>IFSC Code</FormLabel><FormControl><Input placeholder="BANK0001234" {...field} /></FormControl><FormMessage /></FormItem>
+            )}/>
+          </div>
+        )}
+
+        <FormField
+          control={control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Your Contact Email</FormLabel>
+              <FormControl><Input type="email" placeholder="you@example.com" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Your Contact Number (Optional)</FormLabel>
+              <FormControl><Input type="tel" placeholder="+91 12345 67890" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name="country"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Country</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger><SelectValue placeholder="Select your country" /></SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {COUNTRIES.map(country => (
+                    <SelectItem key={country} value={country}>{country}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button type="submit" className="w-full" disabled={isLoading || !rates}>
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Deposit and Receive
+        </Button>
+      </form>
+    </Form>
+  );
+}
