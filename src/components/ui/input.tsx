@@ -12,7 +12,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className
         )}
         ref={ref}
-        value={value ?? ""}
+        value={type === 'file' ? undefined : value ?? ''}
         {...props}
       />
     )
