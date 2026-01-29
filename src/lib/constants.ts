@@ -19,10 +19,19 @@ export const MOCK_QR_CODE_URL = PlaceHolderImages.find(img => img.id === 'qr-cod
 export const MOCK_BUY_BANNER_URL = PlaceHolderImages.find(img => img.id === 'buy-banner-placeholder')?.imageUrl || '';
 export const MOCK_SELL_BANNER_URL = PlaceHolderImages.find(img => img.id === 'sell-banner-placeholder')?.imageUrl || '';
 
-export const MOCK_USDT_ADDRESSES = {
-  BEP20: '0x1234567890abcdef1234567890abcdef12345678',
-  TRC20: 'TABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890',
-  ERC20: '0xabcdef1234567890abcdef1234567890abcdef12',
+export const MOCK_DEPOSIT_DETAILS = {
+  BEP20: {
+    address: '0x1234567890abcdef1234567890abcdef12345678',
+    qrCodeUrl: PlaceHolderImages.find(img => img.id === 'bep20-qr-placeholder')?.imageUrl || '',
+  },
+  TRC20: {
+    address: 'TABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890',
+    qrCodeUrl: PlaceHolderImages.find(img => img.id === 'trc20-qr-placeholder')?.imageUrl || '',
+  },
+  ERC20: {
+    address: '0xabcdef1234567890abcdef1234567890abcdef12',
+    qrCodeUrl: PlaceHolderImages.find(img => img.id === 'erc20-qr-placeholder')?.imageUrl || '',
+  },
 };
 
 export const ADMIN_CREDENTIALS = {

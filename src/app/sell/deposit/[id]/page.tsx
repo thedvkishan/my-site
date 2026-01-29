@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useTransactionStore } from '@/hooks/use-transaction-store';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { MOCK_USDT_ADDRESSES, TRANSACTION_LIFETIME } from '@/lib/constants';
+import { MOCK_DEPOSIT_DETAILS, TRANSACTION_LIFETIME } from '@/lib/constants';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { Copy, Send, TimerIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -51,7 +52,9 @@ export default function SellDepositPage() {
     }
   }, [id, getTransaction, router, toast, updateTransactionStatus]);
 
-  const depositAddress = transaction ? MOCK_USDT_ADDRESSES[transaction.network] : '';
+  const depositInfo = transaction ? MOCK_DEPOSIT_DETAILS[transaction.network] : null;
+  const depositAddress = depositInfo?.address || '';
+  const qrCodeUrl = depositInfo?.qrCodeUrl || '';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(depositAddress);
@@ -121,8 +124,14 @@ export default function SellDepositPage() {
           
           <div className="space-y-3">
             <h3 className="font-semibold text-center">Deposit Address</h3>
-            <div className="p-4 bg-secondary rounded-lg text-center space-y-2">
+            <div className="p-4 bg-secondary rounded-lg text-center space-y-3">
                 <Badge variant="outline">{transaction.network}</Badge>
+                {qrCodeUrl && (
+                    <div className="flex justify-center">
+                        <Image data-ai-hint="qr code" src={qrCodeUrl} alt={`${transaction.network} Deposit QR Code`} width={200} height={200} className="rounded-lg border p-1 bg-white" />
+                    </div>
+                )}
+                <p className="text-sm text-muted-foreground">Scan the QR code or use the address below.</p>
                 <div className="flex items-center justify-center gap-2 mt-2 break-all">
                     <strong className="text-sm font-mono">{depositAddress}</strong>
                     <Button variant="ghost" size="icon" onClick={handleCopy}>
