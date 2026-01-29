@@ -16,6 +16,8 @@ export const MOCK_BANK_DETAILS = {
 
 export const MOCK_UPI_ID = 'tether.swap@gpay';
 export const MOCK_QR_CODE_URL = PlaceHolderImages.find(img => img.id === 'qr-code-placeholder')?.imageUrl || '';
+export const MOCK_BUY_BANNER_URL = PlaceHolderImages.find(img => img.id === 'buy-banner-placeholder')?.imageUrl || '';
+export const MOCK_SELL_BANNER_URL = PlaceHolderImages.find(img => img.id === 'sell-banner-placeholder')?.imageUrl || '';
 
 export const MOCK_USDT_ADDRESSES = {
   BEP20: '0x1234567890abcdef1234567890abcdef12345678',

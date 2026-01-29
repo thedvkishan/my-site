@@ -5,6 +5,18 @@
       "description": "A placeholder image of a QR code.",
       "imageUrl": "https://images.unsplash.com/photo-1571867424488-4565932edb41?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxxciUyMGNvZGV8ZW58MHx8fHwxNzY5NjM3NjcyfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "qr code"
+    },
+    {
+      "id": "buy-banner-placeholder",
+      "description": "A banner for buying cryptocurrency.",
+      "imageUrl": "https://images.unsplash.com/photo-1640601580929-0771d14f16bc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjcnlwdG8lMjBidXl8ZW58MHx8fHwxNzY5NzI2ODgyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "crypto buy"
+    },
+    {
+      "id": "sell-banner-placeholder",
+      "description": "A banner for selling cryptocurrency.",
+      "imageUrl": "https://images.unsplash.com/photo-1642543348781-ed9c6d67ed20?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxjcnlwdG8lMjBzZWxsfGVufDB8fHx8MTc2OTcyNjg4Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "crypto sell"
     }
   ]
 }
