@@ -45,7 +45,7 @@ export function useSettingsStore() {
   useEffect(() => {
     if (!isLoading && !settings && !error && settingsRef) {
       const initialSettings = getInitialSettings();
-      setDocumentNonBlocking(settingsRef, initialSettings, { merge: false });
+      setDocumentNonBlocking(settingsRef, initialSettings, { merge: true });
     }
   }, [isLoading, settings, error, settingsRef]);
 

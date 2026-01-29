@@ -9,12 +9,13 @@
  * Data Structure:
  * User-specific data is nested under the `/users/{userId}` path (e.g., `/users/{userId}/buyOrders`). This structure
  * allows for simple, performant security rules based on the document path.
- * Global configuration data (`paymentMethods`) and user submissions (`contactMessages`) are stored in separate top-level collections.
+ * Global configuration data (`paymentMethods`, `settings`) and user submissions (`contactMessages`) are stored in separate top-level collections.
  *
  * Key Security Decisions:
  * - User Enumeration is Disabled: Listing documents in the top-level `/users` collection is explicitly forbidden to protect user privacy.
  * - User-Owned Data: All access to `/users/{userId}` subcollections is restricted to the authenticated user matching the `{userId}` wildcard.
  * - Public Read-Only Data: The `/paymentMethods` collection is readable by any client (authenticated or not) but cannot be modified, treating it as system configuration.
+ * - Publicly Readable/Writable Settings: The `/settings` collection is readable and writable by anyone. This is insecure for production but allows the admin panel to function in this prototype.
  * - Write-Only "Drop Box": The `/contactMessages` collection allows any client to create a document but denies all reads and other writes. This securely captures user feedback without exposing it to other users.
  *
  * Denormalization for Authorization:
@@ -45,37 +46,6 @@ service cloud.firestore {
      */
     function isOwner(userId) {
       return request.auth.uid == userId;
-    }
-
-    /**
-     * Checks if the document being operated on already exists.
-     * Crucial for protecting against writes on non-existent paths.
-     */
-    function isExistingDoc() {
-      return exists(getAfter().data);
-    }
-
-    /**
-     * Combines ownership and existence checks for update/delete operations.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && isExistingDoc();
-    }
-    
-    /**
-     * Validates that the new document's internal userId field matches the path.
-     * Enforces relational integrity on document creation.
-     */
-    function isNewDocOwner(userId) {
-      return request.resource.data.userId == userId;
-    }
-    
-    /**
-     * Ensures the userId field cannot be changed after creation.
-     * Protects against re-assigning ownership of a document.
-     */
-    function isImmutableOwner() {
-      return request.resource.data.userId == resource.data.userId;
     }
 
     /**
