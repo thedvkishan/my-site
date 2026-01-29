@@ -31,6 +31,15 @@ export function SellForm() {
       usdtAmount: 100,
       paymentMode: 'UPI',
       country: 'India',
+      inrAmount: 0,
+      email: '',
+      phone: '',
+      upiHolderName: '',
+      upiId: '',
+      bankHolderName: '',
+      bankName: '',
+      accountNumber: '',
+      ifsc: '',
     },
   });
 

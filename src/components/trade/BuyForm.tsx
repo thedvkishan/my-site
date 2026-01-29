@@ -29,7 +29,7 @@ export function BuyForm() {
     defaultValues: {
       network: 'BEP20',
       usdtAmount: 100,
-      inrAmount: undefined,
+      inrAmount: 0,
       usdtAddress: '',
       paymentMode: 'UPI',
       email: '',
