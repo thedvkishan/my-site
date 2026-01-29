@@ -1,13 +1,17 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ShieldCheck, Zap, MessageCircle } from 'lucide-react';
-import { MOCK_BUY_BANNER_URL, MOCK_SELL_BANNER_URL } from '@/lib/constants';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useSettingsStore } from '@/hooks/use-settings-store';
 
 export default function Home() {
+  const { settings } = useSettingsStore();
+
   return (
     <>
       {/* Hero Section */}
@@ -32,7 +36,7 @@ export default function Home() {
               <CardContent className="flex-grow flex flex-col justify-between">
                 <div className="relative aspect-video mb-4 rounded-md overflow-hidden">
                   <Image 
-                    src={MOCK_BUY_BANNER_URL} 
+                    src={settings.buyBannerUrl} 
                     alt="Buy Tether" 
                     fill
                     style={{ objectFit: 'cover' }}
@@ -58,7 +62,7 @@ export default function Home() {
               <CardContent className="flex-grow flex flex-col justify-between">
                  <div className="relative aspect-video mb-4 rounded-md overflow-hidden">
                   <Image 
-                    src={MOCK_SELL_BANNER_URL} 
+                    src={settings.sellBannerUrl} 
                     alt="Sell Tether"
                     fill
                     style={{ objectFit: 'cover' }}

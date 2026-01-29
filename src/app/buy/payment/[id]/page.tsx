@@ -7,11 +7,14 @@ import { useTransactionStore } from '@/hooks/use-transaction-store';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { MOCK_BANK_DETAILS, MOCK_QR_CODE_URL, MOCK_UPI_ID, TRANSACTION_LIFETIME } from '@/lib/constants';
+import { TRANSACTION_LIFETIME } from '@/lib/constants';
 import { CountdownTimer } from '@/components/CountdownTimer';
-import { AlertTriangle, Banknote, Copy, QrCode, TimerIcon } from 'lucide-react';
+import { Banknote, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { useSettingsStore } from '@/hooks/use-settings-store';
+import { TimerIcon } from 'lucide-react';
+
 
 type Transaction = {
   id: string;
@@ -28,6 +31,7 @@ export default function BuyPaymentPage() {
   const { id } = params;
   const { getTransaction, updateTransactionStatus } = useTransactionStore();
   const { toast } = useToast();
+  const { settings } = useSettingsStore();
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [isExpired, setIsExpired] = useState(false);
 
@@ -97,13 +101,13 @@ export default function BuyPaymentPage() {
       return (
         <div className="space-y-4">
           <div className="flex justify-center">
-            {MOCK_QR_CODE_URL && <Image data-ai-hint="qr code" src={MOCK_QR_CODE_URL} alt="UPI QR Code" width={200} height={200} className="rounded-lg border p-1" />}
+            {settings.qrCodeUrl && <Image data-ai-hint="qr code" src={settings.qrCodeUrl} alt="UPI QR Code" width={200} height={200} className="rounded-lg border p-1" />}
           </div>
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Scan the QR code or use the UPI ID below</p>
             <div className="flex items-center justify-center gap-2 mt-2">
-              <strong className="text-lg font-mono">{MOCK_UPI_ID}</strong>
-              <Button variant="ghost" size="icon" onClick={() => handleCopy(MOCK_UPI_ID, 'UPI ID')}>
+              <strong className="text-lg font-mono">{settings.upiId}</strong>
+              <Button variant="ghost" size="icon" onClick={() => handleCopy(settings.upiId, 'UPI ID')}>
                 <Copy className="h-4 w-4" />
               </Button>
             </div>
@@ -115,10 +119,10 @@ export default function BuyPaymentPage() {
       return (
         <div className="space-y-3 text-sm">
           {Object.entries({
-            "Account Holder Name": MOCK_BANK_DETAILS.holderName,
-            "Bank Name": MOCK_BANK_DETAILS.bankName,
-            "Account Number": MOCK_BANK_DETAILS.accountNumber,
-            "IFSC Code": MOCK_BANK_DETAILS.ifsc,
+            "Account Holder Name": settings.bankDetails.holderName,
+            "Bank Name": settings.bankDetails.bankName,
+            "Account Number": settings.bankDetails.accountNumber,
+            "IFSC Code": settings.bankDetails.ifsc,
           }).map(([key, value]) => (
             <div key={key} className="flex items-center justify-between">
               <span className="text-muted-foreground">{key}:</span>

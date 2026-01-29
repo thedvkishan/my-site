@@ -7,33 +7,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MOCK_BANK_DETAILS, MOCK_UPI_ID, MOCK_BUY_BANNER_URL, MOCK_SELL_BANNER_URL, MOCK_DEPOSIT_DETAILS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Loader2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Textarea } from '@/components/ui/textarea';
+import { useSettingsStore, type Settings } from '@/hooks/use-settings-store';
 
-type DepositDetails = {
-    [key in 'BEP20' | 'TRC20' | 'ERC20']: {
-        address: string;
-        qrCodeUrl: string;
-    }
-};
+type DepositDetails = Settings['depositDetails'];
 
 export default function AdminDashboardPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     
-    // Form states for mock updates
-    const [bankDetails, setBankDetails] = useState(MOCK_BANK_DETAILS);
-    const [upiId, setUpiId] = useState(MOCK_UPI_ID);
-    const [buyBannerUrl, setBuyBannerUrl] = useState(MOCK_BUY_BANNER_URL);
-    const [sellBannerUrl, setSellBannerUrl] = useState(MOCK_SELL_BANNER_URL);
-    const [depositDetails, setDepositDetails] = useState<DepositDetails>(MOCK_DEPOSIT_DETAILS);
+    const { settings: storedSettings, setSettings: saveSettings, isInitialized } = useSettingsStore();
 
+    // Local form state, initialized from the settings store
+    const [bankDetails, setBankDetails] = useState(storedSettings.bankDetails);
+    const [upiId, setUpiId] = useState(storedSettings.upiId);
+    const [qrCodeUrl, setQrCodeUrl] = useState(storedSettings.qrCodeUrl);
+    const [buyBannerUrl, setBuyBannerUrl] = useState(storedSettings.buyBannerUrl);
+    const [sellBannerUrl, setSellBannerUrl] = useState(storedSettings.sellBannerUrl);
+    const [depositDetails, setDepositDetails] = useState<DepositDetails>(storedSettings.depositDetails);
 
     useEffect(() => {
         try {
@@ -47,6 +44,18 @@ export default function AdminDashboardPage() {
             router.replace('/admin/login');
         }
     }, [router]);
+    
+    // Sync local form state with settings from the store once initialized
+    useEffect(() => {
+        if(isInitialized) {
+            setBankDetails(storedSettings.bankDetails);
+            setUpiId(storedSettings.upiId);
+            setQrCodeUrl(storedSettings.qrCodeUrl);
+            setBuyBannerUrl(storedSettings.buyBannerUrl);
+            setSellBannerUrl(storedSettings.sellBannerUrl);
+            setDepositDetails(storedSettings.depositDetails);
+        }
+    }, [isInitialized, storedSettings]);
 
     const handleLogout = () => {
         localStorage.removeItem('isAdminAuthenticated');
@@ -65,36 +74,47 @@ export default function AdminDashboardPage() {
     };
 
     const handleSave = (type: 'bank' | 'upi' | 'banners' | 'deposit') => {
-        setIsLoading(true);
+        setIsSaving(true);
+        
+        let newSettings = {};
+        let description = '';
+
+        switch(type) {
+            case 'bank':
+                newSettings = { bankDetails };
+                description = 'Bank details have been updated.';
+                break;
+            case 'upi':
+                newSettings = { upiId, qrCodeUrl };
+                description = 'UPI and QR code have been updated.';
+                break;
+            case 'banners':
+                newSettings = { buyBannerUrl, sellBannerUrl };
+                description = 'Homepage banners have been updated.';
+                break;
+            case 'deposit':
+                newSettings = { depositDetails };
+                description = 'USDT deposit details have been updated.';
+                break;
+        }
+
+        saveSettings(newSettings);
+
         setTimeout(() => {
-            // Here you would typically make an API call to save the data.
-            // For this mock, we just show a toast.
-            let description = '';
-            switch(type) {
-                case 'bank':
-                    description = 'Bank details have been updated.';
-                    break;
-                case 'upi':
-                    description = 'UPI and QR code have been updated.';
-                    break;
-                case 'banners':
-                    description = 'Homepage banners have been updated.';
-                    break;
-                case 'deposit':
-                    description = 'USDT deposit details have been updated.';
-                    break;
-            }
             toast({
                 title: 'Settings Saved',
                 description: description,
             });
-            setIsLoading(false);
-        }, 1500);
+            setIsSaving(false);
+        }, 1000);
     };
 
-    if (!isAuthenticated) {
-        // Render nothing or a loading spinner while checking auth
-        return null;
+    if (!isAuthenticated || !isInitialized) {
+        return (
+            <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
+                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+        )
     }
 
     return (
@@ -129,11 +149,6 @@ export default function AdminDashboardPage() {
                                                     <Label htmlFor="buyBannerUrl">Image URL</Label>
                                                     <Input id="buyBannerUrl" value={buyBannerUrl} onChange={(e) => setBuyBannerUrl(e.target.value)} />
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="buyBannerUpload">Upload New Image</Label>
-                                                    <Input id="buyBannerUpload" type="file" />
-                                                    <p className="text-sm text-muted-foreground">This is a mock upload. No file will be processed.</p>
-                                                </div>
                                             </div>
                                              <div className="space-y-4">
                                                 <h4 className="font-semibold">Sell Banner</h4>
@@ -144,15 +159,10 @@ export default function AdminDashboardPage() {
                                                     <Label htmlFor="sellBannerUrl">Image URL</Label>
                                                     <Input id="sellBannerUrl" value={sellBannerUrl} onChange={(e) => setSellBannerUrl(e.target.value)} />
                                                 </div>
-                                                 <div className="space-y-2">
-                                                    <Label htmlFor="sellBannerUpload">Upload New Image</Label>
-                                                    <Input id="sellBannerUpload" type="file" />
-                                                    <p className="text-sm text-muted-foreground">This is a mock upload. No file will be processed.</p>
-                                                </div>
                                             </div>
                                         </div>
-                                        <Button className="w-full" onClick={() => handleSave('banners')} disabled={isLoading}>
-                                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        <Button className="w-full" onClick={() => handleSave('banners')} disabled={isSaving}>
+                                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                             Save Banners
                                         </Button>
                                     </AccordionContent>
@@ -190,8 +200,8 @@ export default function AdminDashboardPage() {
                                                 <Label htmlFor="ifsc">IFSC Code</Label>
                                                 <Input id="ifsc" value={bankDetails.ifsc} onChange={(e) => setBankDetails(prev => ({...prev, ifsc: e.target.value}))}/>
                                             </div>
-                                            <Button className="w-full" onClick={() => handleSave('bank')} disabled={isLoading}>
-                                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            <Button className="w-full" onClick={() => handleSave('bank')} disabled={isSaving}>
+                                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                                 Save Bank Details
                                             </Button>
                                         </AccordionContent>
@@ -207,13 +217,18 @@ export default function AdminDashboardPage() {
                                                 <Input id="upiId" value={upiId} onChange={(e) => setUpiId(e.target.value)}/>
                                             </div>
                                             <Separator className="my-4" />
-                                            <div className="space-y-2">
-                                                <Label htmlFor="qrCode">Upload New QR Code</Label>
-                                                <Input id="qrCode" type="file" />
-                                                <p className="text-sm text-muted-foreground">This is a mock upload. No file will be processed.</p>
+                                            <div className="space-y-4">
+                                                <Label>Current QR Code Preview</Label>
+                                                <div className="flex justify-center p-2 border rounded-md bg-muted">
+                                                    <Image src={qrCodeUrl} alt="UPI QR Code" width={128} height={128} data-ai-hint="qr code" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="qrCodeUrlInput">QR Code Image URL</Label>
+                                                    <Input id="qrCodeUrlInput" value={qrCodeUrl} onChange={(e) => setQrCodeUrl(e.target.value)} />
+                                                </div>
                                             </div>
-                                            <Button className="w-full" onClick={() => handleSave('upi')} disabled={isLoading}>
-                                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            <Button className="w-full" onClick={() => handleSave('upi')} disabled={isSaving}>
+                                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                                 Save UPI Settings
                                             </Button>
                                         </AccordionContent>
@@ -259,19 +274,14 @@ export default function AdminDashboardPage() {
                                                             onChange={(e) => handleDepositDetailsChange(network, 'qrCodeUrl', e.target.value)}
                                                         />
                                                     </div>
-                                                     <div className="space-y-2">
-                                                        <Label htmlFor={`${network}QrUpload`}>Upload New QR Code</Label>
-                                                        <Input id={`${network}QrUpload`} type="file" />
-                                                        <p className="text-sm text-muted-foreground">Mock upload. No file processed.</p>
-                                                    </div>
                                                 </div>
                                             </div>
                                         </AccordionContent>
                                     </AccordionItem>
                                 ))}
                             </Accordion>
-                            <Button className="w-full !mt-6" onClick={() => handleSave('deposit')} disabled={isLoading}>
-                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <Button className="w-full !mt-6" onClick={() => handleSave('deposit')} disabled={isSaving}>
+                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Save Deposit Details
                             </Button>
                         </CardContent>

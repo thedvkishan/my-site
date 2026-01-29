@@ -7,12 +7,12 @@ import { useTransactionStore } from '@/hooks/use-transaction-store';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { MOCK_DEPOSIT_DETAILS, TRANSACTION_LIFETIME } from '@/lib/constants';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { Copy, Send, TimerIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { useSettingsStore } from '@/hooks/use-settings-store';
 
 type Transaction = {
   id: string;
@@ -29,6 +29,7 @@ export default function SellDepositPage() {
   const { id } = params;
   const { getTransaction, updateTransactionStatus } = useTransactionStore();
   const { toast } = useToast();
+  const { settings } = useSettingsStore();
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [isExpired, setIsExpired] = useState(false);
 
@@ -52,7 +53,7 @@ export default function SellDepositPage() {
     }
   }, [id, getTransaction, router, toast, updateTransactionStatus]);
 
-  const depositInfo = transaction ? MOCK_DEPOSIT_DETAILS[transaction.network] : null;
+  const depositInfo = transaction ? settings.depositDetails[transaction.network] : null;
   const depositAddress = depositInfo?.address || '';
   const qrCodeUrl = depositInfo?.qrCodeUrl || '';
 
