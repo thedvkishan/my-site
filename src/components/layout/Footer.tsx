@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Plus } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -11,8 +12,8 @@ export function Footer() {
           <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground">
             Contact
           </Link>
-          <Link href="/admin/login" className="text-sm text-muted-foreground hover:text-foreground">
-            For Admin
+          <Link href="/admin/login" aria-label="Admin Login" className="text-sm text-muted-foreground hover:text-foreground">
+            <Plus className="h-5 w-5" />
           </Link>
         </div>
       </div>
