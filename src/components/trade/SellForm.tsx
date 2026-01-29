@@ -14,15 +14,18 @@ import { getConversionRates } from '@/lib/actions';
 import { sellFormSchema, type SellFormValues } from '@/lib/schemas';
 import { COUNTRIES, NETWORKS, PAYMENT_METHODS_SELL } from '@/lib/constants';
 import { Loader2 } from 'lucide-react';
-import { useTransactionStore } from '@/hooks/use-transaction-store';
+import { useAuth, useFirestore } from '@/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 export function SellForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const { setTransaction } = useTransactionStore();
   const [rates, setRates] = useState<{ buyRate: number; sellRate: number } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const conversionInputSource = useRef<'usdt' | 'inr' | null>(null);
+
+  const auth = useAuth();
+  const firestore = useFirestore();
 
   const form = useForm<SellFormValues>({
     resolver: zodResolver(sellFormSchema),
@@ -85,24 +88,37 @@ export function SellForm() {
   
   async function onSubmit(values: SellFormValues) {
     setIsLoading(true);
-    const transactionId = `SELL-${Date.now()}`;
-    const transactionData = {
-      ...values,
-      id: transactionId,
-      type: 'sell',
-      status: 'pending_deposit',
-      createdAt: new Date().toISOString(),
-      expiresAt: Date.now() + 3 * 60 * 60 * 1000,
-    };
 
-    setTransaction(transactionId, transactionData);
+    if (!auth.currentUser || !firestore) {
+        toast({ title: 'Error', description: 'User not authenticated or database not available.', variant: 'destructive'});
+        setIsLoading(false);
+        return;
+    }
+    
+    try {
+        const orderData = {
+          ...values,
+          userId: auth.currentUser.uid,
+          type: 'sell',
+          status: 'pending_deposit',
+          createdAt: new Date().toISOString(),
+          expiresAt: Date.now() + 3 * 60 * 60 * 1000,
+        };
+        
+        const docRef = await addDoc(collection(firestore, 'sellOrders'), orderData);
+        
+        toast({
+            title: 'Order Created',
+            description: 'Redirecting to deposit page...',
+        });
+    
+        router.push(`/sell/deposit/${docRef.id}`);
 
-    toast({
-      title: 'Order Created',
-      description: 'Redirecting to deposit page...',
-    });
-
-    router.push(`/sell/deposit/${transactionId}`);
+    } catch (error) {
+        console.error("Error creating sell order: ", error);
+        toast({ title: 'Order Creation Failed', description: 'Could not save your order. Please try again.', variant: 'destructive' });
+        setIsLoading(false);
+    }
   }
 
   return (
@@ -263,7 +279,7 @@ export function SellForm() {
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={isLoading || !rates}>
+        <Button type="submit" className="w-full" disabled={isLoading || !rates || !auth.currentUser}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Deposit and Receive
         </Button>

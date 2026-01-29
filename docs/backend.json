@@ -11,6 +11,10 @@
           "type": "string",
           "description": "Unique identifier for the buy order."
         },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who created the order."
+        },
         "network": {
           "type": "string",
           "description": "The selected network for the USDT transaction (BEP20, TRC20, ERC20)."
@@ -44,31 +48,29 @@
           "type": "string",
           "description": "The user's country."
         },
-        "paymentInformation": {
+        "status": {
           "type": "string",
-          "description": "Payment information based on the selected payment method."
+          "description": "The status of the order (e.g., pending_payment, payment_processing, completed, failed, expired)."
         },
-        "paymentToken": {
-          "type": "string",
-          "description": "Unique token generated for the payment."
+        "createdAt": {
+            "type": "string",
+            "format": "date-time"
         },
-        "orderStatus": {
-          "type": "string",
-          "description": "The status of the order (e.g., pending, processing, completed, cancelled)."
+        "expiresAt": {
+            "type": "number"
         }
       },
       "required": [
-        "id",
+        "userId",
         "network",
         "usdtAmount",
         "inrAmount",
         "usdtAddress",
         "paymentMode",
-        "contactEmail",
+        "email",
         "country",
-        "paymentInformation",
-        "paymentToken",
-        "orderStatus"
+        "status",
+        "createdAt"
       ]
     },
     "SellOrder": {
@@ -80,6 +82,10 @@
         "id": {
           "type": "string",
           "description": "Unique identifier for the sell order."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who created the order."
         },
         "network": {
           "type": "string",
@@ -130,13 +136,20 @@
           "type": "string",
           "description": "The user's country."
         },
-        "orderStatus": {
+        "status": {
           "type": "string",
-          "description": "The status of the order (e.g., pending, processing, completed, cancelled)."
+          "description": "The status of the order (e.g., pending_deposit, payment_processing, completed, failed, expired)."
+        },
+         "createdAt": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "expiresAt": {
+            "type": "number"
         }
       },
       "required": [
-        "id",
+        "userId",
         "network",
         "usdtAmount",
         "inrAmount",
@@ -144,48 +157,8 @@
         "contactEmail",
         "contactNumber",
         "country",
-        "orderStatus"
-      ]
-    },
-    "PaymentMethod": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "PaymentMethod",
-      "type": "object",
-      "description": "Represents a payment method configuration.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the payment method."
-        },
-        "methodName": {
-          "type": "string",
-          "description": "Name of the payment method (e.g., UPI, IMPS, NEFT)."
-        },
-        "qrCodeImage": {
-          "type": "string",
-          "description": "URL or path to the QR code image for the payment method."
-        },
-        "accountHolderName": {
-          "type": "string",
-          "description": "Account holder name for the payment method (if applicable)."
-        },
-        "bankName": {
-          "type": "string",
-          "description": "Bank name for the payment method (if applicable)."
-        },
-        "accountNumber": {
-          "type": "string",
-          "description": "Account number for the payment method (if applicable)."
-        },
-        "ifscCode": {
-          "type": "string",
-          "description": "IFSC code for the payment method (if applicable)."
-        }
-      },
-      "required": [
-        "id",
-        "methodName",
-        "qrCodeImage"
+        "status",
+        "createdAt"
       ]
     },
     "ContactMessage": {
@@ -198,31 +171,30 @@
           "type": "string",
           "description": "Unique identifier for the contact message."
         },
-        "userName": {
+        "name": {
           "type": "string",
           "description": "The name of the user submitting the message."
         },
-        "userEmail": {
+        "email": {
           "type": "string",
           "description": "The email address of the user submitting the message.",
           "format": "email"
         },
-        "problemDescription": {
+        "description": {
           "type": "string",
           "description": "A description of the user's problem or inquiry."
         },
-        "submissionDate": {
+        "submittedAt": {
           "type": "string",
           "description": "The date and time the message was submitted.",
           "format": "date-time"
         }
       },
       "required": [
-        "id",
-        "userName",
-        "userEmail",
-        "problemDescription",
-        "submissionDate"
+        "name",
+        "email",
+        "description",
+        "submittedAt"
       ]
     },
     "AppSettings": {
@@ -281,59 +253,23 @@
   "firestore": {
     "structure": [
       {
-        "path": "/users/{userId}/buyOrders/{buyOrderId}",
+        "path": "/buyOrders/{buyOrderId}",
         "definition": {
           "entityName": "BuyOrder",
           "schema": {
             "$ref": "#/backend/entities/BuyOrder"
           },
-          "description": "Stores user's buy orders. Path-based ownership ensures only the user can access their orders.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who created the buy order."
-            },
-            {
-              "name": "buyOrderId",
-              "description": "The ID of the buy order document."
-            }
-          ]
+          "description": "Stores all buy orders. Readable by admin, creatable by any signed-in user."
         }
       },
-      {
-        "path": "/users/{userId}/sellOrders/{sellOrderId}",
+       {
+        "path": "/sellOrders/{sellOrderId}",
         "definition": {
           "entityName": "SellOrder",
           "schema": {
             "$ref": "#/backend/entities/SellOrder"
           },
-          "description": "Stores user's sell orders. Path-based ownership ensures only the user can access their orders.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who created the sell order."
-            },
-            {
-              "name": "sellOrderId",
-              "description": "The ID of the sell order document."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/paymentMethods/{paymentMethodId}",
-        "definition": {
-          "entityName": "PaymentMethod",
-          "schema": {
-            "$ref": "#/backend/entities/PaymentMethod"
-          },
-          "description": "Stores payment method configurations. Publicly readable.",
-          "params": [
-            {
-              "name": "paymentMethodId",
-              "description": "The ID of the payment method document."
-            }
-          ]
+          "description": "Stores all sell orders. Readable by admin, creatable by any signed-in user."
         }
       },
       {
@@ -343,13 +279,7 @@
           "schema": {
             "$ref": "#/backend/entities/ContactMessage"
           },
-          "description": "Stores contact messages submitted by users.",
-          "params": [
-            {
-              "name": "contactMessageId",
-              "description": "The ID of the contact message document."
-            }
-          ]
+          "description": "Stores contact messages submitted by users. Readable by admin, creatable by anyone."
         }
       },
       {
@@ -362,7 +292,6 @@
           "description": "Stores global application settings. This should be a single document, e.g., /settings/appSettings. Publicly readable, admin writable."
         }
       }
-    ],
-    "reasoning": "The Firestore data structure is designed to prioritize authorization independence, clarity, and scalability, aligning with the core principles and strategy mandates.  User-owned data, such as BuyOrders and SellOrders, are stored within user-specific subcollections (`/users/{userId}/buyOrders` and `/users/{userId}/sellOrders`), ensuring clear ownership and simplifying security rules. This structure inherently supports Authorization Independence because access control is path-based, avoiding the need for `get()` calls to parent documents. PaymentMethods are stored in a top-level collection (`/paymentMethods`) and are publicly readable, as they represent system-wide configurations. ContactMessages are stored in the `/contactMessages` collection. To support QAPs (Rules Are Not Filters), the path-based ownership of BuyOrders and SellOrders ensures secure listing, as rules can easily filter by `request.auth.uid`. The structure uses descriptive naming conventions for collections and documents to maximize debuggability. No denormalization is necessary as all data is user specific. The admin section's data (payment methods) doesn't require complex authorization; therefore, no specific denormalization is needed."
+    ]
   }
 }

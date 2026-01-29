@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useTransactionStore } from '@/hooks/use-transaction-store';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,8 @@ import { Banknote, Copy, Loader2, TimerIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { useSettingsStore } from '@/hooks/use-settings-store';
-
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 
 type Transaction = {
   id: string;
@@ -28,52 +28,53 @@ export default function BuyPaymentPage() {
   const router = useRouter();
   const params = useParams();
   const { id } = params;
-  const { getTransaction, updateTransactionStatus } = useTransactionStore();
   const { toast } = useToast();
-  const { settings, isInitialized } = useSettingsStore();
-  const [transaction, setTransaction] = useState<Transaction | null>(null);
+  const { settings, isInitialized: settingsInitialized } = useSettingsStore();
   const [isExpired, setIsExpired] = useState(false);
 
+  const firestore = useFirestore();
+
+  const transactionRef = useMemoFirebase(() => {
+    if (!firestore || typeof id !== 'string') return null;
+    return doc(firestore, 'buyOrders', id);
+  }, [firestore, id]);
+  
+  const { data: transaction, isLoading: transactionLoading } = useDoc<Transaction>(transactionRef);
+
   useEffect(() => {
-    if (typeof id === 'string') {
-      const data = getTransaction(id);
-      if (data) {
-        if (data.status !== 'pending_payment') {
-          router.replace('/');
-          toast({ title: 'Invalid Transaction State', variant: 'destructive' });
-        } else if (Date.now() > data.expiresAt) {
-          setIsExpired(true);
-          updateTransactionStatus(id, 'expired');
-        } else {
-          setTransaction(data);
-        }
-      } else {
+    if (!transactionLoading && transaction) {
+      if (transaction.status !== 'pending_payment') {
+        router.replace('/');
+        toast({ title: 'Invalid Transaction State', variant: 'destructive' });
+      } else if (Date.now() > transaction.expiresAt) {
+        handleExpire();
+      }
+    } else if (!transactionLoading && !transaction) {
         router.replace('/');
         toast({ title: 'Transaction Not Found', variant: 'destructive' });
-      }
     }
-  }, [id, getTransaction, router, toast, updateTransactionStatus]);
+  }, [transaction, transactionLoading, router, toast]);
 
   const handleCopy = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: 'Copied!', description: `${fieldName} copied to clipboard.` });
   };
 
-  const handlePaid = () => {
-    if (typeof id === 'string') {
-      updateTransactionStatus(id, 'payment_processing');
+  const handlePaid = async () => {
+    if (transactionRef) {
+      await updateDoc(transactionRef, { status: 'payment_processing' });
       router.push(`/buy/confirmation/${id}`);
     }
   };
   
-  const handleExpire = () => {
-     if (typeof id === 'string' && !isExpired) {
+  const handleExpire = async () => {
+     if (transactionRef && !isExpired) {
         setIsExpired(true);
-        updateTransactionStatus(id, 'expired');
+        await updateDoc(transactionRef, { status: 'expired' });
      }
   };
 
-  if (!isInitialized) {
+  if (!settingsInitialized || transactionLoading) {
     return (
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
              <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -81,7 +82,7 @@ export default function BuyPaymentPage() {
     )
   }
 
-  if (isExpired) {
+  if (isExpired || (transaction && transaction.status === 'expired')) {
     return (
       <div className="container mx-auto max-w-2xl py-12">
         <Card className="text-center">
@@ -98,10 +99,15 @@ export default function BuyPaymentPage() {
       </div>
     );
   }
-
+  
   if (!transaction) {
-    return <div className="container mx-auto max-w-2xl py-12 text-center">Loading...</div>;
+    return (
+      <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
   }
+
 
   const renderPaymentDetails = () => {
     if (transaction.paymentMode === 'UPI') {
@@ -165,7 +171,7 @@ export default function BuyPaymentPage() {
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Amount to Pay</p>
             <p className="text-4xl font-bold tracking-tight">₹{transaction.inrAmount.toLocaleString('en-IN')}</p>
-            <p className="text-sm text-muted-foreground">Transaction ID: <span className='font-mono'>{transaction.id}</span></p>
+            <p className="text-sm text-muted-foreground">Transaction ID: <span className='font-mono'>{id}</span></p>
           </div>
           
           <Separator />

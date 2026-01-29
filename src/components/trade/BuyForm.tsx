@@ -14,15 +14,18 @@ import { getConversionRates } from '@/lib/actions';
 import { buyFormSchema, type BuyFormValues } from '@/lib/schemas';
 import { COUNTRIES, NETWORKS, PAYMENT_METHODS_BUY } from '@/lib/constants';
 import { Loader2 } from 'lucide-react';
-import { useTransactionStore } from '@/hooks/use-transaction-store';
+import { useAuth, useFirestore } from '@/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 export function BuyForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const { setTransaction } = useTransactionStore();
   const [rates, setRates] = useState<{ buyRate: number; sellRate: number } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const conversionInputSource = useRef<'usdt' | 'inr' | null>(null);
+
+  const auth = useAuth();
+  const firestore = useFirestore();
 
   const form = useForm<BuyFormValues>({
     resolver: zodResolver(buyFormSchema),
@@ -79,24 +82,37 @@ export function BuyForm() {
 
   async function onSubmit(values: BuyFormValues) {
     setIsLoading(true);
-    const transactionId = `BUY-${Date.now()}`;
-    const transactionData = {
-      ...values,
-      id: transactionId,
-      type: 'buy',
-      status: 'pending_payment',
-      createdAt: new Date().toISOString(),
-      expiresAt: Date.now() + 3 * 60 * 60 * 1000,
-    };
-    
-    setTransaction(transactionId, transactionData);
 
-    toast({
-      title: 'Order Created',
-      description: 'Redirecting to payment page...',
-    });
+    if (!auth.currentUser || !firestore) {
+        toast({ title: 'Error', description: 'User not authenticated or database not available.', variant: 'destructive'});
+        setIsLoading(false);
+        return;
+    }
 
-    router.push(`/buy/payment/${transactionId}`);
+    try {
+        const orderData = {
+            ...values,
+            userId: auth.currentUser.uid,
+            type: 'buy',
+            status: 'pending_payment',
+            createdAt: new Date().toISOString(),
+            expiresAt: Date.now() + 3 * 60 * 60 * 1000,
+        };
+        
+        const docRef = await addDoc(collection(firestore, 'buyOrders'), orderData);
+        
+        toast({
+            title: 'Order Created',
+            description: 'Redirecting to payment page...',
+        });
+
+        router.push(`/buy/payment/${docRef.id}`);
+
+    } catch (error) {
+        console.error("Error creating buy order: ", error);
+        toast({ title: 'Order Creation Failed', description: 'Could not save your order. Please try again.', variant: 'destructive' });
+        setIsLoading(false);
+    }
   }
 
   return (
@@ -250,7 +266,7 @@ export function BuyForm() {
             USDT will be deposited to your address within 15 minutes to 3 hours after payment confirmation.
         </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading || !rates}>
+        <Button type="submit" className="w-full" disabled={isLoading || !rates || !auth.currentUser}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Pay Now
         </Button>

@@ -5,20 +5,22 @@ import { useForm } from 'react-hook-form';
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { contactFormSchema, ContactFormValues } from '@/lib/schemas';
-import { submitContactForm } from '@/lib/actions';
 import { Loader2, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useFirestore } from '@/firebase';
+import { addDoc, collection } from 'firebase/firestore';
 
 
 export default function ContactPage() {
     const { toast } = useToast();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
+    const firestore = useFirestore();
 
     const form = useForm<ContactFormValues>({
         resolver: zodResolver(contactFormSchema),
@@ -31,22 +33,32 @@ export default function ContactPage() {
 
     async function onSubmit(values: ContactFormValues) {
         setIsLoading(true);
-        const result = await submitContactForm(values);
-        setIsLoading(false);
+        if (!firestore) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Database not available.' });
+            setIsLoading(false);
+            return;
+        }
 
-        if (result.success) {
+        try {
+            await addDoc(collection(firestore, 'contactMessages'), {
+                ...values,
+                submittedAt: new Date().toISOString(),
+            });
             toast({
                 title: 'Message Sent!',
-                description: result.message,
+                description: "Thank you for your message! We'll get back to you shortly.",
             });
             form.reset();
             router.push('/');
-        } else {
+        } catch (error) {
+            console.error("Error submitting contact form: ", error);
             toast({
                 variant: 'destructive',
                 title: 'Submission Failed',
                 description: 'Something went wrong. Please try again.',
             });
+        } finally {
+            setIsLoading(false);
         }
     }
 

@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useTransactionStore } from '@/hooks/use-transaction-store';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useSettingsStore } from '@/hooks/use-settings-store';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 
 type Transaction = {
   id: string;
@@ -27,31 +28,31 @@ export default function SellDepositPage() {
   const router = useRouter();
   const params = useParams();
   const { id } = params;
-  const { getTransaction, updateTransactionStatus } = useTransactionStore();
   const { toast } = useToast();
-  const { settings, isInitialized } = useSettingsStore();
-  const [transaction, setTransaction] = useState<Transaction | null>(null);
+  const { settings, isInitialized: settingsInitialized } = useSettingsStore();
   const [isExpired, setIsExpired] = useState(false);
 
+  const firestore = useFirestore();
+  const transactionRef = useMemoFirebase(() => {
+    if (!firestore || typeof id !== 'string') return null;
+    return doc(firestore, 'sellOrders', id);
+  }, [firestore, id]);
+
+  const { data: transaction, isLoading: transactionLoading } = useDoc<Transaction>(transactionRef);
+
   useEffect(() => {
-    if (typeof id === 'string') {
-      const data = getTransaction(id);
-      if (data) {
-        if (data.status !== 'pending_deposit') {
-          router.replace('/');
-          toast({ title: 'Invalid Transaction State', variant: 'destructive' });
-        } else if (Date.now() > data.expiresAt) {
-          setIsExpired(true);
-          updateTransactionStatus(id, 'expired');
-        } else {
-          setTransaction(data);
-        }
-      } else {
+    if (!transactionLoading && transaction) {
+      if (transaction.status !== 'pending_deposit') {
         router.replace('/');
-        toast({ title: 'Transaction Not Found', variant: 'destructive' });
+        toast({ title: 'Invalid Transaction State', variant: 'destructive' });
+      } else if (Date.now() > transaction.expiresAt) {
+        handleExpire();
       }
+    } else if (!transactionLoading && !transaction) {
+      router.replace('/');
+      toast({ title: 'Transaction Not Found', variant: 'destructive' });
     }
-  }, [id, getTransaction, router, toast, updateTransactionStatus]);
+  }, [transaction, transactionLoading, router, toast]);
 
   const depositInfo = transaction ? settings.depositDetails[transaction.network] : null;
   const depositAddress = depositInfo?.address || '';
@@ -62,23 +63,22 @@ export default function SellDepositPage() {
     toast({ title: 'Copied!', description: 'Deposit address copied to clipboard.' });
   };
   
-  const handleNext = () => {
-    if (typeof id === 'string') {
-        // In a real app, you would wait for blockchain confirmation.
-        // Here, we just move to the next step.
-        updateTransactionStatus(id, 'payment_processing');
-        router.push(`/buy/confirmation/${id}`); // Re-using buy confirmation page for simplicity
+  const handleNext = async () => {
+    if (transactionRef) {
+        await updateDoc(transactionRef, { status: 'payment_processing' });
+        // NOTE: Reusing buy confirmation page for sell flow. A dedicated page would be better.
+        router.push(`/buy/confirmation/${id}`); 
     }
   };
 
-  const handleExpire = () => {
-    if (typeof id === 'string' && !isExpired) {
+  const handleExpire = async () => {
+    if (transactionRef && !isExpired) {
         setIsExpired(true);
-        updateTransactionStatus(id, 'expired');
+        await updateDoc(transactionRef, { status: 'expired' });
      }
   };
 
-  if (!isInitialized) {
+  if (!settingsInitialized || transactionLoading) {
     return (
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
              <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -86,7 +86,7 @@ export default function SellDepositPage() {
     )
   }
 
-  if (isExpired) {
+  if (isExpired || (transaction && transaction.status === 'expired')) {
     return (
       <div className="container mx-auto max-w-2xl py-12">
         <Card className="text-center">
@@ -105,7 +105,11 @@ export default function SellDepositPage() {
   }
 
   if (!transaction) {
-    return <div className="container mx-auto max-w-2xl py-12 text-center">Loading...</div>;
+    return (
+      <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
   }
   
   return (
@@ -126,7 +130,7 @@ export default function SellDepositPage() {
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Amount to Deposit</p>
             <p className="text-4xl font-bold tracking-tight">{transaction.usdtAmount.toLocaleString()} USDT</p>
-            <p className="text-sm text-muted-foreground">Transaction ID: <span className='font-mono'>{transaction.id}</span></p>
+            <p className="text-sm text-muted-foreground">Transaction ID: <span className='font-mono'>{id}</span></p>
           </div>
           
           <Separator />
