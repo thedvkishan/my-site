@@ -19,6 +19,7 @@ import { settingsSchema, type SettingsFormValues } from '@/lib/schemas';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AdminDataView } from '@/components/admin/AdminDataView';
+import { TetherIcon } from '@/components/icons/TetherIcon';
 
 export default function AdminDashboardPage() {
     const router = useRouter();
@@ -70,7 +71,7 @@ export default function AdminDashboardPage() {
         }
     };
 
-    const handleSave = async (type: 'bank' | 'upi' | 'banners' | 'deposit') => {
+    const handleSave = async (type: 'bank' | 'upi' | 'banners' | 'deposit' | 'logo') => {
         setIsSaving(true);
         
         const values = form.getValues();
@@ -78,6 +79,10 @@ export default function AdminDashboardPage() {
         let description = '';
 
         switch(type) {
+            case 'logo':
+                newSettings = { appLogoUrl: values.appLogoUrl };
+                description = 'App logo has been updated.';
+                break;
             case 'bank':
                 newSettings = { bankDetails: values.bankDetails };
                 description = 'Bank details have been updated.';
@@ -150,7 +155,39 @@ export default function AdminDashboardPage() {
                                         <CardDescription>Update images and other content shown on the site.</CardDescription>
                                     </CardHeader>
                                     <CardContent>
-                                        <Accordion type="single" collapsible defaultValue='banners'>
+                                        <Accordion type="single" collapsible defaultValue='logo'>
+                                            <AccordionItem value="logo">
+                                                <AccordionTrigger className="text-lg">App Logo</AccordionTrigger>
+                                                <AccordionContent className="pt-4 space-y-6">
+                                                    <div className="flex items-start gap-6">
+                                                        <div className="relative h-24 w-24 rounded-md overflow-hidden border bg-muted flex items-center justify-center">
+                                                            {watchedValues.appLogoUrl ? (
+                                                                <Image src={watchedValues.appLogoUrl} alt="App Logo Preview" fill style={{objectFit: 'cover'}} />
+                                                            ) : (
+                                                                <TetherIcon className="h-12 w-12 text-muted-foreground" />
+                                                            )}
+                                                        </div>
+                                                        <div className="space-y-4 flex-grow">
+                                                            <FormItem>
+                                                                <FormLabel>Upload Logo</FormLabel>
+                                                                <FormControl>
+                                                                    <div className='flex items-center gap-2'>
+                                                                        <Input id="logo-upload" type="file" className='hidden' accept="image/png, image/jpeg" onChange={(e) => handleFileChange(e, 'appLogoUrl')} />
+                                                                        <Label htmlFor='logo-upload' className='flex-grow'>
+                                                                            <Button asChild variant="outline"><div><FileUp className='mr-2' /> Upload Image</div></Button>
+                                                                        </Label>
+                                                                    </div>
+                                                                </FormControl>
+                                                                <p className="text-xs text-muted-foreground">Recommended: Square image (e.g., 64x64px).</p>
+                                                            </FormItem>
+                                                            <Button className="w-full" onClick={() => handleSave('logo')} disabled={isSaving}>
+                                                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                                Save Logo
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </AccordionContent>
+                                            </AccordionItem>
                                             <AccordionItem value="banners">
                                                 <AccordionTrigger className="text-lg">Homepage Banners</AccordionTrigger>
                                                 <AccordionContent className="pt-4 space-y-6">

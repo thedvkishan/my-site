@@ -1,6 +1,12 @@
 {
   "placeholderImages": [
     {
+      "id": "app-logo-placeholder",
+      "description": "A placeholder for the app logo.",
+      "imageUrl": "https://images.unsplash.com/photo-1563694983011-6f4d90358083?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxsb2dvfGVufDB8fHx8MTc2OTcwNjk2OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "logo"
+    },
+    {
       "id": "qr-code-placeholder",
       "description": "A placeholder image of a QR code.",
       "imageUrl": "https://images.unsplash.com/photo-1571867424488-4565932edb41?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxxciUyMGNvZGV8ZW58MHx8fHwxNzY5NjM3NjcyfDA&ixlib=rb-4.1.0&q=80&w=1080",

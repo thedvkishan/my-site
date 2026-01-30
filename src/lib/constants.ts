@@ -7,6 +7,8 @@ export const PAYMENT_METHODS_SELL = ['UPI', 'IMPS', 'RTGS', 'NEFT'];
 
 export const COUNTRIES = ['India'];
 
+export const MOCK_APP_LOGO_URL = PlaceHolderImages.find(img => img.id === 'app-logo-placeholder')?.imageUrl || '';
+
 export const MOCK_BANK_DETAILS = {
   holderName: 'TetherSwap Zone LLC',
   bankName: 'Global Trust Bank',

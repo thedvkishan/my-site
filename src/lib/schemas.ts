@@ -77,6 +77,7 @@ const depositNetworkSchema = z.object({
 });
 
 export const settingsSchema = z.object({
+  appLogoUrl: z.string().min(1, 'Logo URL is required.'),
   bankDetails: z.object({
     holderName: z.string().min(1, 'Holder name is required.'),
     bankName: z.string().min(1, 'Bank name is required.'),

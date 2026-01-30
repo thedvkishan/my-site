@@ -202,6 +202,7 @@
       "type": "object",
       "description": "Stores global application settings managed by the admin.",
       "properties": {
+        "appLogoUrl": { "type": "string" },
         "bankDetails": {
           "type": "object",
           "properties": {

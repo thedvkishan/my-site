@@ -5,6 +5,7 @@ import { doc } from 'firebase/firestore';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { 
+    MOCK_APP_LOGO_URL,
     MOCK_BANK_DETAILS, 
     MOCK_UPI_ID, 
     MOCK_BUY_BANNER_URL, 
@@ -14,6 +15,7 @@ import {
 } from '@/lib/constants';
 
 export type Settings = {
+    appLogoUrl: string;
     bankDetails: typeof MOCK_BANK_DETAILS;
     upiId: string;
     qrCodeUrl: string;
@@ -23,6 +25,7 @@ export type Settings = {
 }
 
 const getInitialSettings = (): Settings => ({
+  appLogoUrl: MOCK_APP_LOGO_URL,
   bankDetails: MOCK_BANK_DETAILS,
   upiId: MOCK_UPI_ID,
   qrCodeUrl: MOCK_QR_CODE_URL,
