@@ -63,13 +63,13 @@ export function SellForm() {
 
   useEffect(() => {
     if (rates?.sellRate) {
-        setValue('inrAmount', parseFloat((100 * rates.sellRate).toFixed(2)));
+        setValue('inrAmount', parseFloat((100 * Number(rates.sellRate)).toFixed(2)));
     }
   }, [rates, setValue]);
 
   useEffect(() => {
     if (conversionInputSource.current === 'usdt' && rates?.sellRate) {
-      const newInrAmount = usdtAmount * rates.sellRate;
+      const newInrAmount = usdtAmount * Number(rates.sellRate);
       if (inrAmount !== newInrAmount) {
         setValue('inrAmount', parseFloat(newInrAmount.toFixed(2)));
       }
@@ -78,7 +78,7 @@ export function SellForm() {
 
   useEffect(() => {
     if (conversionInputSource.current === 'inr' && rates?.sellRate) {
-      const newUsdtAmount = inrAmount / rates.sellRate;
+      const newUsdtAmount = inrAmount / Number(rates.sellRate);
       if (usdtAmount !== newUsdtAmount) {
         setValue('usdtAmount', parseFloat(newUsdtAmount.toFixed(4)));
       }
@@ -219,7 +219,7 @@ export function SellForm() {
           </div>
         )}
 
-        {(paymentMode === 'IMPS' || paymentMode === 'RTGS' || paymentMode === 'NEFT') && (
+        {(paymentMode === 'IMPS' || paymentMode === 'RTGS' || paymentMode === 'NEFT' || paymentMode === 'Cash Deposit') && (
           <div className="space-y-4 p-4 border rounded-md bg-secondary">
             <FormField control={control} name="bankHolderName" render={({ field }) => (
               <FormItem><FormLabel>Account Holder Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>

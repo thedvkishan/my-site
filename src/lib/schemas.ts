@@ -49,6 +49,13 @@ export const sellFormSchema = z.object({
         accountNumber: z.string().min(8, 'Please enter a valid account number.'),
         ifsc: z.string().min(8, 'Please enter a valid IFSC code.'),
     }),
+    z.object({
+        paymentMode: z.literal('Cash Deposit'),
+        bankHolderName: z.string().min(2, 'Please enter account holder name.'),
+        bankName: z.string().min(2, 'Please enter bank name.'),
+        accountNumber: z.string().min(8, 'Please enter a valid account number.'),
+        ifsc: z.string().min(8, 'Please enter a valid IFSC code.'),
+    }),
   ]));
   
 
