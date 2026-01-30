@@ -13,6 +13,8 @@ import { Separator } from '@/components/ui/separator';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { MOCK_SETTINGS } from '@/lib/constants';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 type Transaction = {
   id: string;
@@ -31,6 +33,8 @@ export default function BuyPaymentPage() {
   const { id } = params;
   const { toast } = useToast();
   const [isExpired, setIsExpired] = useState(false);
+  const [receipt, setReceipt] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const firestore = useFirestore();
 
@@ -61,10 +65,32 @@ export default function BuyPaymentPage() {
     navigator.clipboard.writeText(text);
     toast({ title: 'Copied!', description: `${fieldName} copied to clipboard.` });
   };
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUploading(true);
+      const reader = new FileReader();
+      reader.onload = (loadEvent) => {
+        setReceipt(loadEvent.target?.result as string);
+        setIsUploading(false);
+        toast({ title: 'Receipt Uploaded', description: 'Your receipt has been attached.' });
+      };
+      reader.onerror = () => {
+        setIsUploading(false);
+        toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not read the file.' });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handlePaid = async () => {
     if (transactionRef) {
-      await updateDoc(transactionRef, { status: 'payment_processing' });
+      const dataToUpdate: { status: string; paymentReceiptUrl?: string } = { status: 'payment_processing' };
+      if (receipt) {
+        dataToUpdate.paymentReceiptUrl = receipt;
+      }
+      await updateDoc(transactionRef, dataToUpdate);
       router.push(`/buy/confirmation/${id}`);
     }
   };
@@ -186,6 +212,24 @@ export default function BuyPaymentPage() {
             <div className="p-4 bg-secondary rounded-lg">{renderPaymentDetails()}</div>
           </div>
 
+          <Separator />
+          <div className="space-y-2 pt-4">
+              <Label htmlFor="receipt-upload">Upload Payment Receipt (Optional)</Label>
+              <Input
+                  id="receipt-upload"
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={handleFileChange}
+                  className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+              />
+              {isUploading && (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <span>Uploading...</span>
+                  </div>
+              )}
+          </div>
+
           <Alert>
             <TimerIcon className="h-4 w-4" />
             <AlertTitle>Time Remaining</AlertTitle>
@@ -196,7 +240,8 @@ export default function BuyPaymentPage() {
           </Alert>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <Button className="w-full" onClick={handlePaid}>
+          <Button className="w-full" onClick={handlePaid} disabled={isUploading}>
+            {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             I Have Paid
           </Button>
           <p className="text-xs text-muted-foreground text-center">

@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { format } from 'date-fns';
+import { Button } from "@/components/ui/button";
 
 export function AdminDataView() {
     const firestore = useFirestore();
@@ -59,6 +60,7 @@ export function AdminDataView() {
                                         <TableHead>Date</TableHead>
                                         <TableHead>ID</TableHead>
                                         <TableHead>Status</TableHead>
+                                        <TableHead>Receipt</TableHead>
                                         <TableHead>USDT</TableHead>
                                         <TableHead>INR</TableHead>
                                         <TableHead>Network</TableHead>
@@ -72,6 +74,17 @@ export function AdminDataView() {
                                             <TableCell>{format(new Date(order.createdAt), 'PPpp')}</TableCell>
                                             <TableCell className="font-mono text-xs">{order.id}</TableCell>
                                             <TableCell><Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>{order.status}</Badge></TableCell>
+                                            <TableCell>
+                                              {order.paymentReceiptUrl ? (
+                                                <Button asChild variant="link" size="sm" className="p-0 h-auto">
+                                                  <a href={order.paymentReceiptUrl} target="_blank" rel="noopener noreferrer">
+                                                    View Receipt
+                                                  </a>
+                                                </Button>
+                                              ) : (
+                                                <span className="text-muted-foreground text-xs">N/A</span>
+                                              )}
+                                            </TableCell>
                                             <TableCell>{order.usdtAmount}</TableCell>
                                             <TableCell>{order.inrAmount}</TableCell>
                                             <TableCell>{order.network}</TableCell>

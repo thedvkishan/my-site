@@ -48,6 +48,10 @@
           "type": "string",
           "description": "The user's country."
         },
+        "paymentReceiptUrl": {
+          "type": "string",
+          "description": "Data URL of the uploaded payment receipt (optional)."
+        },
         "status": {
           "type": "string",
           "description": "The status of the order (e.g., pending_payment, payment_processing, completed, failed, expired)."
