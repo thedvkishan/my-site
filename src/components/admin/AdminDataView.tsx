@@ -57,6 +57,7 @@ export function AdminDataView() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Date</TableHead>
+                                        <TableHead>ID</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>USDT</TableHead>
                                         <TableHead>INR</TableHead>
@@ -69,6 +70,7 @@ export function AdminDataView() {
                                     {buyOrders?.map(order => (
                                         <TableRow key={order.id}>
                                             <TableCell>{format(new Date(order.createdAt), 'PPpp')}</TableCell>
+                                            <TableCell className="font-mono text-xs">{order.id}</TableCell>
                                             <TableCell><Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>{order.status}</Badge></TableCell>
                                             <TableCell>{order.usdtAmount}</TableCell>
                                             <TableCell>{order.inrAmount}</TableCell>
@@ -88,6 +90,7 @@ export function AdminDataView() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Date</TableHead>
+                                        <TableHead>ID</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>USDT</TableHead>
                                         <TableHead>INR</TableHead>
@@ -100,6 +103,7 @@ export function AdminDataView() {
                                     {sellOrders?.map(order => (
                                         <TableRow key={order.id}>
                                             <TableCell>{format(new Date(order.createdAt), 'PPpp')}</TableCell>
+                                            <TableCell className="font-mono text-xs">{order.id}</TableCell>
                                             <TableCell><Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>{order.status}</Badge></TableCell>
                                             <TableCell>{order.usdtAmount}</TableCell>
                                             <TableCell>{order.inrAmount}</TableCell>
@@ -121,6 +125,7 @@ export function AdminDataView() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Date</TableHead>
+                                        <TableHead>ID</TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Email</TableHead>
                                         <TableHead>Message</TableHead>
@@ -130,6 +135,7 @@ export function AdminDataView() {
                                     {contactMessages?.map(msg => (
                                         <TableRow key={msg.id}>
                                             <TableCell>{format(new Date(msg.submittedAt), 'PPp')}</TableCell>
+                                            <TableCell className="font-mono text-xs">{msg.id}</TableCell>
                                             <TableCell>{msg.name}</TableCell>
                                             <TableCell>{msg.email}</TableCell>
                                             <TableCell className="max-w-md">{msg.description}</TableCell>
