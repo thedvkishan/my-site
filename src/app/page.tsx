@@ -63,7 +63,7 @@ export default function Home() {
           </Link>
 
           <Link href="/sell">
-            <Card className="h-full flex flex-col group hover:border-primary hover:shadow-lg transition-all duration-300">
+            <Card className="h-full flex flex-col group hover:border-destructive hover:shadow-lg transition-all duration-300">
               <CardHeader>
                 <CardTitle className="text-2xl font-semibold">Sell Tether (USDT)</CardTitle>
               </CardHeader>
@@ -81,7 +81,7 @@ export default function Home() {
                 <p className="text-muted-foreground mb-4">
                   Convert your USDT to INR and receive funds directly into your bank account or UPI. Experience a fast, transparent, and hassle-free selling process with competitive rates.
                 </p>
-                <Button className="w-full mt-auto">
+                <Button className="w-full mt-auto" variant="destructive">
                   Sell Now <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </CardContent>
