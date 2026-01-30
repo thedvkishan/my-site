@@ -36,6 +36,17 @@ export const MOCK_DEPOSIT_DETAILS = {
   },
 };
 
+export const MOCK_SETTINGS = {
+  appLogoUrl: MOCK_APP_LOGO_URL,
+  bankDetails: MOCK_BANK_DETAILS,
+  upiId: MOCK_UPI_ID,
+  qrCodeUrl: MOCK_QR_CODE_URL,
+  buyBannerUrl: MOCK_BUY_BANNER_URL,
+  sellBannerUrl: MOCK_SELL_BANNER_URL,
+  depositDetails: MOCK_DEPOSIT_DETAILS,
+};
+
+
 export const ADMIN_CREDENTIALS = {
   userId: 'USDTUBON21',
   password: 'ZDT6ukm@1234',

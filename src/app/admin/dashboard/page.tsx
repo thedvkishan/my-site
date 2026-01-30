@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
@@ -14,12 +14,20 @@ import { Separator } from '@/components/ui/separator';
 import { FileUp, Loader2, Download, Upload } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Textarea } from '@/components/ui/textarea';
-import { useSettingsStore, type Settings } from '@/hooks/use-settings-store';
 import { settingsSchema, type SettingsFormValues } from '@/lib/schemas';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AdminDataView } from '@/components/admin/AdminDataView';
 import { TetherIcon } from '@/components/icons/TetherIcon';
+import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { MOCK_SETTINGS } from '@/lib/constants';
+
+// Define the shape of your settings data
+export type Settings = SettingsFormValues;
+
+// Function to get the initial/default settings
+const getInitialSettings = (): Settings => MOCK_SETTINGS;
 
 export default function AdminDashboardPage() {
     const router = useRouter();
@@ -27,11 +35,37 @@ export default function AdminDashboardPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
-    const { settings: storedSettings, setSettings: saveSettings, isInitialized } = useSettingsStore();
+    // --- Direct Firestore integration ---
+    const firestore = useFirestore();
+    const { user, isUserLoading } = useUser();
+
+    const settingsRef = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return doc(firestore, 'settings', 'appSettings');
+    }, [firestore]);
+
+    const { data: storedSettings, isLoading: settingsLoading, error } = useDoc<Settings>(settingsRef);
+
+    const isInitialized = !settingsLoading && !isUserLoading;
+    
+    // Create initial settings document if it doesn't exist
+    useEffect(() => {
+        if (!settingsLoading && !storedSettings && !error && settingsRef && !isUserLoading && user) {
+            const initialSettings = getInitialSettings();
+            setDoc(settingsRef, initialSettings, { merge: true });
+        }
+    }, [settingsLoading, storedSettings, error, settingsRef, isUserLoading, user]);
+
+    const saveSettings = useCallback(async (newSettings: Partial<Settings>) => {
+        if (settingsRef) {
+            await setDoc(settingsRef, newSettings, { merge: true });
+        }
+    }, [settingsRef]);
+    // --- End of Direct Firestore integration ---
+
 
     const form = useForm<SettingsFormValues>({
         resolver: zodResolver(settingsSchema),
-        defaultValues: storedSettings,
     });
 
     useEffect(() => {
@@ -47,6 +81,7 @@ export default function AdminDashboardPage() {
         }
     }, [router]);
     
+    // This effect now correctly populates the form once data is loaded from Firestore
     useEffect(() => {
         if (isInitialized && storedSettings) {
             form.reset(storedSettings);
@@ -129,7 +164,7 @@ export default function AdminDashboardPage() {
             return;
         }
         const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-            JSON.stringify(storedSettings, null, 2)
+            JSON.stringify(form.getValues(), null, 2)
         )}`;
         const link = document.createElement("a");
         link.href = jsonString;
@@ -185,7 +220,7 @@ export default function AdminDashboardPage() {
     
     const watchedValues = form.watch();
 
-    if (!isAuthenticated || !isInitialized) {
+    if (!isAuthenticated || !isInitialized || !storedSettings) {
         return (
             <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
                  <Loader2 className="h-12 w-12 animate-spin text-primary" />

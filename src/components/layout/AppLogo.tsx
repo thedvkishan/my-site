@@ -1,14 +1,26 @@
 'use client';
 
 import Image from 'next/image';
-import { useSettingsStore } from '@/hooks/use-settings-store';
-import { TetherIcon } from '@/components/icons/TetherIcon';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TetherIcon } from '@/components/icons/TetherIcon';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+
+type Settings = {
+  appLogoUrl?: string;
+}
 
 export function AppLogo() {
-  const { settings, isInitialized } = useSettingsStore();
+  const firestore = useFirestore();
+  
+  const settingsRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'settings', 'appSettings');
+  }, [firestore]);
 
-  if (!isInitialized) {
+  const { data: settings, isLoading } = useDoc<Settings>(settingsRef);
+
+  if (isLoading) {
     return <Skeleton className="h-6 w-6 rounded-full" />;
   }
   

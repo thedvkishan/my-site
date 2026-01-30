@@ -7,12 +7,25 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, ShieldCheck, Zap, MessageCircle, Loader2 } from 'lucide-react';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { useSettingsStore } from '@/hooks/use-settings-store';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+
+type Settings = {
+  buyBannerUrl?: string;
+  sellBannerUrl?: string;
+}
 
 export default function Home() {
-  const { settings, isInitialized } = useSettingsStore();
+  const firestore = useFirestore();
+  
+  const settingsRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'settings', 'appSettings');
+  }, [firestore]);
 
-  if (!isInitialized || !settings) {
+  const { data: settings, isLoading } = useDoc<Settings>(settingsRef);
+
+  if (isLoading || !settings) {
     return (
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
              <Loader2 className="h-12 w-12 animate-spin text-primary" />

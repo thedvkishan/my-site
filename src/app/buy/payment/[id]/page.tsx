@@ -10,9 +10,9 @@ import { CountdownTimer } from '@/components/CountdownTimer';
 import { Banknote, Copy, Loader2, TimerIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
-import { useSettingsStore } from '@/hooks/use-settings-store';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
+import { MOCK_SETTINGS } from '@/lib/constants';
 
 type Transaction = {
   id: string;
@@ -23,12 +23,13 @@ type Transaction = {
   expiresAt: number;
 };
 
+type Settings = typeof MOCK_SETTINGS;
+
 export default function BuyPaymentPage() {
   const router = useRouter();
   const params = useParams();
   const { id } = params;
   const { toast } = useToast();
-  const { settings, isInitialized: settingsInitialized } = useSettingsStore();
   const [isExpired, setIsExpired] = useState(false);
 
   const firestore = useFirestore();
@@ -38,7 +39,13 @@ export default function BuyPaymentPage() {
     return doc(firestore, 'buyOrders', id);
   }, [firestore, id]);
   
+  const settingsRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'settings', 'appSettings');
+  }, [firestore]);
+
   const { data: transaction, isLoading: transactionLoading } = useDoc<Transaction>(transactionRef);
+  const { data: settings, isLoading: settingsLoading } = useDoc<Settings>(settingsRef);
   
   useEffect(() => {
     if (transaction) {
@@ -69,7 +76,7 @@ export default function BuyPaymentPage() {
      }
   };
 
-  if (!settingsInitialized || !settings || transactionLoading) {
+  if (settingsLoading || !settings || transactionLoading) {
     return (
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
              <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -96,6 +103,9 @@ export default function BuyPaymentPage() {
   }
   
   if (!transaction) {
+    // This state can happen briefly while the new transaction is being created.
+    // Instead of showing "Not Found" immediately, we show a loader.
+    // If the transaction is still not found after a reasonable time, it might be a real issue.
     return (
       <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
