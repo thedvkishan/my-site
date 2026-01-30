@@ -31,14 +31,12 @@ export function CountdownTimer({ expiryTimestamp, onExpire, className }: Countdo
     return () => clearInterval(intervalId);
   }, [expiryTimestamp, onExpire, timeLeft]);
 
-  const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
-  const minutes = Math.floor((timeLeft / (1000 * 60)) % 60);
+  const minutes = Math.floor(timeLeft / (1000 * 60));
   const seconds = Math.floor((timeLeft / 1000) % 60);
 
   return (
     <div className={className}>
-      {String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}:
-      {String(seconds).padStart(2, '0')}
+      {minutes}M:{String(seconds).padStart(2, '0')}S
     </div>
   );
 }
