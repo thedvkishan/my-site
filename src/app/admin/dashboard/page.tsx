@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AdminDataView } from '@/components/admin/AdminDataView';
 import { TetherIcon } from '@/components/icons/TetherIcon';
-import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { MOCK_SETTINGS } from '@/lib/constants';
 
@@ -37,24 +37,16 @@ export default function AdminDashboardPage() {
     
     // --- Direct Firestore integration ---
     const firestore = useFirestore();
-    const { user, isUserLoading } = useUser();
 
     const settingsRef = useMemoFirebase(() => {
         if (!firestore) return null;
         return doc(firestore, 'settings', 'appSettings');
     }, [firestore]);
 
-    const { data: storedSettings, isLoading: settingsLoading, error } = useDoc<Settings>(settingsRef);
+    const { data: storedSettings, isLoading: settingsLoading } = useDoc<Settings>(settingsRef);
+    const { isUserLoading } = useUser();
 
     const isInitialized = !settingsLoading && !isUserLoading;
-    
-    // Create initial settings document if it doesn't exist
-    useEffect(() => {
-        if (!settingsLoading && !storedSettings && !error && settingsRef && !isUserLoading && user) {
-            const initialSettings = getInitialSettings();
-            setDoc(settingsRef, initialSettings, { merge: true });
-        }
-    }, [settingsLoading, storedSettings, error, settingsRef, isUserLoading, user]);
 
     const saveSettings = useCallback(async (newSettings: Partial<Settings>) => {
         if (settingsRef) {
@@ -66,6 +58,7 @@ export default function AdminDashboardPage() {
 
     const form = useForm<SettingsFormValues>({
         resolver: zodResolver(settingsSchema),
+        defaultValues: getInitialSettings(),
     });
 
     useEffect(() => {
@@ -155,14 +148,6 @@ export default function AdminDashboardPage() {
     };
 
     const handleDownload = () => {
-        if (!storedSettings) {
-            toast({
-                variant: "destructive",
-                title: 'Error',
-                description: 'Settings not loaded yet.',
-            });
-            return;
-        }
         const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
             JSON.stringify(form.getValues(), null, 2)
         )}`;
@@ -220,7 +205,7 @@ export default function AdminDashboardPage() {
     
     const watchedValues = form.watch();
 
-    if (!isAuthenticated || !isInitialized || !storedSettings) {
+    if (!isAuthenticated || !isInitialized) {
         return (
             <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -482,3 +467,5 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
+
+    
