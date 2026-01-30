@@ -12,7 +12,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 
 type Transaction = {
   id: string;
-  status: 'payment_processing' | 'completed' | 'failed';
+  status: 'payment_processing' | 'completed' | 'failed' | 'expired';
   type: 'buy' | 'sell';
 };
 
@@ -30,18 +30,11 @@ export default function ConfirmationPage() {
 
   const transactionRef = useMemoFirebase(() => {
     if (!firestore || typeof id !== 'string') return null;
-    // Determine collection based on transaction type if possible,
-    // but for now, we have to check both. A better way would be to pass type in URL
-    // or have separate confirmation pages.
-    // For this prototype, we will assume transaction could be in either `buyOrders` or `sellOrders`
-    // and this confirmation page is generic.
-    // The previous flow re-used this for sell, so we check both.
-    return doc(firestore, 'buyOrders', id); // Assume buy order first
+    // For this prototype, we assume the transaction is in `buyOrders`.
+    // A production app might need to check `sellOrders` as well if this page is generic.
+    return doc(firestore, 'buyOrders', id);
   }, [firestore, id]);
 
-  // We could add a second useDoc for sellOrders and combine, but that gets complex.
-  // For now, this will only work for BUY orders.
-  // The sell flow was incorrectly pointing here. It should have its own confirmation page.
   const { data: transaction, isLoading: transactionLoading } = useDoc<Transaction>(transactionRef);
 
 
@@ -51,8 +44,7 @@ export default function ConfirmationPage() {
         router.replace('/');
       }
     } else if (!transactionLoading && !transaction) {
-        // Could be a sell order, or invalid ID.
-        // For now, redirecting home.
+        // Redirect home if transaction ID is invalid or not found.
         router.replace('/');
     }
   }, [id, transaction, transactionLoading, router]);
@@ -60,7 +52,8 @@ export default function ConfirmationPage() {
   const handleExpire = async () => {
     if (verificationStatus === 'processing' && transactionRef) {
       setVerificationStatus('failed');
-      await updateDoc(transactionRef, { status: 'failed' });
+      // Use 'expired' status for consistency with other pages
+      await updateDoc(transactionRef, { status: 'expired' });
     }
   };
 
@@ -94,34 +87,21 @@ export default function ConfirmationPage() {
         return (
           <>
             <XCircle className="h-16 w-16 text-destructive" />
-            <CardTitle className="mt-6">Verification Failed</CardTitle>
+            <CardTitle className="mt-6">Verification Expired</CardTitle>
             <CardDescription className="mt-2">
-              We could not verify your transaction. The order has been cancelled.
+              The verification window has closed. The order has been cancelled.
             </CardDescription>
           </>
         );
     }
   };
 
-  // Simulate verification result after some time
-  useEffect(() => {
-    if (verificationStatus === 'processing' && transactionRef) {
-      const timeout = setTimeout(async () => {
-        const isSuccess = Math.random() > 0.3; // 70% success rate
-        if (isSuccess) {
-          setVerificationStatus('verified');
-          await updateDoc(transactionRef, { status: 'completed' });
-        } else {
-          setVerificationStatus('failed');
-          await updateDoc(transactionRef, { status: 'failed' });
-        }
-      }, 10000); // Simulate after 10 seconds
-      return () => clearTimeout(timeout);
-    }
-  }, [verificationStatus, transactionRef]);
-
   if (transactionLoading) {
-    return <div className="container mx-auto max-w-2xl py-12 text-center">Loading...</div>;
+    return (
+        <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
+             <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
   }
 
   return (
