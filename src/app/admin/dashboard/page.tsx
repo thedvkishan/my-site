@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
-import { FileUp, Loader2 } from 'lucide-react';
+import { FileUp, Loader2, Download, Upload } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettingsStore, type Settings } from '@/hooks/use-settings-store';
@@ -117,6 +117,70 @@ export default function AdminDashboardPage() {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const handleDownload = () => {
+        if (!storedSettings) {
+            toast({
+                variant: "destructive",
+                title: 'Error',
+                description: 'Settings not loaded yet.',
+            });
+            return;
+        }
+        const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+            JSON.stringify(storedSettings, null, 2)
+        )}`;
+        const link = document.createElement("a");
+        link.href = jsonString;
+        link.download = "tetherswap-settings.json";
+        link.click();
+        toast({ title: 'Settings Exported', description: 'Your settings have been downloaded.' });
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const json = event.target?.result as string;
+                const newSettings = JSON.parse(json);
+                
+                const validationResult = settingsSchema.safeParse(newSettings);
+                if (!validationResult.success) {
+                    console.error("Invalid settings file:", validationResult.error);
+                    toast({
+                        variant: "destructive",
+                        title: 'Upload Failed',
+                        description: 'The uploaded file has an invalid format.',
+                    });
+                    return;
+                }
+
+                setIsSaving(true);
+                await saveSettings(validationResult.data);
+                form.reset(validationResult.data);
+                toast({
+                    title: 'Settings Imported',
+                    description: 'Your settings have been successfully uploaded and saved.',
+                });
+            } catch (error) {
+                console.error("Failed to parse or save settings:", error);
+                toast({
+                    variant: "destructive",
+                    title: 'Upload Failed',
+                    description: 'Could not read or save the settings file.',
+                });
+            } finally {
+                setIsSaving(false);
+                if (e.target) {
+                    e.target.value = '';
+                }
+            }
+        };
+        reader.readAsText(file);
     };
     
     const watchedValues = form.watch();
@@ -345,6 +409,30 @@ export default function AdminDashboardPage() {
                                             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                             Save Deposit Details
                                         </Button>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Import/Export Settings</CardTitle>
+                                        <CardDescription>Download or upload your site settings as a JSON file.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <Button className="w-full" variant="outline" onClick={handleDownload} disabled={!isInitialized}>
+                                            <Download className="mr-2" />
+                                            Download Settings
+                                        </Button>
+                                        <div>
+                                            <Input id="settings-upload" type="file" className='hidden' accept="application/json" onChange={handleFileUpload} disabled={isSaving} />
+                                            <Label htmlFor='settings-upload' className='w-full'>
+                                                <Button asChild variant="outline" className='w-full' disabled={isSaving}>
+                                                    <div>
+                                                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className='mr-2' />}
+                                                        Upload & Save Settings
+                                                    </div>
+                                                </Button>
+                                            </Label>
+                                        </div>
                                     </CardContent>
                                 </Card>
                             </div>
