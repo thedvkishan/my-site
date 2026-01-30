@@ -184,7 +184,7 @@ export function BuyForm() {
         </div>
         <div className="text-sm text-muted-foreground">
           {ratesLoading && 'Fetching rates...'}
-          {rates?.buyRate && `Current Buy Rate: 1 USDT ≈ ${rates.buyRate.toFixed(2)} INR`}
+          {rates?.buyRate && `Current Buy Rate: 1 USDT ≈ ${Number(rates.buyRate).toFixed(2)} INR`}
         </div>
 
         <FormField

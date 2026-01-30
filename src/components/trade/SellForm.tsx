@@ -184,7 +184,7 @@ export function SellForm() {
         </div>
         <div className="text-sm text-muted-foreground">
           {ratesLoading && 'Fetching rates...'}
-          {rates?.sellRate && `Current Sell Rate: 1 USDT ≈ ${rates.sellRate.toFixed(2)} INR`}
+          {rates?.sellRate && `Current Sell Rate: 1 USDT ≈ ${Number(rates.sellRate).toFixed(2)} INR`}
         </div>
         
         <FormField
