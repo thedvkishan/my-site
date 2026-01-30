@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { sellFormSchema, type SellFormValues } from '@/lib/schemas';
-import { COUNTRIES, NETWORKS, PAYMENT_METHODS_SELL } from '@/lib/constants';
+import { COUNTRIES, NETWORKS, PAYMENT_METHODS_SELL, CASH_DEPOSIT_BANKS } from '@/lib/constants';
 import { Loader2 } from 'lucide-react';
 import { useAuth, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, doc } from 'firebase/firestore';
@@ -224,9 +224,38 @@ export function SellForm() {
             <FormField control={control} name="bankHolderName" render={({ field }) => (
               <FormItem><FormLabel>Account Holder Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
             )}/>
-            <FormField control={control} name="bankName" render={({ field }) => (
-              <FormItem><FormLabel>Bank Name</FormLabel><FormControl><Input placeholder="Your Bank" {...field} /></FormControl><FormMessage /></FormItem>
-            )}/>
+            
+            {paymentMode === 'Cash Deposit' ? (
+                <FormField
+                    control={form.control}
+                    name="bankName"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Bank Name</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Select a bank" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {CASH_DEPOSIT_BANKS.map((bank) => (
+                            <SelectItem key={bank} value={bank}>
+                                {bank}
+                            </SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            ) : (
+                <FormField control={control} name="bankName" render={({ field }) => (
+                    <FormItem><FormLabel>Bank Name</FormLabel><FormControl><Input placeholder="Your Bank" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+            )}
+
             <FormField control={control} name="accountNumber" render={({ field }) => (
               <FormItem><FormLabel>Account Number</FormLabel><FormControl><Input placeholder="1234567890" {...field} /></FormControl><FormMessage /></FormItem>
             )}/>

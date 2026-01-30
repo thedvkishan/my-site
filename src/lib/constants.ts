@@ -5,6 +5,20 @@ export const NETWORKS = ['BEP20', 'TRC20', 'ERC20'];
 export const PAYMENT_METHODS_BUY = ['Cash Deposit', 'UPI', 'IMPS', 'NEFT', 'RTGS'];
 export const PAYMENT_METHODS_SELL = ['Cash Deposit', 'UPI', 'IMPS', 'RTGS', 'NEFT'];
 
+export const CASH_DEPOSIT_BANKS = [
+  'State Bank of India',
+  'Punjab National Bank',
+  'Bank of Baroda',
+  'Canara Bank',
+  'Union Bank of India',
+  'HDFC Bank',
+  'ICICI Bank',
+  'Axis Bank',
+  'Kotak Mahindra Bank',
+  'Federal Bank',
+  'Ujjivan Small Finance Bank',
+];
+
 export const COUNTRIES = ['India'];
 
 export const MOCK_APP_LOGO_URL = PlaceHolderImages.find(img => img.id === 'app-logo-placeholder')?.imageUrl || '';
