@@ -78,6 +78,8 @@ const depositNetworkSchema = z.object({
 
 export const settingsSchema = z.object({
   appLogoUrl: z.string().min(1, 'Logo URL is required.'),
+  buyRate: z.coerce.number().positive('Rate must be a positive number.'),
+  sellRate: z.coerce.number().positive('Rate must be a positive number.'),
   bankDetails: z.object({
     holderName: z.string().min(1, 'Holder name is required.'),
     bankName: z.string().min(1, 'Bank name is required.'),

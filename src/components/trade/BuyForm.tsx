@@ -10,22 +10,32 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { getConversionRates } from '@/lib/actions';
 import { buyFormSchema, type BuyFormValues } from '@/lib/schemas';
 import { COUNTRIES, NETWORKS, PAYMENT_METHODS_BUY } from '@/lib/constants';
 import { Loader2 } from 'lucide-react';
-import { useAuth, useFirestore } from '@/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { useAuth, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { collection, addDoc, doc } from 'firebase/firestore';
+
+type Settings = {
+  buyRate?: number;
+  sellRate?: number;
+}
 
 export function BuyForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const [rates, setRates] = useState<{ buyRate: number; sellRate: number } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const conversionInputSource = useRef<'usdt' | 'inr' | null>(null);
 
   const auth = useAuth();
   const firestore = useFirestore();
+
+  const settingsRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'settings', 'appSettings');
+  }, [firestore]);
+
+  const { data: rates, isLoading: ratesLoading } = useDoc<Settings>(settingsRef);
 
   const form = useForm<BuyFormValues>({
     resolver: zodResolver(buyFormSchema),
@@ -46,24 +56,13 @@ export function BuyForm() {
   const inrAmount = watch('inrAmount');
 
   useEffect(() => {
-    async function fetchRates() {
-      const result = await getConversionRates();
-      if (result.success && result.data) {
-        setRates(result.data);
-        setValue('inrAmount', parseFloat((200 * result.data.buyRate).toFixed(2)));
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: result.error,
-        });
-      }
+    if (rates?.buyRate) {
+        setValue('inrAmount', parseFloat((200 * rates.buyRate).toFixed(2)));
     }
-    fetchRates();
-  }, [setValue, toast]);
+  }, [rates, setValue]);
 
   useEffect(() => {
-    if (conversionInputSource.current === 'usdt' && rates) {
+    if (conversionInputSource.current === 'usdt' && rates?.buyRate) {
       const newInrAmount = usdtAmount * rates.buyRate;
       if (inrAmount !== newInrAmount) {
         setValue('inrAmount', parseFloat(newInrAmount.toFixed(2)));
@@ -72,7 +71,7 @@ export function BuyForm() {
   }, [usdtAmount, rates, setValue, inrAmount]);
 
   useEffect(() => {
-    if (conversionInputSource.current === 'inr' && rates) {
+    if (conversionInputSource.current === 'inr' && rates?.buyRate) {
       const newUsdtAmount = inrAmount / rates.buyRate;
        if (usdtAmount !== newUsdtAmount) {
         setValue('usdtAmount', parseFloat(newUsdtAmount.toFixed(4)));
@@ -184,7 +183,8 @@ export function BuyForm() {
           />
         </div>
         <div className="text-sm text-muted-foreground">
-          {rates ? `Current Buy Rate: 1 USDT ≈ ${rates.buyRate.toFixed(2)} INR` : 'Fetching rates...'}
+          {ratesLoading && 'Fetching rates...'}
+          {rates?.buyRate && `Current Buy Rate: 1 USDT ≈ ${rates.buyRate.toFixed(2)} INR`}
         </div>
 
         <FormField
@@ -266,7 +266,7 @@ export function BuyForm() {
             USDT will be deposited to your address within 15 minutes to 3 hours after payment confirmation.
         </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading || !rates || !auth.currentUser}>
+        <Button type="submit" className="w-full" disabled={isLoading || ratesLoading || !rates || !auth.currentUser}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Pay Now
         </Button>

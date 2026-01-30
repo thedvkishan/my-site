@@ -38,6 +38,8 @@ export const MOCK_DEPOSIT_DETAILS = {
 
 export const MOCK_SETTINGS = {
   appLogoUrl: MOCK_APP_LOGO_URL,
+  buyRate: 95.15,
+  sellRate: 97.25,
   bankDetails: MOCK_BANK_DETAILS,
   upiId: MOCK_UPI_ID,
   qrCodeUrl: MOCK_QR_CODE_URL,

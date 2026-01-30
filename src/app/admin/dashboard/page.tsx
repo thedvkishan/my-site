@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -12,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
-import { FileUp, Loader2, Download, Upload } from 'lucide-react';
+import { FileUp, Loader2, Download, Upload, DollarSign } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Textarea } from '@/components/ui/textarea';
 import { settingsSchema, type SettingsFormValues } from '@/lib/schemas';
@@ -100,7 +99,7 @@ export default function AdminDashboardPage() {
         }
     };
 
-    const handleSave = async (type: 'bank' | 'upi' | 'banners' | 'deposit' | 'logo') => {
+    const handleSave = async (type: 'bank' | 'upi' | 'banners' | 'deposit' | 'logo' | 'rates') => {
         setIsSaving(true);
         
         const values = form.getValues();
@@ -111,6 +110,10 @@ export default function AdminDashboardPage() {
             case 'logo':
                 newSettings = { appLogoUrl: values.appLogoUrl };
                 description = 'App logo has been updated.';
+                break;
+            case 'rates':
+                newSettings = { buyRate: values.buyRate, sellRate: values.sellRate };
+                description = 'Exchange rates have been updated.';
                 break;
             case 'bank':
                 newSettings = { bankDetails: values.bankDetails };
@@ -236,8 +239,8 @@ export default function AdminDashboardPage() {
                             <div className="lg:col-span-2 space-y-8">
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle>Content Management</CardTitle>
-                                        <CardDescription>Update images and other content shown on the site.</CardDescription>
+                                        <CardTitle>Core Settings</CardTitle>
+                                        <CardDescription>Manage main application settings like logo and exchange rates.</CardDescription>
                                     </CardHeader>
                                     <CardContent>
                                         <Accordion type="single" collapsible defaultValue='logo'>
@@ -271,6 +274,19 @@ export default function AdminDashboardPage() {
                                                             </Button>
                                                         </div>
                                                     </div>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                            <AccordionItem value="rates">
+                                                <AccordionTrigger className="text-lg">Exchange Rates</AccordionTrigger>
+                                                <AccordionContent className="pt-4 space-y-6">
+                                                    <div className="grid md:grid-cols-2 gap-6">
+                                                         <FormField control={form.control} name="buyRate" render={({ field }) => (<FormItem><FormLabel>Buy Rate (INR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                         <FormField control={form.control} name="sellRate" render={({ field }) => (<FormItem><FormLabel>Sell Rate (INR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                    </div>
+                                                    <Button className="w-full" onClick={() => handleSave('rates')} disabled={isSaving}>
+                                                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                        Save Rates
+                                                    </Button>
                                                 </AccordionContent>
                                             </AccordionItem>
                                             <AccordionItem value="banners">
@@ -468,5 +484,3 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
-
-    
