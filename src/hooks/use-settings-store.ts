@@ -59,7 +59,7 @@ export function useSettingsStore() {
     }
   }, [settingsRef]);
   
-  const isInitialized = !isLoading && !!settings;
+  const isInitialized = !isLoading;
 
-  return { settings: settings ?? getInitialSettings(), setSettings, isInitialized, isLoading };
+  return { settings: settings, setSettings, isInitialized, isLoading };
 }

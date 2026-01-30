@@ -39,38 +39,24 @@ export default function SellDepositPage() {
   }, [firestore, id]);
 
   const { data: transaction, isLoading: transactionLoading } = useDoc<Transaction>(transactionRef);
-  const [loadTime] = useState(Date.now()); // Capture when component mounts
-
+  
   useEffect(() => {
-    if (transactionLoading) {
-      return; // Wait until loading is finished
-    }
-    
     if (transaction) {
-      // We found the transaction, proceed as normal
       if (transaction.status !== 'pending_deposit') {
         router.replace('/');
-        toast({ title: 'Invalid Transaction State', variant: 'destructive' });
       } else if (Date.now() > transaction.expiresAt) {
         handleExpire();
       }
-    } else {
-      // Transaction not found
-      // Only redirect if it's been a few seconds since the page loaded.
-      // This gives Firestore time to sync.
-      if (Date.now() - loadTime > 3000) {
-        router.replace('/');
-        toast({ title: 'Transaction Not Found', variant: 'destructive' });
-      }
     }
-  }, [transaction, transactionLoading, router, toast, loadTime, id]);
+  }, [transaction, router]);
 
 
-  const depositInfo = transaction ? settings.depositDetails[transaction.network] : null;
+  const depositInfo = transaction ? settings?.depositDetails[transaction.network] : null;
   const depositAddress = depositInfo?.address || '';
   const qrCodeUrl = depositInfo?.qrCodeUrl || '';
 
   const handleCopy = () => {
+    if (!depositAddress) return;
     navigator.clipboard.writeText(depositAddress);
     toast({ title: 'Copied!', description: 'Deposit address copied to clipboard.' });
   };
@@ -89,7 +75,7 @@ export default function SellDepositPage() {
      }
   };
 
-  if (!settingsInitialized || (transactionLoading && Date.now() - loadTime < 3000)) {
+  if (!settingsInitialized || !settings || transactionLoading) {
     return (
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
              <Loader2 className="h-12 w-12 animate-spin text-primary" />

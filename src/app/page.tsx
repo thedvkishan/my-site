@@ -12,7 +12,7 @@ import { useSettingsStore } from '@/hooks/use-settings-store';
 export default function Home() {
   const { settings, isInitialized } = useSettingsStore();
 
-  if (!isInitialized) {
+  if (!isInitialized || !settings) {
     return (
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
              <Loader2 className="h-12 w-12 animate-spin text-primary" />

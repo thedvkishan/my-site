@@ -12,7 +12,7 @@ export function AppLogo() {
     return <Skeleton className="h-6 w-6 rounded-full" />;
   }
   
-  if (settings.appLogoUrl) {
+  if (settings?.appLogoUrl) {
       return <Image src={settings.appLogoUrl} alt="App Logo" width={24} height={24} className="h-6 w-6" />;
   }
 
