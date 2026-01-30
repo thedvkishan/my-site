@@ -39,20 +39,32 @@ export default function SellDepositPage() {
   }, [firestore, id]);
 
   const { data: transaction, isLoading: transactionLoading } = useDoc<Transaction>(transactionRef);
+  const [loadTime] = useState(Date.now()); // Capture when component mounts
 
   useEffect(() => {
-    if (!transactionLoading && transaction) {
+    if (transactionLoading) {
+      return; // Wait until loading is finished
+    }
+    
+    if (transaction) {
+      // We found the transaction, proceed as normal
       if (transaction.status !== 'pending_deposit') {
         router.replace('/');
         toast({ title: 'Invalid Transaction State', variant: 'destructive' });
       } else if (Date.now() > transaction.expiresAt) {
         handleExpire();
       }
-    } else if (!transactionLoading && !transaction) {
-      router.replace('/');
-      toast({ title: 'Transaction Not Found', variant: 'destructive' });
+    } else {
+      // Transaction not found
+      // Only redirect if it's been a few seconds since the page loaded.
+      // This gives Firestore time to sync.
+      if (Date.now() - loadTime > 3000) {
+        router.replace('/');
+        toast({ title: 'Transaction Not Found', variant: 'destructive' });
+      }
     }
-  }, [transaction, transactionLoading, router, toast]);
+  }, [transaction, transactionLoading, router, toast, loadTime, id]);
+
 
   const depositInfo = transaction ? settings.depositDetails[transaction.network] : null;
   const depositAddress = depositInfo?.address || '';
@@ -66,8 +78,7 @@ export default function SellDepositPage() {
   const handleNext = async () => {
     if (transactionRef) {
         await updateDoc(transactionRef, { status: 'payment_processing' });
-        // NOTE: Reusing buy confirmation page for sell flow. A dedicated page would be better.
-        router.push(`/buy/confirmation/${id}`); 
+        router.push(`/sell/confirmation/${id}`); 
     }
   };
 
@@ -78,7 +89,7 @@ export default function SellDepositPage() {
      }
   };
 
-  if (!settingsInitialized || transactionLoading) {
+  if (!settingsInitialized || (transactionLoading && Date.now() - loadTime < 3000)) {
     return (
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
              <Loader2 className="h-12 w-12 animate-spin text-primary" />

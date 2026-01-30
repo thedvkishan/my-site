@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { TRANSACTION_LIFETIME } from '@/lib/constants';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { Banknote, Copy, Loader2, TimerIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -40,20 +39,31 @@ export default function BuyPaymentPage() {
   }, [firestore, id]);
   
   const { data: transaction, isLoading: transactionLoading } = useDoc<Transaction>(transactionRef);
+  const [loadTime] = useState(Date.now()); // Capture when component mounts
 
   useEffect(() => {
-    if (!transactionLoading && transaction) {
+    if (transactionLoading) {
+      return; // Wait until loading is finished
+    }
+
+    if (transaction) {
+      // We found the transaction, proceed as normal
       if (transaction.status !== 'pending_payment') {
         router.replace('/');
         toast({ title: 'Invalid Transaction State', variant: 'destructive' });
       } else if (Date.now() > transaction.expiresAt) {
         handleExpire();
       }
-    } else if (!transactionLoading && !transaction) {
+    } else {
+      // Transaction not found
+      // Only redirect if it's been a few seconds since the page loaded.
+      // This gives Firestore time to sync.
+      if (Date.now() - loadTime > 3000) { 
         router.replace('/');
         toast({ title: 'Transaction Not Found', variant: 'destructive' });
+      }
     }
-  }, [transaction, transactionLoading, router, toast]);
+  }, [transaction, transactionLoading, router, toast, loadTime, id]);
 
   const handleCopy = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text);
@@ -74,7 +84,7 @@ export default function BuyPaymentPage() {
      }
   };
 
-  if (!settingsInitialized || transactionLoading) {
+  if (!settingsInitialized || (transactionLoading && Date.now() - loadTime < 3000)) {
     return (
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
              <Loader2 className="h-12 w-12 animate-spin text-primary" />

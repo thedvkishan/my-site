@@ -18,7 +18,7 @@ type Transaction = {
 
 type VerificationStatus = 'processing' | 'verified' | 'failed';
 
-export default function ConfirmationPage() {
+export default function SellConfirmationPage() {
   const router = useRouter();
   const params = useParams();
   const { id } = params;
@@ -30,7 +30,7 @@ export default function ConfirmationPage() {
 
   const transactionRef = useMemoFirebase(() => {
     if (!firestore || typeof id !== 'string') return null;
-    return doc(firestore, 'buyOrders', id);
+    return doc(firestore, 'sellOrders', id as string);
   }, [firestore, id]);
 
   const { data: transaction, isLoading: transactionLoading } = useDoc<Transaction>(transactionRef);
@@ -56,11 +56,9 @@ export default function ConfirmationPage() {
     }
   }, [id, transaction, transactionLoading, router, loadTime]);
 
-
   const handleExpire = async () => {
     if (verificationStatus === 'processing' && transactionRef) {
       setVerificationStatus('failed');
-      // Use 'expired' status for consistency with other pages
       await updateDoc(transactionRef, { status: 'expired' });
     }
   };
@@ -87,7 +85,7 @@ export default function ConfirmationPage() {
             <CheckCircle2 className="h-16 w-16 text-green-500" />
             <CardTitle className="mt-6">Transaction Verified!</CardTitle>
             <CardDescription className="mt-2">
-              Your USDT has been sent to your address.
+              Your payment is being sent to your account.
             </CardDescription>
           </>
         );
