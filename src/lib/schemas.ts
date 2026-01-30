@@ -16,7 +16,7 @@ export type BuyFormValues = z.infer<typeof buyFormSchema>;
 
 export const sellFormSchema = z.object({
     network: z.enum(NETWORKS as [string, ...string[]], { required_error: 'Please select a network.' }),
-    usdtAmount: z.coerce.number().min(1, 'Amount must be at least 1.'),
+    usdtAmount: z.coerce.number().min(100, 'Minimum sell amount is 100 USDT.'),
     inrAmount: z.coerce.number().min(1, 'Amount must be at least 1.'),
     paymentMode: z.enum(PAYMENT_METHODS_SELL as [string, ...string[]], { required_error: 'Please select a payment mode.' }),
     email: z.string().email('Please enter a valid email address.'),
