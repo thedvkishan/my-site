@@ -34,7 +34,7 @@
           "type": "string",
           "description": "The selected payment mode (Cash Deposit, UPI, IMPS, NEFT, RTGS)."
         },
-        "contactEmail": {
+        "email": {
           "type": "string",
           "description": "The user's contact email address.",
           "format": "email"
@@ -126,7 +126,7 @@
           "type": "string",
           "description": "The IFSC code of the bank for receiving payment (if not UPI)."
         },
-        "contactEmail": {
+        "email": {
           "type": "string",
           "description": "The user's contact email address.",
           "format": "email"
@@ -157,7 +157,7 @@
         "usdtAmount",
         "inrAmount",
         "paymentReceivingMode",
-        "contactEmail",
+        "email",
         "contactNumber",
         "country",
         "status",

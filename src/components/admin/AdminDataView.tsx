@@ -1,7 +1,7 @@
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, collectionGroup, orderBy, query } from "firebase/firestore";
+import { collection, orderBy, query } from "firebase/firestore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import Image from "next/image";
 
 export function AdminDataView() {
     const firestore = useFirestore();
@@ -76,11 +78,27 @@ export function AdminDataView() {
                                             <TableCell><Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>{order.status}</Badge></TableCell>
                                             <TableCell>
                                               {order.paymentReceiptUrl ? (
-                                                <Button asChild variant="link" size="sm" className="p-0 h-auto">
-                                                  <a href={order.paymentReceiptUrl} target="_blank" rel="noopener noreferrer">
-                                                    View Receipt
-                                                  </a>
-                                                </Button>
+                                                <Dialog>
+                                                  <DialogTrigger asChild>
+                                                    <Button variant="link" size="sm" className="p-0 h-auto">View Receipt</Button>
+                                                  </DialogTrigger>
+                                                  <DialogContent className="max-w-4xl h-[90vh]">
+                                                    <DialogHeader>
+                                                      <DialogTitle>Payment Receipt for Order {order.id}</DialogTitle>
+                                                    </DialogHeader>
+                                                    {order.paymentReceiptUrl.startsWith('data:image') ? (
+                                                      <div className="relative h-full">
+                                                        <Image src={order.paymentReceiptUrl} alt="Payment Receipt" fill style={{objectFit: 'contain'}} />
+                                                      </div>
+                                                    ) : order.paymentReceiptUrl.startsWith('data:application/pdf') ? (
+                                                      <iframe src={order.paymentReceiptUrl} className="w-full h-full" title="Receipt PDF"></iframe>
+                                                    ) : (
+                                                      <a href={order.paymentReceiptUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                                                        Open receipt in new tab
+                                                      </a>
+                                                    )}
+                                                  </DialogContent>
+                                                </Dialog>
                                               ) : (
                                                 <span className="text-muted-foreground text-xs">N/A</span>
                                               )}
