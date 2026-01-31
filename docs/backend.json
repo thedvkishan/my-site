@@ -208,6 +208,8 @@
         "appLogoUrl": { "type": "string" },
         "buyRate": { "type": "number", "description": "The rate for buying USDT." },
         "sellRate": { "type": "number", "description": "The rate for selling USDT." },
+        "minBuyAmount": { "type": "number", "description": "The minimum amount for buying USDT." },
+        "minSellAmount": { "type": "number", "description": "The minimum amount for selling USDT." },
         "bankDetails": {
           "type": "object",
           "properties": {

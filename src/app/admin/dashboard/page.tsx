@@ -112,8 +112,8 @@ export default function AdminDashboardPage() {
                 description = 'App logo has been updated.';
                 break;
             case 'rates':
-                newSettings = { buyRate: values.buyRate, sellRate: values.sellRate };
-                description = 'Exchange rates have been updated.';
+                newSettings = { buyRate: values.buyRate, sellRate: values.sellRate, minBuyAmount: values.minBuyAmount, minSellAmount: values.minSellAmount };
+                description = 'Exchange rates and limits have been updated.';
                 break;
             case 'bank':
                 newSettings = { bankDetails: values.bankDetails };
@@ -277,15 +277,17 @@ export default function AdminDashboardPage() {
                                                 </AccordionContent>
                                             </AccordionItem>
                                             <AccordionItem value="rates">
-                                                <AccordionTrigger className="text-lg">Exchange Rates</AccordionTrigger>
+                                                <AccordionTrigger className="text-lg">Rates & Limits</AccordionTrigger>
                                                 <AccordionContent className="pt-4 space-y-6">
                                                     <div className="grid md:grid-cols-2 gap-6">
                                                          <FormField control={form.control} name="buyRate" render={({ field }) => (<FormItem><FormLabel>Buy Rate (INR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                                          <FormField control={form.control} name="sellRate" render={({ field }) => (<FormItem><FormLabel>Sell Rate (INR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                         <FormField control={form.control} name="minBuyAmount" render={({ field }) => (<FormItem><FormLabel>Min. Buy Amount (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                         <FormField control={form.control} name="minSellAmount" render={({ field }) => (<FormItem><FormLabel>Min. Sell Amount (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                                     </div>
                                                     <Button className="w-full" onClick={() => handleSave('rates')} disabled={isSaving}>
                                                         {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                        Save Rates
+                                                        Save Rates & Limits
                                                     </Button>
                                                 </AccordionContent>
                                             </AccordionItem>

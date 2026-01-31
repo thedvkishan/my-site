@@ -3,14 +3,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { sellFormSchema, type SellFormValues } from '@/lib/schemas';
 import { COUNTRIES, NETWORKS, PAYMENT_METHODS_SELL, CASH_DEPOSIT_BANKS } from '@/lib/constants';
 import { Loader2 } from 'lucide-react';
 import { useAuth, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
@@ -19,6 +19,8 @@ import { collection, addDoc, doc } from 'firebase/firestore';
 type Settings = {
   buyRate?: number;
   sellRate?: number;
+  minBuyAmount?: number;
+  minSellAmount?: number;
 }
 
 export function SellForm() {
@@ -35,13 +37,59 @@ export function SellForm() {
     return doc(firestore, 'settings', 'appSettings');
   }, [firestore]);
 
-  const { data: rates, isLoading: ratesLoading } = useDoc<Settings>(settingsRef);
+  const { data: settings, isLoading: settingsLoading } = useDoc<Settings>(settingsRef);
+  
+  const sellFormSchema = useMemo(() => z.object({
+    network: z.enum(NETWORKS as [string, ...string[]], { required_error: 'Please select a network.' }),
+    usdtAmount: z.coerce.number().min(settings?.minSellAmount ?? 1, `Minimum sell amount is ${settings?.minSellAmount ?? 1} USDT.`),
+    inrAmount: z.coerce.number().min(1, 'Amount must be at least 1.'),
+    paymentMode: z.enum(PAYMENT_METHODS_SELL as [string, ...string[]], { required_error: 'Please select a payment mode.' }),
+    email: z.string().email('Please enter a valid email address.'),
+    phone: z.string().optional(),
+    country: z.enum(COUNTRIES as [string, ...string[]], { required_error: 'Please select your country.' }),
+  }).and(z.discriminatedUnion('paymentMode', [
+    z.object({
+        paymentMode: z.literal('UPI'),
+        upiHolderName: z.string().min(2, 'Please enter holder name.'),
+        upiId: z.string().min(3, 'Please enter a valid UPI ID.'),
+    }),
+    z.object({
+        paymentMode: z.literal('IMPS'),
+        bankHolderName: z.string().min(2, 'Please enter account holder name.'),
+        bankName: z.string().min(2, 'Please enter bank name.'),
+        accountNumber: z.string().min(8, 'Please enter a valid account number.'),
+        ifsc: z.string().min(8, 'Please enter a valid IFSC code.'),
+    }),
+    z.object({
+        paymentMode: z.literal('RTGS'),
+        bankHolderName: z.string().min(2, 'Please enter account holder name.'),
+        bankName: z.string().min(2, 'Please enter bank name.'),
+        accountNumber: z.string().min(8, 'Please enter a valid account number.'),
+        ifsc: z.string().min(8, 'Please enter a valid IFSC code.'),
+    }),
+    z.object({
+        paymentMode: z.literal('NEFT'),
+        bankHolderName: z.string().min(2, 'Please enter account holder name.'),
+        bankName: z.string().min(2, 'Please enter bank name.'),
+        accountNumber: z.string().min(8, 'Please enter a valid account number.'),
+        ifsc: z.string().min(8, 'Please enter a valid IFSC code.'),
+    }),
+    z.object({
+        paymentMode: z.literal('Cash Deposit'),
+        bankHolderName: z.string().min(2, 'Please enter account holder name.'),
+        bankName: z.string().min(2, 'Please enter bank name.'),
+        accountNumber: z.string().min(8, 'Please enter a valid account number.'),
+        ifsc: z.string().min(8, 'Please enter a valid IFSC code.'),
+    }),
+  ])), [settings]);
+  
+  type SellFormValues = z.infer<typeof sellFormSchema>;
 
   const form = useForm<SellFormValues>({
     resolver: zodResolver(sellFormSchema),
     defaultValues: {
       network: 'BEP20',
-      usdtAmount: 100,
+      usdtAmount: 0,
       paymentMode: 'UPI',
       country: 'India',
       inrAmount: 0,
@@ -62,28 +110,29 @@ export function SellForm() {
   const paymentMode = watch('paymentMode');
 
   useEffect(() => {
-    if (rates?.sellRate) {
-        setValue('inrAmount', parseFloat((100 * Number(rates.sellRate)).toFixed(2)));
+    if (settings?.sellRate && settings?.minSellAmount && form.getValues('usdtAmount') === 0) {
+        setValue('usdtAmount', settings.minSellAmount);
+        setValue('inrAmount', parseFloat((settings.minSellAmount * Number(settings.sellRate)).toFixed(2)));
     }
-  }, [rates, setValue]);
+  }, [settings, setValue, form]);
 
   useEffect(() => {
-    if (conversionInputSource.current === 'usdt' && rates?.sellRate) {
-      const newInrAmount = usdtAmount * Number(rates.sellRate);
+    if (conversionInputSource.current === 'usdt' && settings?.sellRate) {
+      const newInrAmount = usdtAmount * Number(settings.sellRate);
       if (inrAmount !== newInrAmount) {
         setValue('inrAmount', parseFloat(newInrAmount.toFixed(2)));
       }
     }
-  }, [usdtAmount, rates, setValue, inrAmount]);
+  }, [usdtAmount, settings, setValue, inrAmount]);
 
   useEffect(() => {
-    if (conversionInputSource.current === 'inr' && rates?.sellRate) {
-      const newUsdtAmount = inrAmount / Number(rates.sellRate);
+    if (conversionInputSource.current === 'inr' && settings?.sellRate) {
+      const newUsdtAmount = inrAmount / Number(settings.sellRate);
       if (usdtAmount !== newUsdtAmount) {
         setValue('usdtAmount', parseFloat(newUsdtAmount.toFixed(4)));
       }
     }
-  }, [inrAmount, rates, setValue, usdtAmount]);
+  }, [inrAmount, settings, setValue, usdtAmount]);
   
   async function onSubmit(values: SellFormValues) {
     setIsLoading(true);
@@ -183,8 +232,8 @@ export function SellForm() {
           />
         </div>
         <div className="text-sm text-muted-foreground">
-          {ratesLoading && 'Fetching rates...'}
-          {rates?.sellRate && `Current Sell Rate: 1 USDT ≈ ${Number(rates.sellRate).toFixed(2)} INR`}
+          {settingsLoading && 'Fetching rates...'}
+          {settings?.sellRate && `Current Sell Rate: 1 USDT ≈ ${Number(settings.sellRate).toFixed(2)} INR`}
         </div>
         
         <FormField
@@ -308,7 +357,7 @@ export function SellForm() {
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={isLoading || ratesLoading || !rates || !auth.currentUser}>
+        <Button type="submit" className="w-full" disabled={isLoading || settingsLoading || !settings || !auth.currentUser}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Deposit and Receive
         </Button>

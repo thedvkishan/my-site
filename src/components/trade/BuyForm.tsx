@@ -3,14 +3,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { buyFormSchema, type BuyFormValues } from '@/lib/schemas';
 import { COUNTRIES, NETWORKS, PAYMENT_METHODS_BUY } from '@/lib/constants';
 import { Loader2 } from 'lucide-react';
 import { useAuth, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
@@ -19,6 +19,8 @@ import { collection, addDoc, doc } from 'firebase/firestore';
 type Settings = {
   buyRate?: number;
   sellRate?: number;
+  minBuyAmount?: number;
+  minSellAmount?: number;
 }
 
 export function BuyForm() {
@@ -35,13 +37,26 @@ export function BuyForm() {
     return doc(firestore, 'settings', 'appSettings');
   }, [firestore]);
 
-  const { data: rates, isLoading: ratesLoading } = useDoc<Settings>(settingsRef);
+  const { data: settings, isLoading: settingsLoading } = useDoc<Settings>(settingsRef);
+
+  const buyFormSchema = useMemo(() => z.object({
+    network: z.enum(NETWORKS as [string, ...string[]], { required_error: 'Please select a network.' }),
+    usdtAmount: z.coerce.number().min(settings?.minBuyAmount ?? 1, `Minimum buy amount is ${settings?.minBuyAmount ?? 1} USDT.`),
+    inrAmount: z.coerce.number().min(1, 'Amount must be at least 1.'),
+    usdtAddress: z.string().min(10, 'Please enter a valid USDT address.'),
+    paymentMode: z.enum(PAYMENT_METHODS_BUY as [string, ...string[]], { required_error: 'Please select a payment mode.' }),
+    email: z.string().email('Please enter a valid email address.'),
+    phone: z.string().optional(),
+    country: z.enum(COUNTRIES as [string, ...string[]], { required_error: 'Please select your country.' }),
+  }), [settings]);
+
+  type BuyFormValues = z.infer<typeof buyFormSchema>;
 
   const form = useForm<BuyFormValues>({
     resolver: zodResolver(buyFormSchema),
     defaultValues: {
       network: 'BEP20',
-      usdtAmount: 200,
+      usdtAmount: 0,
       inrAmount: 0,
       usdtAddress: '',
       paymentMode: 'UPI',
@@ -56,28 +71,29 @@ export function BuyForm() {
   const inrAmount = watch('inrAmount');
 
   useEffect(() => {
-    if (rates?.buyRate) {
-        setValue('inrAmount', parseFloat((200 * rates.buyRate).toFixed(2)));
+    if (settings?.buyRate && settings?.minBuyAmount && form.getValues('usdtAmount') === 0) {
+        setValue('usdtAmount', settings.minBuyAmount);
+        setValue('inrAmount', parseFloat((settings.minBuyAmount * settings.buyRate).toFixed(2)));
     }
-  }, [rates, setValue]);
+  }, [settings, setValue, form]);
 
   useEffect(() => {
-    if (conversionInputSource.current === 'usdt' && rates?.buyRate) {
-      const newInrAmount = usdtAmount * rates.buyRate;
+    if (conversionInputSource.current === 'usdt' && settings?.buyRate) {
+      const newInrAmount = usdtAmount * settings.buyRate;
       if (inrAmount !== newInrAmount) {
         setValue('inrAmount', parseFloat(newInrAmount.toFixed(2)));
       }
     }
-  }, [usdtAmount, rates, setValue, inrAmount]);
+  }, [usdtAmount, settings, setValue, inrAmount]);
 
   useEffect(() => {
-    if (conversionInputSource.current === 'inr' && rates?.buyRate) {
-      const newUsdtAmount = inrAmount / rates.buyRate;
+    if (conversionInputSource.current === 'inr' && settings?.buyRate) {
+      const newUsdtAmount = inrAmount / settings.buyRate;
        if (usdtAmount !== newUsdtAmount) {
         setValue('usdtAmount', parseFloat(newUsdtAmount.toFixed(4)));
       }
     }
-  }, [inrAmount, rates, setValue, usdtAmount]);
+  }, [inrAmount, settings, setValue, usdtAmount]);
 
   async function onSubmit(values: BuyFormValues) {
     setIsLoading(true);
@@ -183,8 +199,8 @@ export function BuyForm() {
           />
         </div>
         <div className="text-sm text-muted-foreground">
-          {ratesLoading && 'Fetching rates...'}
-          {rates?.buyRate && `Current Buy Rate: 1 USDT ≈ ${Number(rates.buyRate).toFixed(2)} INR`}
+          {settingsLoading && 'Fetching rates...'}
+          {settings?.buyRate && `Current Buy Rate: 1 USDT ≈ ${Number(settings.buyRate).toFixed(2)} INR`}
         </div>
 
         <FormField
@@ -266,7 +282,7 @@ export function BuyForm() {
             USDT will be deposited to your address within 15 minutes to 3 hours after payment confirmation.
         </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading || ratesLoading || !rates || !auth.currentUser}>
+        <Button type="submit" className="w-full" disabled={isLoading || settingsLoading || !settings || !auth.currentUser}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Pay Now
         </Button>
