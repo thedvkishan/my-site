@@ -159,7 +159,7 @@ export default function BuyPaymentPage() {
         </div>
       );
     }
-    if (['IMPS', 'NEFT', 'RTGS'].includes(transaction.paymentMode)) {
+    if (['IMPS', 'NEFT', 'RTGS', 'Cash Deposit'].includes(transaction.paymentMode)) {
       return (
         <div className="space-y-3 text-sm">
           {Object.entries({
