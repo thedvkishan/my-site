@@ -10,8 +10,18 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Image from "next/image";
+import { Separator } from "@/components/ui/separator";
+
+// Helper component to render details in a consistent way
+const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
+    <div className="grid grid-cols-[160px_1fr] items-start gap-4">
+        <span className="text-muted-foreground text-right">{label}</span>
+        <div className="font-semibold break-words">{value}</div>
+    </div>
+);
+
 
 export function AdminDataView() {
     const firestore = useFirestore();
@@ -42,7 +52,7 @@ export function AdminDataView() {
         <Card>
             <CardHeader>
                 <CardTitle>User Submitted Data</CardTitle>
-                <CardDescription>View all orders and messages submitted by users.</CardDescription>
+                <CardDescription>View all orders and messages submitted by users. Click a row to see full details.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="buyOrders">
@@ -62,7 +72,6 @@ export function AdminDataView() {
                                         <TableHead>Date</TableHead>
                                         <TableHead>ID</TableHead>
                                         <TableHead>Status</TableHead>
-                                        <TableHead>Receipt</TableHead>
                                         <TableHead>USDT</TableHead>
                                         <TableHead>INR</TableHead>
                                         <TableHead>Network</TableHead>
@@ -72,43 +81,78 @@ export function AdminDataView() {
                                 </TableHeader>
                                 <TableBody>
                                     {buyOrders?.map(order => (
-                                        <TableRow key={order.id}>
-                                            <TableCell>{format(new Date(order.createdAt), 'PPpp')}</TableCell>
-                                            <TableCell className="font-mono text-xs">{order.id}</TableCell>
-                                            <TableCell><Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>{order.status}</Badge></TableCell>
-                                            <TableCell>
-                                              {order.paymentReceiptUrl ? (
-                                                <Dialog>
-                                                  <DialogTrigger asChild>
-                                                    <Button variant="link" size="sm" className="p-0 h-auto">View Receipt</Button>
-                                                  </DialogTrigger>
-                                                  <DialogContent className="max-w-4xl h-[90vh]">
-                                                    <DialogHeader>
-                                                      <DialogTitle>Payment Receipt for Order {order.id}</DialogTitle>
-                                                    </DialogHeader>
-                                                    {order.paymentReceiptUrl.startsWith('data:image') ? (
-                                                      <div className="relative h-full">
-                                                        <Image src={order.paymentReceiptUrl} alt="Payment Receipt" fill style={{objectFit: 'contain'}} />
-                                                      </div>
-                                                    ) : order.paymentReceiptUrl.startsWith('data:application/pdf') ? (
-                                                      <iframe src={order.paymentReceiptUrl} className="w-full h-full" title="Receipt PDF"></iframe>
-                                                    ) : (
-                                                      <a href={order.paymentReceiptUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                                                        Open receipt in new tab
-                                                      </a>
-                                                    )}
-                                                  </DialogContent>
-                                                </Dialog>
-                                              ) : (
-                                                <span className="text-muted-foreground text-xs">N/A</span>
-                                              )}
-                                            </TableCell>
-                                            <TableCell>{order.usdtAmount}</TableCell>
-                                            <TableCell>{order.inrAmount}</TableCell>
-                                            <TableCell>{order.network}</TableCell>
-                                            <TableCell>{order.email}</TableCell>
-                                            <TableCell className="font-mono text-xs truncate max-w-xs">{order.usdtAddress}</TableCell>
-                                        </TableRow>
+                                        <Dialog key={order.id}>
+                                            <DialogTrigger asChild>
+                                                <TableRow className="cursor-pointer">
+                                                    <TableCell>{format(new Date(order.createdAt), 'PPpp')}</TableCell>
+                                                    <TableCell className="font-mono text-xs">{order.id}</TableCell>
+                                                    <TableCell><Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>{order.status}</Badge></TableCell>
+                                                    <TableCell>{order.usdtAmount}</TableCell>
+                                                    <TableCell>{order.inrAmount}</TableCell>
+                                                    <TableCell>{order.network}</TableCell>
+                                                    <TableCell>{order.email}</TableCell>
+                                                    <TableCell className="font-mono text-xs truncate max-w-xs">{order.usdtAddress}</TableCell>
+                                                </TableRow>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-3xl">
+                                                <DialogHeader>
+                                                <DialogTitle>Buy Order Details</DialogTitle>
+                                                <DialogDescription>
+                                                    Full information for transaction ID: {order.id}
+                                                </DialogDescription>
+                                                </DialogHeader>
+                                                <ScrollArea className="max-h-[70vh] pr-6">
+                                                    <div className="space-y-4 py-4 text-sm">
+                                                        <DetailRow label="Transaction ID" value={<span className="font-mono">{order.id}</span>} />
+                                                        <DetailRow label="User ID" value={<span className="font-mono">{order.userId}</span>} />
+                                                        <DetailRow label="Status" value={<Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>{order.status}</Badge>} />
+                                                        <DetailRow label="Created At" value={format(new Date(order.createdAt), 'PPpp')} />
+                                                        <DetailRow label="Expires At" value={format(new Date(order.expiresAt), 'PPpp')} />
+                                                        
+                                                        <Separator className="my-4" />
+
+                                                        <DetailRow label="USDT Amount" value={`${order.usdtAmount} USDT`} />
+                                                        <DetailRow label="INR Amount" value={`₹${order.inrAmount.toLocaleString('en-IN')}`} />
+                                                        <DetailRow label="Network" value={order.network} />
+                                                        <DetailRow label="USDT Address" value={<span className="font-mono">{order.usdtAddress}</span>} />
+
+                                                        <Separator className="my-4" />
+
+                                                        <DetailRow label="Contact Email" value={order.email} />
+                                                        <DetailRow label="Contact Number" value={order.contactNumber || 'N/A'} />
+                                                        <DetailRow label="Country" value={order.country} />
+                                                        <DetailRow label="Payment Mode" value={order.paymentMode} />
+                                                        <DetailRow label="Payment Receipt" value={
+                                                            order.paymentReceiptUrl ? (
+                                                                <Dialog>
+                                                                <DialogTrigger asChild>
+                                                                    <Button variant="outline" size="sm">View Receipt</Button>
+                                                                </DialogTrigger>
+                                                                <DialogContent className="max-w-4xl h-[90vh]">
+                                                                    <DialogHeader>
+                                                                    <DialogTitle>Payment Receipt for Order {order.id}</DialogTitle>
+                                                                    </DialogHeader>
+                                                                    {order.paymentReceiptUrl.startsWith('data:image') ? (
+                                                                    <div className="relative h-full">
+                                                                        <Image src={order.paymentReceiptUrl} alt="Payment Receipt" fill style={{objectFit: 'contain'}} />
+                                                                    </div>
+                                                                    ) : order.paymentReceiptUrl.startsWith('data:application/pdf') ? (
+                                                                    <iframe src={order.paymentReceiptUrl} className="w-full h-full" title="Receipt PDF"></iframe>
+                                                                    ) : (
+                                                                    <a href={order.paymentReceiptUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                                                                        Open receipt in new tab
+                                                                    </a>
+                                                                    )}
+                                                                </DialogContent>
+                                                                </Dialog>
+                                                            ) : (
+                                                                <span className="text-muted-foreground">N/A</span>
+                                                            )
+                                                        } />
+                                                    </div>
+                                                </ScrollArea>
+                                            </DialogContent>
+                                        </Dialog>
                                     ))}
                                 </TableBody>
                             </Table>
@@ -132,18 +176,69 @@ export function AdminDataView() {
                                 </TableHeader>
                                 <TableBody>
                                     {sellOrders?.map(order => (
-                                        <TableRow key={order.id}>
-                                            <TableCell>{format(new Date(order.createdAt), 'PPpp')}</TableCell>
-                                            <TableCell className="font-mono text-xs">{order.id}</TableCell>
-                                            <TableCell><Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>{order.status}</Badge></TableCell>
-                                            <TableCell>{order.usdtAmount}</TableCell>
-                                            <TableCell>{order.inrAmount}</TableCell>
-                                            <TableCell>{order.network}</TableCell>
-                                            <TableCell>{order.email}</TableCell>
-                                            <TableCell className="text-xs">
-                                                {order.paymentMode === 'UPI' ? `UPI: ${order.upiId}` : `Bank: ${order.accountNumber}`}
-                                            </TableCell>
-                                        </TableRow>
+                                        <Dialog key={order.id}>
+                                            <DialogTrigger asChild>
+                                                <TableRow className="cursor-pointer">
+                                                    <TableCell>{format(new Date(order.createdAt), 'PPpp')}</TableCell>
+                                                    <TableCell className="font-mono text-xs">{order.id}</TableCell>
+                                                    <TableCell><Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>{order.status}</Badge></TableCell>
+                                                    <TableCell>{order.usdtAmount}</TableCell>
+                                                    <TableCell>{order.inrAmount}</TableCell>
+                                                    <TableCell>{order.network}</TableCell>
+                                                    <TableCell>{order.email}</TableCell>
+                                                    <TableCell className="text-xs">
+                                                        {order.paymentMode === 'UPI' ? `UPI: ${order.upiId}` : `Bank: ${order.accountNumber}`}
+                                                    </TableCell>
+                                                </TableRow>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-3xl">
+                                                <DialogHeader>
+                                                    <DialogTitle>Sell Order Details</DialogTitle>
+                                                    <DialogDescription>
+                                                        Full information for transaction ID: {order.id}
+                                                    </DialogDescription>
+                                                </DialogHeader>
+                                                <ScrollArea className="max-h-[70vh] pr-6">
+                                                     <div className="space-y-4 py-4 text-sm">
+                                                        <DetailRow label="Transaction ID" value={<span className="font-mono">{order.id}</span>} />
+                                                        <DetailRow label="User ID" value={<span className="font-mono">{order.userId}</span>} />
+                                                        <DetailRow label="Status" value={<Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>{order.status}</Badge>} />
+                                                        <DetailRow label="Created At" value={format(new Date(order.createdAt), 'PPpp')} />
+                                                        <DetailRow label="Expires At" value={format(new Date(order.expiresAt), 'PPpp')} />
+
+                                                        <Separator className="my-4" />
+
+                                                        <DetailRow label="USDT Amount" value={`${order.usdtAmount} USDT`} />
+                                                        <DetailRow label="INR Amount" value={`₹${order.inrAmount.toLocaleString('en-IN')}`} />
+                                                        <DetailRow label="Network" value={order.network} />
+
+                                                        <Separator className="my-4" />
+                                                        
+                                                        <DetailRow label="Receiving Mode" value={order.paymentMode} />
+                                                        {order.paymentMode === 'UPI' && (
+                                                            <>
+                                                                <DetailRow label="UPI Holder Name" value={order.upiHolderName} />
+                                                                <DetailRow label="UPI ID" value={order.upiId} />
+                                                            </>
+                                                        )}
+                                                        {['IMPS', 'RTGS', 'NEFT', 'Cash Deposit'].includes(order.paymentMode) && (
+                                                            <>
+                                                                <DetailRow label="Bank Holder Name" value={order.bankHolderName} />
+                                                                <DetailRow label="Bank Name" value={order.bankName} />
+                                                                <DetailRow label="Account Number" value={<span className="font-mono">{order.accountNumber}</span>} />
+                                                                <DetailRow label="IFSC Code" value={<span className="font-mono">{order.ifsc}</span>} />
+                                                            </>
+                                                        )}
+
+                                                        <Separator className="my-4" />
+                                                        
+                                                        <DetailRow label="Contact Email" value={order.email} />
+                                                        <DetailRow label="Contact Number" value={order.phone || 'N/A'} />
+                                                        <DetailRow label="Country" value={order.country} />
+                                                    </div>
+                                                </ScrollArea>
+                                            </DialogContent>
+                                        </Dialog>
                                     ))}
                                 </TableBody>
                             </Table>
@@ -164,13 +259,36 @@ export function AdminDataView() {
                                 </TableHeader>
                                 <TableBody>
                                     {contactMessages?.map(msg => (
-                                        <TableRow key={msg.id}>
-                                            <TableCell>{format(new Date(msg.submittedAt), 'PPp')}</TableCell>
-                                            <TableCell className="font-mono text-xs">{msg.id}</TableCell>
-                                            <TableCell>{msg.name}</TableCell>
-                                            <TableCell>{msg.email}</TableCell>
-                                            <TableCell className="max-w-md">{msg.description}</TableCell>
-                                        </TableRow>
+                                         <Dialog key={msg.id}>
+                                            <DialogTrigger asChild>
+                                                <TableRow className="cursor-pointer">
+                                                    <TableCell>{format(new Date(msg.submittedAt), 'PPp')}</TableCell>
+                                                    <TableCell className="font-mono text-xs">{msg.id}</TableCell>
+                                                    <TableCell>{msg.name}</TableCell>
+                                                    <TableCell>{msg.email}</TableCell>
+                                                    <TableCell className="max-w-md truncate">{msg.description}</TableCell>
+                                                </TableRow>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-2xl">
+                                                <DialogHeader>
+                                                    <DialogTitle>Contact Message</DialogTitle>
+                                                    <DialogDescription>
+                                                        From: {msg.name} ({msg.email})
+                                                    </DialogDescription>
+                                                </DialogHeader>
+                                                <ScrollArea className="max-h-[70vh] pr-6">
+                                                     <div className="space-y-4 py-4 text-sm">
+                                                        <DetailRow label="Message ID" value={<span className="font-mono">{msg.id}</span>} />
+                                                        <DetailRow label="Submitted At" value={format(new Date(msg.submittedAt), 'PPpp')} />
+                                                        <Separator className="my-4" />
+                                                        <div className="space-y-2">
+                                                            <div className="text-muted-foreground text-right">Description</div>
+                                                            <p className="font-semibold whitespace-pre-wrap">{msg.description}</p>
+                                                        </div>
+                                                     </div>
+                                                </ScrollArea>
+                                            </DialogContent>
+                                        </Dialog>
                                     ))}
                                 </TableBody>
                             </Table>
