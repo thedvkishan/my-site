@@ -1,7 +1,7 @@
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, orderBy, query } from "firebase/firestore";
+import { collection, query } from "firebase/firestore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -28,17 +28,17 @@ export function AdminDataView() {
 
     const buyOrdersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'buyOrders'), orderBy('createdAt', 'desc'));
+        return query(collection(firestore, 'buyOrders'));
     }, [firestore]);
 
     const sellOrdersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'sellOrders'), orderBy('createdAt', 'desc'));
+        return query(collection(firestore, 'sellOrders'));
     }, [firestore]);
     
     const contactMessagesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'contactMessages'), orderBy('submittedAt', 'desc'));
+        return query(collection(firestore, 'contactMessages'));
     }, [firestore]);
 
 
@@ -80,7 +80,7 @@ export function AdminDataView() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {buyOrders?.map(order => (
+                                    {buyOrders?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(order => (
                                         <Dialog key={order.id}>
                                             <DialogTrigger asChild>
                                                 <TableRow className="cursor-pointer">
@@ -175,7 +175,7 @@ export function AdminDataView() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {sellOrders?.map(order => (
+                                    {sellOrders?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(order => (
                                         <Dialog key={order.id}>
                                             <DialogTrigger asChild>
                                                 <TableRow className="cursor-pointer">
@@ -258,7 +258,7 @@ export function AdminDataView() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {contactMessages?.map(msg => (
+                                    {contactMessages?.slice().sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()).map(msg => (
                                          <Dialog key={msg.id}>
                                             <DialogTrigger asChild>
                                                 <TableRow className="cursor-pointer">
