@@ -112,7 +112,7 @@ export default function BuyPaymentPage() {
 
   if (isExpired || (transaction && transaction.status === 'expired')) {
     return (
-      <div className="container mx-auto max-w-2xl py-12">
+      <div className="container mx-auto max-w-2xl px-4 py-12">
         <Card className="text-center">
           <CardHeader>
             <CardTitle className="text-destructive">Transaction Expired</CardTitle>
@@ -145,15 +145,15 @@ export default function BuyPaymentPage() {
       return (
         <div className="space-y-4">
           <div className="flex justify-center">
-            {settings.qrCodeUrl && <Image data-ai-hint="qr code" src={settings.qrCodeUrl} alt="UPI QR Code" width={200} height={200} className="rounded-lg border p-1" />}
+            {settings.qrCodeUrl && <Image data-ai-hint="qr code" src={settings.qrCodeUrl} alt="UPI QR Code" width={160} height={160} className="rounded-lg border p-1" />}
           </div>
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Scan the QR code or use the UPI ID below</p>
-            <div className="flex items-center justify-center gap-2 mt-2">
-              <strong className="text-lg font-mono">{settings.upiId}</strong>
-              <Button variant="ghost" size="icon" onClick={() => handleCopy(settings.upiId, 'UPI ID')}>
-                <Copy className="h-4 w-4" />
-              </Button>
+            <div className="relative mt-2 rounded-md border bg-background p-3 font-mono text-lg text-left">
+                <p className="break-all pr-10">{settings.upiId}</p>
+                <Button variant="ghost" size="icon" onClick={() => handleCopy(settings.upiId, 'UPI ID')} className="absolute top-1/2 right-1 -translate-y-1/2">
+                    <Copy className="h-4 w-4" />
+                </Button>
             </div>
           </div>
         </div>
@@ -161,21 +161,21 @@ export default function BuyPaymentPage() {
     }
     if (['IMPS', 'NEFT', 'RTGS', 'Cash Deposit'].includes(transaction.paymentMode)) {
       return (
-        <div className="space-y-3 text-sm">
+        <div className="space-y-4 text-sm">
           {Object.entries({
             "Account Holder Name": settings.bankDetails.holderName,
             "Bank Name": settings.bankDetails.bankName,
             "Account Number": settings.bankDetails.accountNumber,
             "IFSC Code": settings.bankDetails.ifsc,
           }).map(([key, value]) => (
-            <div key={key} className="flex items-center justify-between">
-              <span className="text-muted-foreground">{key}:</span>
-              <div className="flex items-center gap-2">
-                <strong className="font-mono">{value}</strong>
-                <Button variant="ghost" size="icon" onClick={() => handleCopy(value, key)}>
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
+            <div key={key} className="grid gap-1">
+                <span className="text-muted-foreground">{key}</span>
+                <div className="relative flex w-full items-center">
+                    <p className="w-full break-all rounded-md border bg-background p-2 pr-10 font-mono text-left">{value}</p>
+                    <Button variant="ghost" size="icon" onClick={() => handleCopy(value, key)} className="absolute right-1 h-8 w-8">
+                        <Copy className="h-4 w-4" />
+                    </Button>
+                </div>
             </div>
           ))}
         </div>
@@ -185,7 +185,7 @@ export default function BuyPaymentPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-2xl py-12">
+    <div className="container mx-auto max-w-2xl px-4 py-12">
       <Card>
         <CardHeader>
           <div className='flex justify-center mb-4'>

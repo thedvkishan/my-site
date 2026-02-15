@@ -93,7 +93,7 @@ export default function SellDepositPage() {
 
   if (isExpired || (transaction && transaction.status === 'expired')) {
     return (
-      <div className="container mx-auto max-w-2xl py-12">
+      <div className="container mx-auto max-w-2xl px-4 py-12">
         <Card className="text-center">
           <CardHeader>
             <CardTitle className="text-destructive">Transaction Expired</CardTitle>
@@ -118,7 +118,7 @@ export default function SellDepositPage() {
   }
   
   return (
-    <div className="container mx-auto max-w-2xl py-12">
+    <div className="container mx-auto max-w-2xl px-4 py-12">
       <Card>
         <CardHeader>
           <div className='flex justify-center mb-4'>
@@ -142,17 +142,17 @@ export default function SellDepositPage() {
           
           <div className="space-y-3">
             <h3 className="font-semibold text-center">Deposit Address</h3>
-            <div className="p-4 bg-secondary rounded-lg text-center space-y-3">
+            <div className="p-4 bg-secondary rounded-lg text-center space-y-4">
                 <Badge variant="outline">{transaction.network}</Badge>
                 {qrCodeUrl && (
                     <div className="flex justify-center">
-                        <Image data-ai-hint="qr code" src={qrCodeUrl} alt={`${transaction.network} Deposit QR Code`} width={200} height={200} className="rounded-lg border p-1 bg-white" />
+                        <Image data-ai-hint="qr code" src={qrCodeUrl} alt={`${transaction.network} Deposit QR Code`} width={160} height={160} className="rounded-lg border p-1 bg-white" />
                     </div>
                 )}
                 <p className="text-sm text-muted-foreground">Scan the QR code or use the address below.</p>
-                <div className="flex items-center justify-center gap-2 mt-2 break-all">
-                    <strong className="text-sm font-mono">{depositAddress}</strong>
-                    <Button variant="ghost" size="icon" onClick={handleCopy}>
+                <div className="relative rounded-md border bg-background p-3 font-mono text-sm text-left">
+                    <p className="break-all pr-10">{depositAddress}</p>
+                    <Button variant="ghost" size="icon" onClick={handleCopy} className="absolute top-1/2 right-1 -translate-y-1/2">
                         <Copy className="h-4 w-4" />
                     </Button>
                 </div>
