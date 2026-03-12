@@ -52,6 +52,12 @@ export default function SellPage() {
   const isOnHold = profile?.status === 'on_hold';
   const sortedOrders = sellOrders?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
 
+  const handleRowClick = (order: any) => {
+    if (order.status === 'payment_processing') {
+        router.push(`/sell/confirmation/${order.id}`);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
         case 'completed': return <Badge className="bg-green-500">Completed</Badge>;
@@ -117,7 +123,7 @@ export default function SellPage() {
                   </TableRow>
                 ) : (
                   sortedOrders.map(order => (
-                    <TableRow key={order.id} className="hover:bg-muted/30 transition-colors">
+                    <TableRow key={order.id} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => handleRowClick(order)}>
                       <TableCell className="text-[10px] font-medium">
                         {format(new Date(order.createdAt), 'dd MMM HH:mm')}
                       </TableCell>

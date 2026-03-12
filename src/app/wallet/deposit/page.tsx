@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@/firebase';
 import { collection, addDoc, doc, updateDoc, query, where } from 'firebase/firestore';
-import { Loader2, Copy, TimerIcon, AlertCircle, History, Lock } from 'lucide-react';
+import { Loader2, Copy, TimerIcon, AlertCircle, History, Lock, Clock } from 'lucide-react';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { NETWORKS } from '@/lib/constants';
@@ -196,6 +196,16 @@ export default function DepositPage() {
     }
   };
 
+  const handleRowClick = (dep: Deposit) => {
+    if (dep.status === 'pending_hash') {
+        setActiveDepositId(dep.id);
+        setStep('pay');
+    } else if (dep.status === 'waiting_confirmation') {
+        setActiveDepositId(dep.id);
+        setStep('confirm');
+    }
+  };
+
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 md:py-12 space-y-8">
       <div className="max-w-xl mx-auto w-full">
@@ -310,32 +320,27 @@ export default function DepositPage() {
         )}
 
         {step === 'confirm' && (
-          <Card className="text-center py-12">
+          <Card className="text-center py-12 border-2 shadow-xl">
               <CardContent className="space-y-6">
                   <div className="flex justify-center">
-                      <div className="p-6 bg-yellow-500/10 rounded-full animate-pulse">
-                          <AlertCircle className="h-16 w-16 text-yellow-500" />
+                      <div className="p-6 bg-yellow-500/10 rounded-full">
+                          <Clock className="h-16 w-16 text-yellow-500 animate-[spin_8s_linear_infinite]" />
                       </div>
                   </div>
                   <div className="space-y-2">
-                      <CardTitle className="text-2xl">Waiting for Confirmation</CardTitle>
-                      <CardDescription>
-                          We have received your transaction hash. Our team is verifying your deposit. 
-                          This usually takes 15-30 minutes.
+                      <CardTitle className="text-2xl font-black uppercase">Awaiting for deposit confirmation</CardTitle>
+                      <CardDescription className="font-medium">
+                          Our team is verifying your direct wallet credit request.
                       </CardDescription>
                   </div>
                   <div className="p-4 bg-secondary rounded-lg text-left space-y-2">
                       <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Status:</span>
-                          <span className="font-semibold text-yellow-600 uppercase">Processing</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Hash:</span>
+                          <span className="text-muted-foreground">Reference:</span>
                           <span className="font-mono text-xs truncate max-w-[200px]">{activeDeposit?.txHash || txHash}</span>
                       </div>
                   </div>
-                  <Button className="w-full" onClick={() => { setActiveDepositId(null); setStep('input'); }}>
-                      Make New Deposit
+                  <Button className="w-full h-12 font-black uppercase tracking-widest" onClick={() => { setActiveDepositId(null); setStep('input'); }}>
+                      New Credit Request
                   </Button>
               </CardContent>
           </Card>
@@ -370,7 +375,7 @@ export default function DepositPage() {
                   </TableRow>
                 ) : (
                   sortedHistory.map(dep => (
-                    <TableRow key={dep.id} className="cursor-pointer hover:bg-muted/50" onClick={() => dep.status === 'pending_hash' && (setActiveDepositId(dep.id), setStep('pay'))}>
+                    <TableRow key={dep.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleRowClick(dep)}>
                       <TableCell className="text-xs">
                         {format(new Date(dep.createdAt), 'PPp')}
                       </TableCell>

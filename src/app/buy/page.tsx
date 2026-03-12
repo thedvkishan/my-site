@@ -52,6 +52,14 @@ export default function BuyPage() {
   const isOnHold = profile?.status === 'on_hold';
   const sortedOrders = buyOrders?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
 
+  const handleRowClick = (order: any) => {
+    if (order.status === 'pending_payment') {
+        router.push(`/buy/payment/${order.id}`);
+    } else if (order.status === 'payment_processing') {
+        router.push(`/buy/confirmation/${order.id}`);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
         case 'completed': return <Badge className="bg-green-500">Completed</Badge>;
@@ -101,7 +109,7 @@ export default function BuyPage() {
                 <CardContent className="text-sm space-y-3">
                     <p className="text-muted-foreground font-medium">All transactions are processed through secure settlement protocols and monitored for reliability.</p>
                     <div className="flex items-center gap-2 font-black text-accent uppercase text-[10px] tracking-wider">
-                        <Zap className="h-4 w-4" /> 30-180 Min Settlement Goal
+                        <Zap className="h-4 w-4" /> Secure Settlement Goal
                     </div>
                 </CardContent>
             </Card>
@@ -128,7 +136,7 @@ export default function BuyPage() {
                         </TableRow>
                       ) : (
                         sortedOrders.map(order => (
-                          <TableRow key={order.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => order.status === 'pending_payment' && router.push(`/buy/payment/${order.id}`)}>
+                          <TableRow key={order.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleRowClick(order)}>
                             <TableCell className="text-[10px] font-medium">{format(new Date(order.createdAt), 'dd MMM HH:mm')}</TableCell>
                             <TableCell className="font-black text-primary text-xs">{order.usdtAmount} USDT</TableCell>
                             <TableCell>{getStatusBadge(order.status)}</TableCell>

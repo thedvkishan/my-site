@@ -1,98 +1,45 @@
+
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Card, CardHeader, CardFooter } from '@/components/ui/card';
+import { useRouter } from 'next/navigation';
+import { Card, CardHeader, CardFooter, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-
-type Transaction = {
-  id: string;
-  status: 'payment_processing' | 'completed' | 'failed' | 'expired';
-  type: 'buy' | 'sell';
-};
-
-type VerificationStatus = 'processing' | 'verified' | 'failed';
+import { Clock } from 'lucide-react';
 
 export default function SellConfirmationPage() {
   const router = useRouter();
-  const params = useParams();
-  const { id } = params;
-  
-  const [verificationStatus] = useState<VerificationStatus>('processing');
-
-  const firestore = useFirestore();
-
-  const transactionRef = useMemoFirebase(() => {
-    if (!firestore || typeof id !== 'string') return null;
-    return doc(firestore, 'sellOrders', id as string);
-  }, [firestore, id]);
-
-  const { data: transaction, isLoading: transactionLoading } = useDoc<Transaction>(transactionRef);
-  const [loadTime] = useState(Date.now());
-
-
-  useEffect(() => {
-    if (transactionLoading) {
-      return;
-    }
-
-    if (transaction) {
-      if (transaction.status !== 'payment_processing') {
-        router.replace('/');
-      }
-    } else {
-      if (Date.now() - loadTime > 3000) {
-        router.replace('/');
-      }
-    }
-  }, [id, transaction, transactionLoading, router, loadTime]);
-
-  const renderStatus = () => {
-    switch (verificationStatus) {
-      case 'processing':
-        return (
-          <>
-            <Loader2 className="h-16 w-16 text-primary animate-spin" />
-          </>
-        );
-      case 'verified':
-        return (
-          <>
-            <CheckCircle2 className="h-16 w-16 text-green-500" />
-          </>
-        );
-      case 'failed':
-        return (
-          <>
-            <XCircle className="h-16 w-16 text-destructive" />
-          </>
-        );
-    }
-  };
-
-  if (transactionLoading && (Date.now() - loadTime < 3000)) {
-    return (
-        <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
-             <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-    );
-  }
 
   return (
-    <div className="container mx-auto max-w-lg py-12">
-      <Card>
-        <CardHeader className="items-center text-center py-12">
-          {renderStatus()}
+    <div className="container mx-auto max-w-lg py-12 px-4">
+      <Card className="border-2 shadow-xl overflow-hidden">
+        <div className="h-2 bg-destructive animate-pulse" />
+        <CardHeader className="items-center text-center py-12 space-y-4">
+          <div className="p-4 bg-destructive/10 rounded-full">
+            <Clock className="h-16 w-16 text-destructive animate-spin-slow" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black uppercase tracking-tight">Awaiting for settlement confirmation</h2>
+            <p className="text-muted-foreground text-sm font-medium">Liquidation protocol has been initiated for your assets.</p>
+          </div>
         </CardHeader>
-        <CardFooter>
-            <Button className="w-full" onClick={() => router.push('/')}>
-              {verificationStatus === 'processing' ? 'Back to Home' : 'Start a New Transaction'}
+        <CardContent className="bg-muted/30 p-6 text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-y">
+          Institutional Liquidation Logged
+        </CardContent>
+        <CardFooter className="p-6">
+            <Button variant="outline" className="w-full h-12 font-black uppercase tracking-widest" onClick={() => router.push('/')}>
+              Back to Hub
             </Button>
         </CardFooter>
       </Card>
+      <style jsx global>{`
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 8s linear infinite;
+        }
+      `}</style>
     </div>
   );
 }

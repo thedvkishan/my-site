@@ -62,6 +62,24 @@ export default function WalletHistoryPage() {
   const sortedBuy = buyOrders?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
   const sortedSell = sellOrders?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
 
+  const handleAction = (item: any, type: 'buy' | 'sell' | 'deposit' | 'withdrawal') => {
+    switch (type) {
+        case 'buy':
+            if (item.status === 'pending_payment') router.push(`/buy/payment/${item.id}`);
+            else if (item.status === 'payment_processing') router.push(`/buy/confirmation/${item.id}`);
+            break;
+        case 'sell':
+            if (item.status === 'payment_processing') router.push(`/sell/confirmation/${item.id}`);
+            break;
+        case 'deposit':
+            if (item.status === 'pending_hash' || item.status === 'waiting_confirmation') router.push('/wallet/deposit');
+            break;
+        case 'withdrawal':
+            if (item.status === 'pending') router.push(`/wallet/withdrawal/confirmation/${item.id}`);
+            break;
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
         case 'completed': return <Badge className="bg-green-500">Completed</Badge>;
@@ -120,7 +138,7 @@ export default function WalletHistoryPage() {
                                     <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground font-medium italic">No Buy records found.</TableCell></TableRow>
                                 ) : (
                                     sortedBuy.map(order => (
-                                        <TableRow key={order.id} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => order.status === 'pending_payment' && router.push(`/buy/payment/${order.id}`)}>
+                                        <TableRow key={order.id} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => handleAction(order, 'buy')}>
                                             <TableCell className="text-xs font-medium">{format(new Date(order.createdAt), 'dd MMM yyyy HH:mm')}</TableCell>
                                             <TableCell className="font-black text-primary">{order.usdtAmount} USDT</TableCell>
                                             <TableCell className="text-xs font-bold opacity-70">{order.paymentMode}</TableCell>
@@ -159,7 +177,7 @@ export default function WalletHistoryPage() {
                                     <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground font-medium italic">No Liquidation records found.</TableCell></TableRow>
                                 ) : (
                                     sortedSell.map(order => (
-                                        <TableRow key={order.id} className="hover:bg-muted/30 transition-colors">
+                                        <TableRow key={order.id} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => handleAction(order, 'sell')}>
                                             <TableCell className="text-xs font-medium">{format(new Date(order.createdAt), 'dd MMM yyyy HH:mm')}</TableCell>
                                             <TableCell className="font-black text-destructive">-{order.usdtAmount} USDT</TableCell>
                                             <TableCell className="text-xs font-bold">₹{order.inrAmount?.toLocaleString()}</TableCell>
@@ -198,7 +216,7 @@ export default function WalletHistoryPage() {
                                     <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground font-medium italic">No Credit records found.</TableCell></TableRow>
                                 ) : (
                                     sortedDeposits.map(dep => (
-                                        <TableRow key={dep.id} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => dep.status === 'pending_hash' && router.push('/wallet/deposit')}>
+                                        <TableRow key={dep.id} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => handleAction(dep, 'deposit')}>
                                             <TableCell className="text-xs font-medium">{format(new Date(dep.createdAt), 'dd MMM yyyy HH:mm')}</TableCell>
                                             <TableCell className="font-black text-green-600">+{dep.amount} USDT</TableCell>
                                             <TableCell className="text-xs font-bold opacity-70">{dep.network}</TableCell>
@@ -237,7 +255,7 @@ export default function WalletHistoryPage() {
                                     <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground font-medium italic">No Debit records found.</TableCell></TableRow>
                                 ) : (
                                     sortedWithdrawals.map(wd => (
-                                        <TableRow key={wd.id} className="hover:bg-muted/30 transition-colors">
+                                        <TableRow key={wd.id} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => handleAction(wd, 'withdrawal')}>
                                             <TableCell className="text-xs font-medium">{format(new Date(wd.createdAt), 'dd MMM yyyy HH:mm')}</TableCell>
                                             <TableCell className="font-black text-red-600">-{wd.amount} USDT</TableCell>
                                             <TableCell className="text-xs font-bold opacity-70">{wd.network}</TableCell>

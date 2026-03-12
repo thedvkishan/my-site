@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@/firebase';
 import { collection, addDoc, doc, query, where, updateDoc, increment } from 'firebase/firestore';
-import { Loader2, Wallet, CheckCircle2, History, Lock } from 'lucide-react';
+import { Loader2, Wallet, History, Lock } from 'lucide-react';
 import { NETWORKS } from '@/lib/constants';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +38,6 @@ export default function WithdrawalPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
   const [amount, setAmount] = useState('');
   const [network, setNetwork] = useState('BEP20');
   const [address, setAddress] = useState('');
@@ -102,8 +102,7 @@ export default function WithdrawalPage() {
 
     setIsLoading(true);
     try {
-      // 1. Create the withdrawal request
-      await addDoc(collection(firestore, 'withdrawals'), {
+      const docRef = await addDoc(collection(firestore, 'withdrawals'), {
         userId: user!.uid,
         amount: numAmount,
         network,
@@ -112,12 +111,10 @@ export default function WithdrawalPage() {
         createdAt: new Date().toISOString(),
       });
 
-      // 2. Immediately deduct the balance
       if (userProfileRef) {
         await updateDoc(userProfileRef, { balance: increment(-numAmount) });
       }
 
-      // 3. Create a notification for the user
       await createInternalNotification(
         user!.uid, 
         'Withdrawal Requested', 
@@ -125,8 +122,8 @@ export default function WithdrawalPage() {
         'info'
       );
 
-      setSubmitted(true);
       toast({ title: 'Success', description: 'Withdrawal requested. USDT deducted from balance.' });
+      router.push(`/wallet/withdrawal/confirmation/${docRef.id}`);
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to submit withdrawal request.' });
@@ -155,99 +152,83 @@ export default function WithdrawalPage() {
     }
   };
 
+  const handleRowClick = (wd: Withdrawal) => {
+    if (wd.status === 'pending') {
+        router.push(`/wallet/withdrawal/confirmation/${wd.id}`);
+    }
+  };
+
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 md:py-12 space-y-8">
       <div className="max-w-xl mx-auto w-full">
-        {submitted ? (
-          <Card className="text-center py-8">
-              <CardContent className="space-y-6">
-                  <div className="flex justify-center">
-                      <CheckCircle2 className="h-20 w-20 text-green-500" />
-                  </div>
-                  <div className="space-y-2">
-                      <CardTitle>Withdrawal Requested</CardTitle>
-                      <CardDescription>
-                          Your withdrawal of {amount} USDT is being processed. 
-                          The amount has been deducted from your balance.
-                      </CardDescription>
-                  </div>
-                  <Button className="w-full" onClick={() => setSubmitted(false)}>
-                      Request Another Withdrawal
-                  </Button>
-              </CardContent>
-          </Card>
-        ) : (
-          <>
-            {isOnHold && (
-              <Alert variant="destructive" className="border-2 border-destructive animate-pulse mb-6">
-                  <Lock className="h-5 w-5" />
-                  <AlertTitle className="font-bold">Withdrawals Disabled</AlertTitle>
-                  <AlertDescription>Your account is currently on hold. You cannot perform new withdrawals at this time. Please contact support.</AlertDescription>
-              </Alert>
-            )}
-            <Card className={isOnHold ? 'opacity-60 pointer-events-none' : ''}>
-              <CardHeader className="text-center">
-                <div className="flex justify-center mb-4">
-                     <div className="p-3 bg-accent/10 rounded-full border-4 border-primary/20">
-                          <Wallet className="h-8 w-8 text-accent" />
-                     </div>
-                </div>
-                <CardTitle>Withdraw USDT</CardTitle>
-                <CardDescription>Available Balance: {(profile?.balance || 0).toLocaleString()} USDT</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="amount">Amount (USDT)</Label>
-                    <div className="relative">
-                      <Input
-                          id="amount"
-                          type="number"
-                          placeholder="0.00"
-                          value={amount}
-                          onChange={(e) => setAmount(e.target.value)}
-                      />
-                      <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-xs h-7"
-                          onClick={() => setAmount((profile?.balance || 0).toString())}
-                      >
-                          MAX
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="network">Network</Label>
-                    <Select value={network} onValueChange={setNetwork}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select network" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {NETWORKS.map(net => (
-                          <SelectItem key={net} value={net}>{net}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Recipient Address</Label>
-                    <Input
-                      id="address"
-                      placeholder="Enter your receiving wallet address"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                    />
-                  </div>
-              </CardContent>
-              <CardFooter>
-                <Button className="w-full" size="lg" onClick={handleWithdraw} disabled={isLoading || isOnHold}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Request Withdrawal
-                </Button>
-              </CardFooter>
-            </Card>
-          </>
+        {isOnHold && (
+          <Alert variant="destructive" className="border-2 border-destructive animate-pulse mb-6">
+              <Lock className="h-5 w-5" />
+              <AlertTitle className="font-bold">Withdrawals Disabled</AlertTitle>
+              <AlertDescription>Your account is currently on hold. You cannot perform new withdrawals at this time. Please contact support.</AlertDescription>
+          </Alert>
         )}
+        <Card className={isOnHold ? 'opacity-60 pointer-events-none' : ''}>
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+                 <div className="p-3 bg-accent/10 rounded-full border-4 border-primary/20">
+                      <Wallet className="h-8 w-8 text-accent" />
+                 </div>
+            </div>
+            <CardTitle>Withdraw USDT</CardTitle>
+            <CardDescription>Available Balance: {(profile?.balance || 0).toLocaleString()} USDT</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount (USDT)</Label>
+                <div className="relative">
+                  <Input
+                      id="amount"
+                      type="number"
+                      placeholder="0.00"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                  />
+                  <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-xs h-7"
+                      onClick={() => setAmount((profile?.balance || 0).toString())}
+                  >
+                      MAX
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="network">Network</Label>
+                <Select value={network} onValueChange={setNetwork}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select network" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {NETWORKS.map(net => (
+                      <SelectItem key={net} value={net}>{net}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address">Recipient Address</Label>
+                <Input
+                  id="address"
+                  placeholder="Enter your receiving wallet address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                />
+              </div>
+          </CardContent>
+          <CardFooter>
+            <Button className="w-full h-12 font-black uppercase tracking-widest" size="lg" onClick={handleWithdraw} disabled={isLoading || isOnHold}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Request Withdrawal
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
 
       <Card>
@@ -278,7 +259,7 @@ export default function WithdrawalPage() {
                   </TableRow>
                 ) : (
                   sortedHistory.map(wd => (
-                    <TableRow key={wd.id}>
+                    <TableRow key={wd.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleRowClick(wd)}>
                       <TableCell className="text-xs">
                         {format(new Date(wd.createdAt), 'PPp')}
                       </TableCell>
