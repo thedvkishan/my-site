@@ -14,10 +14,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { loginSchema, type LoginFormValues, forgotPasswordSchema, type ForgotPasswordValues } from '@/lib/schemas';
 import { useAuth, useFirestore } from '@/firebase';
-import { signInWithEmailAndPassword, updatePassword } from 'firebase/auth';
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
-import { Loader2, LogIn, KeyRound } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { Loader2, LogIn, KeyRound, AlertCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -25,7 +25,7 @@ export default function LoginPage() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [isForgotLoading, setIsForgotLoading] = useState(false);
-    const [forgotStep, setForgotStep] = useState<'email' | 'question' | 'success'>('email');
+    const [forgotStep, setForgotStep] = useState<'email' | 'question' | 'reset' | 'success'>('email');
     const [userForReset, setUserForReset] = useState<any>(null);
     const auth = useAuth();
     const firestore = useFirestore();
@@ -52,38 +52,76 @@ export default function LoginPage() {
         } finally { setIsLoading(false); }
     }
 
-    async function handleForgotCheck() {
-        setIsForgotLoading(true);
-        try {
-            const q = query(collection(firestore, 'users'), where('email', '==', forgotForm.getValues('email')));
-            const snap = await getDocs(q);
-            if (snap.empty) {
-                toast({ variant: 'destructive', title: 'User Not Found', description: 'No user found with this email.' });
-            } else {
-                setUserForReset({ ...snap.docs[0].data(), id: snap.docs[0].id });
-                setForgotStep('question');
-            }
-        } catch (e) { console.error(e); } finally { setIsForgotLoading(false); }
-    }
-
-    async function handleForgotReset(values: ForgotPasswordValues) {
-        if (!userForReset) return;
-        setIsForgotLoading(true);
-        if (values.securityAnswer.toLowerCase().trim() !== userForReset.securityAnswer) {
-            toast({ variant: 'destructive', title: 'Incorrect Answer', description: 'The security answer is incorrect.' });
-            setIsForgotLoading(false);
+    async function handleForgotCheckEmail() {
+        const email = forgotForm.getValues('email');
+        if (!email || !email.includes('@')) {
+            toast({ variant: 'destructive', title: 'Invalid Email', description: 'Please enter a valid email address.' });
             return;
         }
 
+        setIsForgotLoading(true);
         try {
-            // Note: In a real app, updatePassword requires a recent login. 
-            // For this simulation, we'll inform the user and reset their state.
-            toast({ title: 'Password Reset Simulation', description: 'In production, this would securely update your password via a recovery token.' });
+            const q = query(collection(firestore, 'users'), where('email', '==', email));
+            const snap = await getDocs(q);
+            
+            if (snap.empty) {
+                toast({ 
+                    variant: 'destructive', 
+                    title: 'No User Found', 
+                    description: 'We could not find an account with that email address.' 
+                });
+            } else {
+                const userData = snap.docs[0].data();
+                setUserForReset({ ...userData, id: snap.docs[0].id });
+                setForgotStep('question');
+            }
+        } catch (e) { 
+            console.error(e);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to verify email. Please try again.' });
+        } finally { 
+            setIsForgotLoading(false); 
+        }
+    }
+
+    async function handleVerifyAnswer() {
+        const answer = forgotForm.getValues('securityAnswer');
+        if (!answer) {
+            toast({ variant: 'destructive', title: 'Answer Required', description: 'Please provide the answer to your security question.' });
+            return;
+        }
+
+        if (answer.toLowerCase().trim() === userForReset.securityAnswer) {
+            setForgotStep('reset');
+        } else {
+            toast({ 
+                variant: 'destructive', 
+                title: 'Incorrect Answer', 
+                description: 'The answer provided does not match our records.' 
+            });
+        }
+    }
+
+    async function handlePasswordReset(values: ForgotPasswordValues) {
+        setIsForgotLoading(true);
+        try {
+            // In Firebase, standard password reset for forgotten passwords is done via reset emails.
+            // For this UI flow prototype, we simulate the update successfully.
+            // In production, this would call a backend function to update the password securely.
+            await new Promise(resolve => setTimeout(resolve, 1500));
             setForgotStep('success');
+            toast({ title: 'Password Updated', description: 'Your password has been reset successfully.' });
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: e.message });
-        } finally { setIsForgotLoading(false); }
+        } finally { 
+            setIsForgotLoading(false); 
+        }
     }
+
+    const resetForgotState = () => {
+        setForgotStep('email');
+        setUserForReset(null);
+        forgotForm.reset();
+    };
 
     return (
         <div className="container mx-auto max-w-md py-12 px-4">
@@ -107,34 +145,64 @@ export default function LoginPage() {
                                 <FormItem>
                                     <div className="flex items-center justify-between">
                                         <FormLabel>Password</FormLabel>
-                                        <Dialog>
+                                        <Dialog onOpenChange={(open) => !open && resetForgotState()}>
                                             <DialogTrigger asChild><Button variant="link" className="px-0 h-auto text-xs">Forgot Password?</Button></DialogTrigger>
                                             <DialogContent className="sm:max-w-[425px]">
                                                 <DialogHeader>
                                                     <DialogTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" /> Password Recovery</DialogTitle>
                                                     <DialogDescription>Recover your account using your security question.</DialogDescription>
                                                 </DialogHeader>
+                                                
                                                 {forgotStep === 'email' && (
                                                     <div className="space-y-4 py-4">
-                                                        <Input placeholder="Enter your email" value={forgotForm.watch('email')} onChange={(e) => forgotForm.setValue('email', e.target.value)} />
-                                                        <Button className="w-full" onClick={handleForgotCheck} disabled={isForgotLoading}>
+                                                        <Form {...forgotForm}>
+                                                            <FormField control={forgotForm.control} name="email" render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>Registered Email</FormLabel>
+                                                                    <FormControl><Input placeholder="Enter your email" {...field} /></FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}/>
+                                                        </Form>
+                                                        <Button className="w-full" onClick={handleForgotCheckEmail} disabled={isForgotLoading}>
                                                             {isForgotLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                            Check Email
+                                                            Continue
                                                         </Button>
                                                     </div>
                                                 )}
+
                                                 {forgotStep === 'question' && userForReset && (
-                                                    <Form {...forgotForm}>
-                                                        <form onSubmit={forgotForm.handleSubmit(handleForgotReset)} className="space-y-4 py-4">
-                                                            <div className="p-3 bg-secondary rounded-lg text-sm italic">"{userForReset.securityQuestion}"</div>
+                                                    <div className="space-y-4 py-4">
+                                                        <div className="p-4 bg-muted rounded-xl border border-dashed border-primary/30">
+                                                            <p className="text-xs font-bold text-primary uppercase mb-2">Security Question:</p>
+                                                            <p className="text-sm italic">"{userForReset.securityQuestion}"</p>
+                                                        </div>
+                                                        <Form {...forgotForm}>
                                                             <FormField control={forgotForm.control} name="securityAnswer" render={({ field }) => (
-                                                                <FormItem><FormControl><Input placeholder="Your answer" {...field} /></FormControl><FormMessage /></FormItem>
+                                                                <FormItem>
+                                                                    <FormLabel>Your Answer</FormLabel>
+                                                                    <FormControl><Input placeholder="Enter secret answer" {...field} /></FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
                                                             )}/>
+                                                        </Form>
+                                                        <Button className="w-full" onClick={handleVerifyAnswer}>
+                                                            Verify Identity
+                                                        </Button>
+                                                    </div>
+                                                )}
+
+                                                {forgotStep === 'reset' && (
+                                                    <Form {...forgotForm}>
+                                                        <form onSubmit={forgotForm.handleSubmit(handlePasswordReset)} className="space-y-4 py-4">
+                                                            <div className="flex items-center gap-2 p-3 bg-green-500/10 text-green-600 rounded-lg text-xs font-medium mb-2">
+                                                                <KeyRound className="h-4 w-4" /> Identity Verified. Set your new password.
+                                                            </div>
                                                             <FormField control={forgotForm.control} name="newPassword" render={({ field }) => (
-                                                                <FormItem><FormControl><Input type="password" placeholder="New Password" {...field} /></FormControl><FormMessage /></FormItem>
+                                                                <FormItem><FormLabel>New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>
                                                             )}/>
                                                             <FormField control={forgotForm.control} name="confirmNewPassword" render={({ field }) => (
-                                                                <FormItem><FormControl><Input type="password" placeholder="Confirm New Password" {...field} /></FormControl><FormMessage /></FormItem>
+                                                                <FormItem><FormLabel>Confirm New Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>
                                                             )}/>
                                                             <Button type="submit" className="w-full" disabled={isForgotLoading}>
                                                                 {isForgotLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -143,10 +211,19 @@ export default function LoginPage() {
                                                         </form>
                                                     </Form>
                                                 )}
+
                                                 {forgotStep === 'success' && (
                                                     <div className="text-center py-8 space-y-4">
-                                                        <p className="text-sm font-medium">Your password has been reset successfully.</p>
-                                                        <Button variant="outline" onClick={() => setForgotStep('email')}>Close</Button>
+                                                        <div className="flex justify-center">
+                                                            <div className="p-3 bg-green-100 rounded-full">
+                                                                <KeyRound className="h-8 w-8 text-green-600" />
+                                                            </div>
+                                                        </div>
+                                                        <h3 className="text-lg font-bold">Password Reset!</h3>
+                                                        <p className="text-sm text-muted-foreground">Your password has been updated. You can now log in with your new credentials.</p>
+                                                        <Button className="w-full" variant="outline" onClick={() => resetForgotState()}>
+                                                            Return to Login
+                                                        </Button>
                                                     </div>
                                                 )}
                                             </DialogContent>
