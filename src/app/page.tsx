@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -19,7 +18,8 @@ import {
   Clock,
   Building2,
   CreditCard,
-  Banknote
+  Banknote,
+  TrendingDown
 } from 'lucide-react';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -32,8 +32,6 @@ type UserProfile = {
 }
 
 type Settings = {
-  buyBannerUrl?: string;
-  sellBannerUrl?: string;
   buyRateBank?: number;
   sellRateBank?: number;
 }
@@ -90,11 +88,12 @@ export default function Home() {
                 </Card>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-12">
                 {[
                     { label: 'Deposit', icon: CircleDollarSign, href: '/wallet/deposit', color: 'text-primary', bg: 'bg-primary/5' },
                     { label: 'Withdraw', icon: Wallet, href: '/wallet/withdrawal', color: 'text-accent', bg: 'bg-accent/5' },
                     { label: 'Buy USDT', icon: TrendingUp, href: '/buy', color: 'text-green-500', bg: 'bg-green-500/5' },
+                    { label: 'Sell USDT', icon: TrendingDown, href: '/sell', color: 'text-destructive', bg: 'bg-destructive/5' },
                     { label: 'History', icon: History, href: '/wallet/history', color: 'text-muted-foreground', bg: 'bg-muted/5' },
                 ].map((action, i) => (
                     <Button 
@@ -123,7 +122,7 @@ export default function Home() {
                              </div>
                              <CardTitle className="text-2xl font-bold">Buy USDT</CardTitle>
                         </div>
-                        <CardDescription>Fast purchase with local INR methods.</CardDescription>
+                        <CardDescription>Fast purchase with professional rates.</CardDescription>
                     </CardHeader>
                     <CardContent className="p-8 pt-0 space-y-6">
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
