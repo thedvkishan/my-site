@@ -22,7 +22,7 @@ type Settings = {
   minBuyAmount?: number;
 }
 
-export function BuyForm() {
+export function BuyForm({ disabled }: { disabled?: boolean }) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -65,7 +65,8 @@ export function BuyForm() {
 
   const currentRate = useMemo(() => {
     if (!settings || !settings.buyRates) return 0;
-    return settings.buyRates[paymentMode] || 0;
+    const rawRate = settings.buyRates[paymentMode];
+    return Number(rawRate) || 0;
   }, [settings, paymentMode]);
 
   useEffect(() => {
@@ -148,7 +149,7 @@ export function BuyForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Network</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
                 <FormControl>
                   <SelectTrigger><SelectValue placeholder="Select a network" /></SelectTrigger>
                 </FormControl>
@@ -175,6 +176,7 @@ export function BuyForm() {
                     type="number" 
                     placeholder="Enter USDT amount" 
                     {...field} 
+                    disabled={disabled}
                     onChange={(e) => {
                       conversionInputSource.current = 'usdt';
                       field.onChange(e);
@@ -196,6 +198,7 @@ export function BuyForm() {
                     type="number" 
                     placeholder="Enter INR amount" 
                     {...field} 
+                    disabled={disabled}
                     onChange={(e) => {
                       conversionInputSource.current = 'inr';
                       field.onChange(e);
@@ -212,7 +215,7 @@ export function BuyForm() {
           {!settingsLoading && (
             <div className="flex justify-between items-center">
                 <span>Selected Rate ({paymentMode}):</span>
-                <span className="font-bold">1 USDT ≈ ₹{(currentRate || 0).toFixed(2)}</span>
+                <span className="font-bold">1 USDT ≈ ₹{Number(currentRate || 0).toFixed(2)}</span>
             </div>
           )}
         </div>
@@ -223,7 +226,7 @@ export function BuyForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Payment Mode</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
                 <FormControl>
                   <SelectTrigger><SelectValue placeholder="Select a payment mode" /></SelectTrigger>
                 </FormControl>
@@ -242,7 +245,7 @@ export function BuyForm() {
             USDT will be added to your internal balance within 30 minutes to 3 hours after payment confirmation.
         </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading || settingsLoading || !settings || !user}>
+        <Button type="submit" className="w-full" disabled={isLoading || settingsLoading || !settings || !user || disabled}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Pay Now
         </Button>

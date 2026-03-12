@@ -62,8 +62,8 @@ export default function Home() {
     )
   }
 
-  const bankBuyRate = settings.buyRates?.['Bank Transfer'] || settings.buyRates?.['IMPS'] || 0;
-  const bankSellRate = settings.sellRates?.['Bank Transfer'] || settings.sellRates?.['IMPS'] || 0;
+  const bankBuyRate = Number(settings.buyRates?.['Bank Transfer'] || settings.buyRates?.['IMPS'] || 0);
+  const bankSellRate = Number(settings.sellRates?.['Bank Transfer'] || settings.sellRates?.['IMPS'] || 0);
 
   // LOGGED IN VIEW (DASHBOARD)
   if (user) {

@@ -22,7 +22,7 @@ type Settings = {
   minSellAmount?: number;
 }
 
-export function SellForm() {
+export function SellForm({ disabled }: { disabled?: boolean }) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -112,7 +112,8 @@ export function SellForm() {
 
   const currentRate = useMemo(() => {
     if (!settings || !settings.sellRates) return 0;
-    return settings.sellRates[paymentMode] || 0;
+    const rawRate = settings.sellRates[paymentMode];
+    return Number(rawRate) || 0;
   }, [settings, paymentMode]);
 
   useEffect(() => {
@@ -195,7 +196,7 @@ export function SellForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Network</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
                 <FormControl>
                   <SelectTrigger><SelectValue placeholder="Select a network" /></SelectTrigger>
                 </FormControl>
@@ -218,7 +219,11 @@ export function SellForm() {
               <FormItem>
                 <FormLabel>USDT Amount</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="Enter USDT amount" {...field} 
+                  <Input 
+                    type="number" 
+                    placeholder="Enter USDT amount" 
+                    {...field} 
+                    disabled={disabled}
                     onChange={(e) => {
                       conversionInputSource.current = 'usdt';
                       field.onChange(e);
@@ -236,7 +241,11 @@ export function SellForm() {
               <FormItem>
                 <FormLabel>INR Amount You Receive</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="Enter INR amount" {...field} 
+                  <Input 
+                    type="number" 
+                    placeholder="Enter INR amount" 
+                    {...field} 
+                    disabled={disabled}
                     onChange={(e) => {
                       conversionInputSource.current = 'inr';
                       field.onChange(e);
@@ -253,7 +262,7 @@ export function SellForm() {
           {!settingsLoading && (
             <div className="flex justify-between items-center">
                 <span>Selected Rate ({paymentMode}):</span>
-                <span className="font-bold">1 USDT ≈ ₹{(currentRate || 0).toFixed(2)}</span>
+                <span className="font-bold">1 USDT ≈ ₹{Number(currentRate || 0).toFixed(2)}</span>
             </div>
           )}
         </div>
@@ -264,7 +273,7 @@ export function SellForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Payment Receiving Mode</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
                 <FormControl>
                   <SelectTrigger><SelectValue placeholder="Select a payment mode" /></SelectTrigger>
                 </FormControl>
@@ -282,10 +291,10 @@ export function SellForm() {
         {paymentMode === 'UPI' && (
           <div className="space-y-4 p-4 border rounded-md bg-secondary">
             <FormField control={control} name="upiHolderName" render={({ field }) => (
-              <FormItem><FormLabel>UPI Holder Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem><FormLabel>UPI Holder Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} disabled={disabled} /></FormControl><FormMessage /></FormItem>
             )}/>
             <FormField control={control} name="upiId" render={({ field }) => (
-              <FormItem><FormLabel>UPI ID</FormLabel><FormControl><Input placeholder="yourname@upi" {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem><FormLabel>UPI ID</FormLabel><FormControl><Input placeholder="yourname@upi" {...field} disabled={disabled} /></FormControl><FormMessage /></FormItem>
             )}/>
           </div>
         )}
@@ -293,7 +302,7 @@ export function SellForm() {
         {(paymentMode === 'IMPS' || paymentMode === 'RTGS' || paymentMode === 'NEFT' || paymentMode === 'Cash Deposit' || paymentMode === 'Bank Transfer') && (
           <div className="space-y-4 p-4 border rounded-md bg-secondary">
             <FormField control={control} name="bankHolderName" render={({ field }) => (
-              <FormItem><FormLabel>Account Holder Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem><FormLabel>Account Holder Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} disabled={disabled} /></FormControl><FormMessage /></FormItem>
             )}/>
             
             {paymentMode === 'Cash Deposit' ? (
@@ -303,7 +312,7 @@ export function SellForm() {
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel>Bank Name</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
                         <FormControl>
                             <SelectTrigger>
                             <SelectValue placeholder="Select a bank" />
@@ -323,15 +332,15 @@ export function SellForm() {
                 />
             ) : (
                 <FormField control={control} name="bankName" render={({ field }) => (
-                    <FormItem><FormLabel>Bank Name</FormLabel><FormControl><Input placeholder="Your Bank" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Bank Name</FormLabel><FormControl><Input placeholder="Your Bank" {...field} disabled={disabled} /></FormControl><FormMessage /></FormItem>
                 )}/>
             )}
 
             <FormField control={control} name="accountNumber" render={({ field }) => (
-              <FormItem><FormLabel>Account Number</FormLabel><FormControl><Input placeholder="1234567890" {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem><FormLabel>Account Number</FormLabel><FormControl><Input placeholder="1234567890" {...field} disabled={disabled} /></FormControl><FormMessage /></FormItem>
             )}/>
             <FormField control={control} name="ifsc" render={({ field }) => (
-              <FormItem><FormLabel>IFSC Code</FormLabel><FormControl><Input placeholder="BANK0001234" {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem><FormLabel>IFSC Code</FormLabel><FormControl><Input placeholder="BANK0001234" {...field} disabled={disabled} /></FormControl><FormMessage /></FormItem>
             )}/>
           </div>
         )}
@@ -340,7 +349,7 @@ export function SellForm() {
             Please deposit your USDT within 3 hours after creating this order.
         </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading || settingsLoading || !settings || !user}>
+        <Button type="submit" className="w-full" disabled={isLoading || settingsLoading || !settings || !user || disabled}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Sell
         </Button>
