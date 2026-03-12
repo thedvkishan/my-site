@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function BuyPage() {
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading } = userUser();
   const router = useRouter();
   const firestore = useFirestore();
 
@@ -66,7 +66,7 @@ export default function BuyPage() {
                   </div>
                   <div>
                     <CardTitle className="text-2xl font-bold">Buy Tether (USDT)</CardTitle>
-                    <CardDescription>Instant purchase with institutional rates.</CardDescription>
+                    <CardDescription>Instant purchase with professional rates.</CardDescription>
                   </div>
               </div>
             </CardHeader>
@@ -80,11 +80,11 @@ export default function BuyPage() {
             <Card className="bg-accent/5 border-accent/20">
                 <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                        <ShieldCheck className="h-5 w-5 text-accent" /> Secure Platform
+                        <ShieldCheck className="h-5 w-5 text-accent" /> Professional Platform
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm space-y-3">
-                    <p className="text-muted-foreground">All transactions are secured with military-grade encryption and monitored by our 24/7 security team.</p>
+                    <p className="text-muted-foreground">All transactions are processed through our secure settlement protocols and monitored for reliability.</p>
                     <div className="flex items-center gap-2 font-bold text-accent">
                         <Zap className="h-4 w-4" /> 15-Min Fulfillment Goal
                     </div>

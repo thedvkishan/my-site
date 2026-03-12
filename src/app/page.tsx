@@ -1,7 +1,6 @@
 
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,17 +13,10 @@ import {
   TrendingUp, 
   CircleDollarSign, 
   History, 
-  Lock, 
   Globe, 
   CheckCircle2,
   BarChart3,
   Clock,
-  ShieldAlert,
-  Verified,
-  Scale,
-  ShieldHalf,
-  Server,
-  Fingerprint,
   Building2,
   CreditCard,
   Banknote
@@ -191,11 +183,11 @@ export default function Home() {
             </div>
             <div className="text-left">
                 <h2 className="text-3xl font-black tracking-tighter leading-none">TetherSwap Zone</h2>
-                <p className="text-primary font-bold text-xs uppercase tracking-widest mt-1">INSTITUTIONAL GRADE TRADING</p>
+                <p className="text-primary font-bold text-xs uppercase tracking-widest mt-1">PROFESSIONAL USDT EXCHANGE</p>
             </div>
           </div>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed font-medium">
-            TetherSwap Zone is a leading global digital asset platform providing professional-grade USDT exchange services. We combine security, speed, and competitive pricing to deliver the best trading experience.
+            TetherSwap Zone is a professional digital asset platform providing reliable USDT exchange services. We combine speed and competitive pricing to deliver an efficient trading experience.
           </p>
         </div>
       </section>
@@ -204,18 +196,14 @@ export default function Home() {
       <section className="relative pt-20 pb-20 md:pt-32 md:pb-32 px-4">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-background -z-10" />
         <div className="container mx-auto max-w-6xl text-center space-y-8 animate-in fade-in slide-in-from-top-10 duration-1000">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-4">
-            <ShieldCheck className="h-4 w-4" /> Trusted by 50,000+ Traders
-          </div>
-          
           <h1 className="text-5xl md:text-8xl font-black tracking-tighter leading-none">
-            Securely Buy & Sell <br />
+            Reliably Buy & Sell <br />
             <span className="text-primary drop-shadow-sm">USDT Tether</span>
           </h1>
           
           <p className="text-muted-foreground text-lg md:text-2xl max-w-3xl mx-auto font-medium leading-relaxed">
-            The most professional platform for seamless USDT transactions. <br className="hidden md:block" />
-            Fast settlements, institutional-grade security, and 24/7 support.
+            The professional platform for seamless USDT transactions. <br className="hidden md:block" />
+            Fast settlements, competitive rates, and dedicated support.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto pt-8 justify-center">
@@ -228,10 +216,9 @@ export default function Home() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 pt-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-            <div className="flex items-center gap-2 font-bold tracking-widest text-xs uppercase"><ShieldCheck className="h-5 w-5 text-primary" /> Certified</div>
-            <div className="flex items-center gap-2 font-bold tracking-widest text-xs uppercase"><Lock className="h-5 w-5 text-primary" /> Encrypted</div>
+            <div className="flex items-center gap-2 font-bold tracking-widest text-xs uppercase"><ShieldCheck className="h-5 w-5 text-primary" /> Reliable</div>
             <div className="flex items-center gap-2 font-bold tracking-widest text-xs uppercase"><Globe className="h-5 w-5 text-primary" /> Global</div>
-            <div className="flex items-center gap-2 font-bold tracking-widest text-xs uppercase"><Clock className="h-5 w-5 text-primary" /> 24/7 Live</div>
+            <div className="flex items-center gap-2 font-bold tracking-widest text-xs uppercase"><Clock className="h-5 w-5 text-primary" /> 24/7 Access</div>
           </div>
         </div>
       </section>
@@ -241,7 +228,7 @@ export default function Home() {
         <div className="container mx-auto max-w-6xl px-4">
             <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4">Live Markets</h2>
-                <p className="text-muted-foreground">Select your trade type to begin institutional verification.</p>
+                <p className="text-muted-foreground">Select your trade type to begin your transaction.</p>
             </div>
             <div className="grid md:grid-cols-2 gap-8">
                 <Card className="relative overflow-hidden group hover:border-primary transition-all duration-300 border-2 shadow-sm hover:shadow-xl bg-card">
@@ -252,7 +239,7 @@ export default function Home() {
                              </div>
                              <CardTitle className="text-2xl font-bold">Buy USDT</CardTitle>
                         </div>
-                        <CardDescription>Instant purchase with zero hidden fees.</CardDescription>
+                        <CardDescription>Fast purchase with no hidden fees.</CardDescription>
                     </CardHeader>
                     <CardContent className="p-8 pt-0 space-y-6">
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
@@ -347,9 +334,9 @@ export default function Home() {
               <div className="p-4 bg-primary/5 rounded-2xl w-fit mb-6 group-hover:bg-primary/10">
                 <ShieldCheck className="h-10 w-10 text-primary" />
               </div>
-              <h3 className="text-2xl font-bold mb-3">Institutional Security</h3>
+              <h3 className="text-2xl font-bold mb-3">Professional Standard</h3>
               <p className="text-muted-foreground leading-relaxed">
-                98% of all digital assets are held in offline multi-signature cold storage vaults for maximum protection.
+                Our platform operates with high standards of integrity and efficiency to protect your trading interest.
               </p>
             </Card>
             <Card className="p-8 border-2 transition-all hover:border-primary group bg-muted/5">
@@ -358,144 +345,18 @@ export default function Home() {
               </div>
               <h3 className="text-2xl font-bold mb-3">Priority Settlements</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Our automated clearing system ensures that 95% of orders are fulfilled in under 15 minutes.
+                Our optimized clearing system ensures that most orders are fulfilled within a reasonable timeframe.
               </p>
             </Card>
             <Card className="p-8 border-2 transition-all hover:border-primary group bg-muted/5">
               <div className="p-4 bg-primary/5 rounded-2xl w-fit mb-6 group-hover:bg-primary/10">
                 <CircleDollarSign className="h-10 w-10 text-primary" />
               </div>
-              <h3 className="text-2xl font-bold mb-3">Global Market Depth</h3>
+              <h3 className="text-2xl font-bold mb-3">Competitive Pricing</h3>
               <p className="text-muted-foreground leading-relaxed">
-                We monitor global exchanges 24/7 to provide the most competitive INR to USDT rates in the industry.
+                We monitor global rates continuously to provide some of the most competitive INR to USDT rates available.
               </p>
             </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Why Institutional Traders Choose Us (Trust Section) */}
-      <section className="py-24 bg-primary/5">
-        <div className="container mx-auto max-w-6xl px-4 text-center">
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-16">Unrivaled Platform Integrity</h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-12">
-                {[
-                    { title: "1:1 Reserves", icon: Verified, desc: "Every USDT is backed 1:1 by real-world assets in audited institutional accounts." },
-                    { title: "Compliance First", icon: Scale, desc: "Adhering to the highest standards of international financial regulations and AML protocols." },
-                    { title: "Deep Liquidity", icon: TrendingUp, desc: "Our liquidity pools ensure minimal slippage even on high-volume institutional trades." },
-                    { title: "Elite Desk", icon: ShieldAlert, desc: "Our elite trading desk provides 24/7 priority assistance for all account holders." }
-                ].map((item, i) => (
-                    <div key={i} className="space-y-4">
-                        <div className="flex justify-center">
-                            <div className="p-4 bg-white rounded-3xl shadow-sm border-2 border-primary/10 group hover:border-primary transition-all">
-                                <item.icon className="h-10 w-10 text-primary" />
-                            </div>
-                        </div>
-                        <h4 className="text-xl font-bold">{item.title}</h4>
-                        <p className="text-sm text-muted-foreground leading-relaxed px-4">{item.desc}</p>
-                    </div>
-                ))}
-            </div>
-        </div>
-      </section>
-
-      {/* Trust Architecture Section */}
-      <section className="py-24 bg-card border-y relative">
-         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-         <div className="container mx-auto max-w-6xl px-4">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-                <div className="space-y-8">
-                    <h2 className="text-4xl md:text-6xl font-black tracking-tight leading-none">Security is in <br/><span className="text-primary">Our DNA</span></h2>
-                    <p className="text-xl text-muted-foreground font-medium">We build for the long term. Our infrastructure is designed to withstand the most extreme market conditions.</p>
-                    <div className="grid sm:grid-cols-2 gap-6">
-                        {[
-                            { icon: ShieldHalf, label: "AES-256 Encryption" },
-                            { icon: Server, label: "Isolated Node Cluster" },
-                            { icon: Fingerprint, label: "Biometric Verification" },
-                            { icon: Clock, label: "24/7 SOC Monitoring" }
-                        ].map((s, i) => (
-                            <div key={i} className="flex items-center gap-3 p-4 bg-muted/30 rounded-2xl border-2 border-transparent hover:border-primary/20 transition-all">
-                                <s.icon className="h-6 w-6 text-primary" />
-                                <span className="font-bold text-sm tracking-tight">{s.label}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                <div className="relative">
-                    <div className="absolute -inset-4 bg-primary/5 rounded-[40px] rotate-3 -z-10" />
-                    <Card className="p-8 border-2 shadow-2xl relative bg-card overflow-hidden">
-                        <div className="absolute top-0 right-0 p-8 opacity-5"><ShieldCheck className="h-48 w-48" /></div>
-                        <h4 className="text-2xl font-bold mb-6">Audited Reserves</h4>
-                        <div className="space-y-6">
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm font-bold">
-                                    <span>Tether Backing Ratio</span>
-                                    <span className="text-primary">100%</span>
-                                </div>
-                                <div className="h-3 bg-muted rounded-full overflow-hidden">
-                                    <div className="h-full bg-primary w-full" />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm font-bold">
-                                    <span>Insurance Fund Pool</span>
-                                    <span className="text-primary">$500M+</span>
-                                </div>
-                                <div className="h-3 bg-muted rounded-full overflow-hidden">
-                                    <div className="h-full bg-primary w-[85%]" />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="mt-8 pt-8 border-t flex items-center gap-4">
-                            <Verified className="h-8 w-8 text-primary" />
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest leading-loose">
-                                Certified by Global Financial Oversight Committees
-                            </p>
-                        </div>
-                    </Card>
-                </div>
-            </div>
-         </div>
-      </section>
-
-      {/* Trust & Rates */}
-      <section className="py-24 bg-secondary/20">
-        <div className="container mx-auto max-w-6xl px-4">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-            <div className="space-y-6">
-              <h2 className="text-4xl md:text-6xl font-black tracking-tight">Real-Time Global Market Rates</h2>
-              <p className="text-lg text-muted-foreground leading-relaxed font-medium">
-                Transparency is at our core. We offer a minimal spread and zero hidden fees, ensuring you get the most value out of every trade.
-              </p>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4 p-4 rounded-2xl border-2 bg-card hover:border-primary/20 transition-all">
-                  <CheckCircle2 className="text-primary h-6 w-6" />
-                  <span className="font-bold">Verified local payment methods</span>
-                </div>
-                <div className="flex items-center gap-4 p-4 rounded-2xl border-2 bg-card hover:border-primary/20 transition-all">
-                  <CheckCircle2 className="text-primary h-6 w-6" />
-                  <span className="font-bold">Institutional-grade liquidity pools</span>
-                </div>
-                <div className="flex items-center gap-4 p-4 rounded-2xl border-2 bg-card hover:border-primary/20 transition-all">
-                  <CheckCircle2 className="text-primary h-6 w-6" />
-                  <span className="font-bold">Secure KYC/AML compliance protocols</span>
-                </div>
-              </div>
-            </div>
-            <div className="grid gap-6">
-               <Card className="p-8 border-2 relative overflow-hidden bg-card shadow-lg">
-                  <div className="absolute top-0 right-0 p-4 opacity-5"><TrendingUp className="h-24 w-24" /></div>
-                  <p className="text-sm font-bold text-primary uppercase tracking-widest mb-1">Live Buy Price</p>
-                  <h3 className="text-5xl font-black">₹{(Number(settings.buyRateBank) || 0).toFixed(2)}</h3>
-                  <p className="text-muted-foreground text-sm mt-4 font-medium italic">Current rate for Bank Transfer settlement</p>
-               </Card>
-               <Card className="p-8 border-2 relative overflow-hidden bg-card shadow-lg">
-                  <div className="absolute top-0 right-0 p-4 opacity-5 rotate-180"><TrendingUp className="h-24 w-24" /></div>
-                  <p className="text-sm font-bold text-destructive uppercase tracking-widest mb-1">Live Sell Price</p>
-                  <h3 className="text-5xl font-black">₹{(Number(settings.sellRateBank) || 0).toFixed(2)}</h3>
-                  <p className="text-muted-foreground text-sm mt-4 font-medium italic">Current rate for instant INR conversion</p>
-               </Card>
-            </div>
           </div>
         </div>
       </section>
@@ -505,25 +366,25 @@ export default function Home() {
         <div className="container mx-auto max-w-4xl">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">Frequently Asked Questions</h2>
-            <p className="text-muted-foreground font-medium">Everything you need to know to get started with confidence.</p>
+            <p className="text-muted-foreground font-medium">Everything you need to know to get started.</p>
           </div>
           <Accordion type="single" collapsible className="w-full space-y-4">
             <AccordionItem value="item-1" className="border-2 rounded-2xl px-6 bg-muted/5">
-              <AccordionTrigger className="text-lg font-bold hover:no-underline py-6">Is TetherSwap Zone secure?</AccordionTrigger>
+              <AccordionTrigger className="text-lg font-bold hover:no-underline py-6">Is my account protected?</AccordionTrigger>
               <AccordionContent className="text-muted-foreground text-lg pb-6 leading-relaxed">
-                Absolutely. We utilize high-level encryption (SSL), two-factor authentication (2FA), and offline cold storage for 98% of user assets. Our security protocols are audited regularly by third-party cybersecurity firms.
+                We utilize standard industry practices, including SSL encryption and secure account verification, to maintain a professional and stable trading environment.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-2" className="border-2 rounded-2xl px-6 bg-muted/5">
               <AccordionTrigger className="text-lg font-bold hover:no-underline py-6">What are the transaction limits?</AccordionTrigger>
               <AccordionContent className="text-muted-foreground text-lg pb-6 leading-relaxed">
-                To maintain high liquidity and security, we have a minimum transaction limit of 100 USDT for all Buy, Sell, and Deposit orders. There is no set maximum limit, though large trades may require additional verification.
+                To maintain efficiency, we have a minimum transaction limit of 100 USDT for all Buy, Sell, and Deposit orders. 
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-3" className="border-2 rounded-2xl px-6 bg-muted/5">
               <AccordionTrigger className="text-lg font-bold hover:no-underline py-6">How long do withdrawals take?</AccordionTrigger>
               <AccordionContent className="text-muted-foreground text-lg pb-6 leading-relaxed">
-                Most withdrawal requests are processed within 15-60 minutes. Depending on the blockchain network traffic (BEP20, TRC20, or ERC20), it may take up to 2 hours for funds to reflect in your external wallet.
+                Most withdrawal requests are processed promptly. Depending on network traffic, it usually takes between 15 to 120 minutes for funds to reflect.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
