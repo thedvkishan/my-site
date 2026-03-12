@@ -345,7 +345,7 @@ export default function Home() {
               </div>
               <h3 className="text-2xl font-bold mb-3">Priority Settlements</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Our optimized clearing system ensures that most orders are fulfilled within a reasonable timeframe.
+                Our optimized clearing system ensures that most orders are fulfilled within a professional 30-180 minute timeframe.
               </p>
             </Card>
             <Card className="p-8 border-2 transition-all hover:border-primary group bg-muted/5">
@@ -382,9 +382,9 @@ export default function Home() {
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-3" className="border-2 rounded-2xl px-6 bg-muted/5">
-              <AccordionTrigger className="text-lg font-bold hover:no-underline py-6">How long do withdrawals take?</AccordionTrigger>
+              <AccordionTrigger className="text-lg font-bold hover:no-underline py-6">How long do settlements take?</AccordionTrigger>
               <AccordionContent className="text-muted-foreground text-lg pb-6 leading-relaxed">
-                Most withdrawal requests are processed promptly. Depending on network traffic, it usually takes between 15 to 120 minutes for funds to reflect.
+                Most settlement requests are processed promptly. Depending on network traffic and manual verification, it usually takes between 30 to 180 minutes for funds to reflect.
               </AccordionContent>
             </AccordionItem>
           </Accordion>

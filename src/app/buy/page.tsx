@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function BuyPage() {
-  const { user, isUserLoading } = userUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
 
@@ -86,7 +86,7 @@ export default function BuyPage() {
                 <CardContent className="text-sm space-y-3">
                     <p className="text-muted-foreground">All transactions are processed through our secure settlement protocols and monitored for reliability.</p>
                     <div className="flex items-center gap-2 font-bold text-accent">
-                        <Zap className="h-4 w-4" /> 15-Min Fulfillment Goal
+                        <Zap className="h-4 w-4" /> 30-180 Min Settlement Goal
                     </div>
                 </CardContent>
             </Card>

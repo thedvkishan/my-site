@@ -7,7 +7,7 @@ import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, User as UserIcon, Mail, Phone, Calendar, ShieldCheck, Wallet, ArrowDownCircle, ArrowUpCircle, Clock, TrendingUp, TrendingDown } from 'lucide-react';
+import { Loader2, Mail, Phone, Calendar, ShieldCheck, Wallet, ArrowDownCircle, ArrowUpCircle, Clock, TrendingUp, TrendingDown } from 'lucide-react';
 import { doc, query, collection, where } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -60,7 +60,7 @@ export default function AccountPage() {
             totalSell: sellOrders?.reduce((acc, curr) => acc + (curr.usdtAmount || 0), 0) || 0,
             totalDeposit: deposits?.reduce((acc, curr) => acc + (curr.amount || 0), 0) || 0,
             totalWithdrawal: withdrawals?.reduce((acc, curr) => acc + (curr.amount || 0), 0) || 0,
-            avgTime: "12-45 mins" // Static mock value as requested
+            avgTime: "30 - 180 min" // Updated static mock value
         };
     }, [buyOrders, sellOrders, deposits, withdrawals]);
 
@@ -184,7 +184,7 @@ export default function AccountPage() {
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-bold">Average Fulfillment Speed</h3>
-                                    <p className="text-muted-foreground">Our institutional clearing system processes your orders rapidly.</p>
+                                    <p className="text-muted-foreground">Our settlement protocols process orders within professional timelines.</p>
                                 </div>
                             </div>
                             <div className="text-center md:text-right">

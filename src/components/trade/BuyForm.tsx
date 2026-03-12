@@ -241,7 +241,7 @@ export function BuyForm() {
         />
         
         <div className="text-sm text-center text-muted-foreground p-4 bg-secondary rounded-md">
-            USDT will be added to your internal balance within 15 minutes to 3 hours after payment confirmation.
+            USDT will be added to your internal balance within 30 minutes to 3 hours after payment confirmation.
         </div>
 
         <Button type="submit" className="w-full" disabled={isLoading || settingsLoading || !settings || !user}>
