@@ -7,7 +7,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, Eye, Search, User as UserIcon, Mail, Phone, Calendar, Wallet, Hash, ArrowUpRight, ShieldAlert, ShieldCheck, Lock, Unlock, Plus, Minus, History, ArrowDownCircle, ArrowUpCircle, TrendingUp, TrendingDown } from "lucide-react";
+import { 
+    Loader2, 
+    Eye, 
+    Search, 
+    User as UserIcon, 
+    Mail, 
+    Phone, 
+    Wallet, 
+    Hash, 
+    ArrowUpRight, 
+    ShieldAlert, 
+    Lock, 
+    Unlock, 
+    Plus, 
+    Minus, 
+    ArrowDownCircle, 
+    ArrowUpCircle, 
+    TrendingUp, 
+    TrendingDown,
+    Zap,
+    History,
+    MessageSquare,
+    Users
+} from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -15,6 +38,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="grid grid-cols-[100px_1fr] md:grid-cols-[160px_1fr] items-start gap-4 py-2.5 border-b border-muted/50 last:border-0">
@@ -22,6 +46,15 @@ const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) 
         <div className="font-semibold break-words text-xs md:text-sm">{value || 'N/A'}</div>
     </div>
 );
+
+const PENDING_STATUSES = [
+    'pending_payment', 
+    'payment_processing', 
+    'waiting_confirmation', 
+    'pending_deposit', 
+    'pending_hash', 
+    'pending'
+];
 
 export function AdminDataView() {
     const firestore = useFirestore();
@@ -68,30 +101,49 @@ export function AdminDataView() {
     const { data: contactMessages, isLoading: messagesLoading } = useCollection(contactMessagesQuery);
     const { data: users, isLoading: usersLoading } = useCollection(usersQuery);
     
-    const isLoading = buyOrdersLoading || sellOrdersLoading || depositsLoading || withdrawalsLoading || messagesLoading || usersLoading;
+    const isMainLoading = buyOrdersLoading || sellOrdersLoading || depositsLoading || withdrawalsLoading;
 
-    const filterData = (data: any[] | null) => {
-        if (!data) return [];
+    // Consolidate all transactions for unified pending/confirmed views
+    const allTransactions = useMemo(() => {
+        const combined = [
+            ...(buyOrders || []).map(o => ({ ...o, category: 'buy' })),
+            ...(sellOrders || []).map(o => ({ ...o, category: 'sell' })),
+            ...(deposits || []).map(o => ({ ...o, category: 'deposit' })),
+            ...(withdrawals || []).map(o => ({ ...o, category: 'withdrawal' })),
+        ];
+        return combined.sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0).getTime();
+            const dateB = new Date(b.createdAt || 0).getTime();
+            return dateB - dateA;
+        });
+    }, [buyOrders, sellOrders, deposits, withdrawals]);
+
+    const filterData = (data: any[]) => {
         if (!searchQuery.trim()) return data;
-        
         const q = searchQuery.toLowerCase();
         return data.filter(item => {
-            // Check ID explicitly
             if (item.id && item.id.toLowerCase().includes(q)) return true;
-            
-            // Check all other values
             return Object.values(item).some(val => 
                 val !== null && val !== undefined && String(val).toLowerCase().includes(q)
             );
         });
     };
 
-    const filteredBuyOrders = useMemo(() => filterData(buyOrders), [buyOrders, searchQuery]);
-    const filteredSellOrders = useMemo(() => filterData(sellOrders), [sellOrders, searchQuery]);
-    const filteredDeposits = useMemo(() => filterData(deposits), [deposits, searchQuery]);
-    const filteredWithdrawals = useMemo(() => filterData(withdrawals), [withdrawals, searchQuery]);
-    const filteredMessages = useMemo(() => filterData(contactMessages), [contactMessages, searchQuery]);
-    const filteredUsers = useMemo(() => filterData(users), [users, searchQuery]);
+    const pendingTransactions = useMemo(() => 
+        filterData(allTransactions.filter(t => PENDING_STATUSES.includes(t.status))),
+    [allTransactions, searchQuery]);
+
+    const settledTransactions = useMemo(() => 
+        filterData(allTransactions.filter(t => !PENDING_STATUSES.includes(t.status))),
+    [allTransactions, searchQuery]);
+
+    const filteredMessages = useMemo(() => 
+        filterData(contactMessages || []),
+    [contactMessages, searchQuery]);
+
+    const filteredUsers = useMemo(() => 
+        filterData(users || []),
+    [users, searchQuery]);
 
     const createNotification = async (userId: string, title: string, message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') => {
         if (!firestore) return;
@@ -106,14 +158,15 @@ export function AdminDataView() {
         });
     };
 
-    const handleStatusUpdate = async (type: 'buyOrders' | 'sellOrders' | 'deposits' | 'withdrawals', id: string, status: string, userId?: string, amount?: number, overrideAmount?: number) => {
+    const handleStatusUpdate = async (type: string, id: string, status: string, userId?: string, amount?: number, overrideAmount?: number) => {
         if (!firestore) return;
         setActionLoading(id);
         
+        const collName = type === 'buy' ? 'buyOrders' : type === 'sell' ? 'sellOrders' : type === 'deposit' ? 'deposits' : 'withdrawals';
         const finalAmount = overrideAmount !== undefined ? overrideAmount : amount;
 
         try {
-            const orderRef = doc(firestore, type, id);
+            const orderRef = doc(firestore, collName, id);
             const updateData: any = { status };
             
             if (status === 'completed' && typeof finalAmount === 'number' && !isNaN(finalAmount)) {
@@ -122,9 +175,9 @@ export function AdminDataView() {
 
             await updateDoc(orderRef, updateData);
 
-            if ((type === 'withdrawals' || type === 'sellOrders') && userId && typeof amount === 'number' && typeof finalAmount === 'number') {
+            if ((type === 'withdrawal' || type === 'sell') && userId && typeof amount === 'number' && typeof finalAmount === 'number') {
                 const userRef = doc(firestore, 'users', userId);
-                const typeLabel = type === 'withdrawals' ? 'Withdrawal' : 'Sell Order';
+                const typeLabel = type === 'withdrawal' ? 'Withdrawal' : 'Sell Order';
 
                 if (status === 'failed') {
                     await updateDoc(userRef, { balance: increment(amount) });
@@ -138,8 +191,7 @@ export function AdminDataView() {
                     await createNotification(userId, `${typeLabel} Finalized`, `Your ${typeLabel.toLowerCase()} request has been successfully processed.`, 'success');
                 }
             } else if (userId) {
-                const typeLabel = type.replace('Orders', '').replace('s', '');
-                const displayType = typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1);
+                const displayType = type.charAt(0).toUpperCase() + type.slice(1);
                 const colorType = status === 'completed' ? 'success' : status === 'failed' ? 'error' : 'info';
                 
                 await createNotification(
@@ -150,7 +202,7 @@ export function AdminDataView() {
                 );
             }
 
-            if ((type === 'deposits' || type === 'buyOrders') && status === 'completed' && userId && typeof finalAmount === 'number') {
+            if ((type === 'deposit' || type === 'buy') && status === 'completed' && userId && typeof finalAmount === 'number') {
                 const userRef = doc(firestore, 'users', userId);
                 await updateDoc(userRef, { balance: increment(finalAmount) });
                 await createNotification(userId, 'Balance Credited', `${finalAmount.toLocaleString()} USDT has been added to your clearing balance.`, 'success');
@@ -216,20 +268,152 @@ export function AdminDataView() {
         }
     };
 
+    const renderTransactionRow = (order: any) => (
+        <TableRow key={order.id} className="hover:bg-muted/30 transition-colors">
+            <TableCell>
+                <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className={cn(
+                        "font-black text-[8px] uppercase px-1.5 py-0",
+                        order.category === 'buy' && "bg-green-500/10 text-green-600 border-green-200",
+                        order.category === 'sell' && "bg-destructive/10 text-destructive border-destructive/20",
+                        order.category === 'deposit' && "bg-blue-500/10 text-blue-600 border-blue-200",
+                        order.category === 'withdrawal' && "bg-orange-500/10 text-orange-600 border-orange-200",
+                    )}>
+                        {order.category}
+                    </Badge>
+                    <div className="text-[10px] font-black font-mono text-muted-foreground"><Hash className="h-2 w-2 inline" /> {order.id.slice(-6)}</div>
+                </div>
+                <div className="text-[10px] text-muted-foreground font-medium truncate max-w-[120px] mt-1">{order.email || order.userId?.slice(-8)}</div>
+            </TableCell>
+            <TableCell>
+                <div className={cn(
+                    "font-black text-xs",
+                    (order.category === 'buy' || order.category === 'deposit') ? "text-primary" : "text-destructive"
+                )}>
+                    {(order.category === 'buy' || order.category === 'deposit') ? '+' : '-'}{order.usdtAmount || order.amount} USDT
+                </div>
+                {order.inrAmount && <div className="text-[9px] text-muted-foreground font-bold">₹{order.inrAmount.toLocaleString()}</div>}
+            </TableCell>
+            <TableCell className="text-right">
+                <Dialog onOpenChange={(open) => open && setApprovedAmount(String(order.usdtAmount || order.amount))}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                            <Eye className="h-4 w-4" />
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-xl mx-4">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-black uppercase flex items-center gap-2">
+                                {order.category} Protocol Details
+                            </DialogTitle>
+                            <DialogDescription className="text-xs">Transaction ID: {order.id}</DialogDescription>
+                        </DialogHeader>
+                        
+                        <ScrollArea className="max-h-[65vh] py-4 pr-4">
+                            <div className="border-2 border-dashed rounded-xl bg-muted/10 px-4 py-2 space-y-0.5">
+                                <DetailRow label="Protocol Status" value={getStatusBadge(order.status)} />
+                                <DetailRow label="Created At" value={order.createdAt ? format(new Date(order.createdAt), 'PPp') : 'N/A'} />
+                                <DetailRow label="User Context" value={order.email || order.userId} />
+                                <DetailRow label="Volume" value={<span className="font-black">{(order.usdtAmount || order.amount).toLocaleString()} USDT</span>} />
+                                
+                                {order.category === 'buy' && (
+                                    <>
+                                        <DetailRow label="Bank Amount" value={<span className="text-primary font-black">₹{order.inrAmount?.toLocaleString()}</span>} />
+                                        <DetailRow label="Method" value={order.paymentMode} />
+                                        <DetailRow label="Receipt Proof" value={order.paymentReceiptUrl ? (
+                                            <div className="space-y-3 pt-1">
+                                                <a href={order.paymentReceiptUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold flex items-center gap-2 text-xs bg-primary/10 w-fit px-3 py-1.5 rounded-full">
+                                                    Open Original Proof <ArrowUpRight className="h-3.5 w-3.5" />
+                                                </a>
+                                                {order.paymentReceiptUrl.startsWith('data:image') && (
+                                                    <div className="relative w-full mt-2 border-2 border-primary/20 rounded-xl overflow-hidden bg-white shadow-inner p-2">
+                                                        <img src={order.paymentReceiptUrl} alt="Receipt Preview" className="max-w-full h-auto max-h-[400px] mx-auto" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : <span className="text-muted-foreground italic">No receipt submitted</span>} />
+                                    </>
+                                )}
+
+                                {order.category === 'sell' && (
+                                    <>
+                                        <DetailRow label="Settlement" value={<span className="text-destructive font-black text-lg">₹{order.inrAmount?.toLocaleString()}</span>} />
+                                        <DetailRow label="Method" value={<Badge variant="secondary" className="font-bold text-[10px]">{order.paymentMode}</Badge>} />
+                                        {order.paymentMode === 'UPI' ? (
+                                            <>
+                                                <DetailRow label="UPI ID" value={order.upiId} />
+                                                <DetailRow label="Holder Name" value={order.upiHolderName} />
+                                            </>
+                                        ) : (
+                                            <>
+                                                <DetailRow label="Bank Name" value={order.bankName} />
+                                                <DetailRow label="Account No" value={<span className="font-mono text-[10px]">{order.accountNumber}</span>} />
+                                                <DetailRow label="IFSC Code" value={<span className="font-mono text-[10px]">{order.ifsc}</span>} />
+                                                <DetailRow label="Holder" value={order.bankHolderName} />
+                                            </>
+                                        )}
+                                    </>
+                                )}
+
+                                {order.category === 'deposit' && (
+                                    <>
+                                        <DetailRow label="Network" value={order.network} />
+                                        <DetailRow label="TXID Hash" value={<span className="font-mono text-[10px] break-all text-primary font-bold">{order.txHash || 'Awaiting Submission'}</span>} />
+                                    </>
+                                )}
+
+                                {order.category === 'withdrawal' && (
+                                    <>
+                                        <DetailRow label="Recipient" value={<span className="font-mono text-[10px] break-all text-destructive font-bold">{order.address}</span>} />
+                                        <DetailRow label="Network" value={order.network} />
+                                    </>
+                                )}
+                            </div>
+                        </ScrollArea>
+
+                        {!SETTLED_STATUSES.includes(order.status) && (
+                            <>
+                                <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-3 mt-4">
+                                    <Label className="text-xs font-bold uppercase tracking-wider">Final Approved Volume</Label>
+                                    <div className="relative">
+                                        <Input 
+                                            type="number" 
+                                            value={approvedAmount} 
+                                            onChange={(e) => setApprovedAmount(e.target.value)}
+                                            className="font-black text-lg border-primary/30"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-primary">USDT</span>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground italic">Original request: {order.usdtAmount || order.amount} USDT.</p>
+                                </div>
+                                <DialogFooter className="flex-row gap-2 mt-4">
+                                    <Button variant="outline" className="flex-1 font-bold text-xs h-10" onClick={() => handleStatusUpdate(order.category, order.id, 'failed', order.userId, order.usdtAmount || order.amount)} disabled={actionLoading === order.id}>Reject & Refund</Button>
+                                    <Button className="flex-1 bg-primary font-bold text-xs h-10" onClick={() => handleStatusUpdate(order.category, order.id, 'completed', order.userId, order.usdtAmount || order.amount, parseFloat(approvedAmount))} disabled={actionLoading === order.id}>Confirm & Complete</Button>
+                                </DialogFooter>
+                            </>
+                        )}
+                    </DialogContent>
+                </Dialog>
+            </TableCell>
+        </TableRow>
+    );
+
+    const SETTLED_STATUSES = ['completed', 'failed', 'expired'];
+
     return (
         <Card className="overflow-hidden border-2 shadow-lg">
             <CardHeader className="p-4 md:p-6 bg-muted/30 border-b">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                        <CardTitle className="text-xl md:text-2xl font-black tracking-tight">Institutional Data Terminal</CardTitle>
+                        <CardTitle className="text-xl md:text-2xl font-black tracking-tight">Terminal Control Center</CardTitle>
                         <CardDescription className="text-xs md:text-sm">
-                            {users?.length || 0} Traders | {buyOrders?.length || 0} Buys | {sellOrders?.length || 0} Sells
+                            Real-time monitoring of all settlement protocols.
                         </CardDescription>
                     </div>
                     <div className="relative w-full md:w-96">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
-                            placeholder="Search Name, Email, ID, Hash..." 
+                            placeholder="Search ID, Email, Hash, Name..." 
                             className="pl-10 h-10 border-primary/20 shadow-sm focus:ring-primary/20"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -238,284 +422,57 @@ export function AdminDataView() {
                 </div>
             </CardHeader>
             <CardContent className="p-0">
-                <Tabs defaultValue="buyOrders" className="w-full">
+                <Tabs defaultValue="pending" className="w-full">
                     <div className="border-b bg-muted/10">
                         <ScrollArea className="w-full whitespace-nowrap">
                             <TabsList className="flex w-full justify-start h-auto p-2 bg-transparent border-b-0 gap-2">
-                                <TabsTrigger value="buyOrders" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider">Buy ({filteredBuyOrders.length})</TabsTrigger>
-                                <TabsTrigger value="sellOrders" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider">Sell ({filteredSellOrders.length})</TabsTrigger>
-                                <TabsTrigger value="deposits" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider">Deposits ({filteredDeposits.length})</TabsTrigger>
-                                <TabsTrigger value="withdrawals" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider">Withdraw ({filteredWithdrawals.length})</TabsTrigger>
-                                <TabsTrigger value="contact" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider">Support ({filteredMessages.length})</TabsTrigger>
-                                <TabsTrigger value="users" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider">Users ({filteredUsers.length})</TabsTrigger>
+                                <TabsTrigger value="pending" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center gap-2">
+                                    <Zap className="h-3 w-3" /> Pending Actions ({pendingTransactions.length})
+                                </TabsTrigger>
+                                <TabsTrigger value="settled" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center gap-2">
+                                    <History className="h-3 w-3" /> Settled Archives ({settledTransactions.length})
+                                </TabsTrigger>
+                                <TabsTrigger value="contact" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center gap-2">
+                                    <MessageSquare className="h-3 w-3" /> Support tickets ({filteredMessages.length})
+                                </TabsTrigger>
+                                <TabsTrigger value="users" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center gap-2">
+                                    <Users className="h-3 w-3" /> User registry ({filteredUsers.length})
+                                </TabsTrigger>
                             </TabsList>
                             <ScrollBar orientation="horizontal" />
                         </ScrollArea>
                     </div>
                     
-                    {isLoading && <div className="flex justify-center items-center py-24"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" /></div>}
+                    {isMainLoading && <div className="flex justify-center items-center py-24"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" /></div>}
                     
-                    <TabsContent value="buyOrders" className="m-0">
-                        <ScrollArea className="h-[60vh] md:h-[65vh]">
+                    <TabsContent value="pending" className="m-0">
+                        <ScrollArea className="h-[65vh]">
                             <Table>
-                                <TableHeader className="bg-muted/50"><TableRow><TableHead className="text-[10px] font-bold uppercase">Ref / User</TableHead><TableHead className="text-[10px] font-bold uppercase">Volume</TableHead><TableHead className="text-right text-[10px] font-bold uppercase">View</TableHead></TableRow></TableHeader>
+                                <TableHeader className="bg-muted/50"><TableRow><TableHead className="text-[10px] font-bold uppercase">Type / Ref</TableHead><TableHead className="text-[10px] font-bold uppercase">Volume</TableHead><TableHead className="text-right text-[10px] font-bold uppercase">Actions</TableHead></TableRow></TableHeader>
                                 <TableBody>
-                                    {filteredBuyOrders.map(order => (
-                                        <TableRow key={order.id} className="hover:bg-muted/30 transition-colors">
-                                            <TableCell>
-                                                <div className="text-[10px] font-black font-mono text-primary flex items-center gap-1"><Hash className="h-3 w-3" /> {order.id.slice(-6)}</div>
-                                                <div className="text-[10px] text-muted-foreground font-medium truncate max-w-[120px]">{order.email}</div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="font-black text-primary text-xs">{order.usdtAmount} USDT</div>
-                                                <div className="text-[9px] text-muted-foreground font-bold">₹{order.inrAmount?.toLocaleString()}</div>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Dialog onOpenChange={(open) => open && setApprovedAmount(String(order.usdtAmount))}>
-                                                    <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button></DialogTrigger>
-                                                    <DialogContent className="max-w-xl mx-4">
-                                                        <DialogHeader><DialogTitle className="text-xl font-black">Buy Order Details</DialogTitle><DialogDescription className="text-xs">Ref: {order.id}</DialogDescription></DialogHeader>
-                                                        <ScrollArea className="max-h-[60vh] py-4 pr-4">
-                                                            <div className="border-2 border-dashed rounded-xl bg-muted/10 px-4 py-2 space-y-0.5">
-                                                                <DetailRow label="Created" value={order.createdAt ? format(new Date(order.createdAt), 'PPp') : 'N/A'} />
-                                                                <DetailRow label="User UID" value={order.userId} />
-                                                                <DetailRow label="Status" value={getStatusBadge(order.status)} />
-                                                                <DetailRow label="Volume" value={`${order.usdtAmount} USDT`} />
-                                                                <DetailRow label="Amount" value={<span className="text-primary font-black">₹{order.inrAmount?.toLocaleString()}</span>} />
-                                                                <DetailRow label="Network" value={<Badge variant="outline" className="font-mono text-[10px]">{order.network}</Badge>} />
-                                                                <DetailRow label="Method" value={order.paymentMode} />
-                                                                <DetailRow label="Email" value={order.email} />
-                                                                <DetailRow label="Proof" value={order.paymentReceiptUrl ? (
-                                                                    <div className="space-y-3 pt-1">
-                                                                        <a 
-                                                                            href={order.paymentReceiptUrl} 
-                                                                            target="_blank" 
-                                                                            rel="noopener noreferrer"
-                                                                            className="text-primary hover:underline font-bold flex items-center gap-2 text-xs bg-primary/10 w-fit px-3 py-1.5 rounded-full"
-                                                                        >
-                                                                            View Full Receipt <ArrowUpRight className="h-3.5 w-3.5" />
-                                                                        </a>
-                                                                        {order.paymentReceiptUrl.startsWith('data:image') && (
-                                                                            <div className="relative w-full mt-2 border-2 border-primary/20 rounded-xl overflow-hidden bg-white shadow-inner flex items-center justify-center min-h-[200px]">
-                                                                                <img src={order.paymentReceiptUrl} alt="Receipt Preview" className="max-w-full h-auto max-h-[400px]" />
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                ) : <span className="text-muted-foreground italic">No receipt provided</span>} />
-                                                            </div>
-                                                        </ScrollArea>
-                                                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-3 mt-4">
-                                                            <Label htmlFor="approved-amount-buy" className="text-xs font-bold uppercase tracking-wider">Approved Volume (Adjust if needed)</Label>
-                                                            <div className="relative">
-                                                                <Input 
-                                                                    id="approved-amount-buy"
-                                                                    type="number" 
-                                                                    value={approvedAmount} 
-                                                                    onChange={(e) => setApprovedAmount(e.target.value)}
-                                                                    className="font-black text-lg border-primary/30"
-                                                                />
-                                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-primary">USDT</span>
-                                                            </div>
-                                                            <p className="text-[10px] text-muted-foreground italic">Requested: {order.usdtAmount} USDT. Approved amount will be credited to user's wallet.</p>
-                                                        </div>
-                                                        <DialogFooter className="flex-row gap-2 mt-4">
-                                                            <Button variant="destructive" className="flex-1 font-bold text-xs h-10" onClick={() => handleStatusUpdate('buyOrders', order.id, 'failed', order.userId, order.usdtAmount)} disabled={actionLoading === order.id}>Reject</Button>
-                                                            <Button className="flex-1 bg-green-600 hover:bg-green-700 font-bold text-xs h-10" onClick={() => handleStatusUpdate('buyOrders', order.id, 'completed', order.userId, order.usdtAmount, parseFloat(approvedAmount))} disabled={actionLoading === order.id}>Confirm & Approve</Button>
-                                                        </DialogFooter>
-                                                    </DialogContent>
-                                                </Dialog>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {pendingTransactions.length === 0 ? (
+                                        <TableRow><TableCell colSpan={3} className="text-center py-24 text-muted-foreground font-medium italic">No pending actions found.</TableCell></TableRow>
+                                    ) : pendingTransactions.map(renderTransactionRow)}
                                 </TableBody>
                             </Table>
                         </ScrollArea>
                     </TabsContent>
                     
-                    <TabsContent value="sellOrders" className="m-0">
-                        <ScrollArea className="h-[60vh] md:h-[65vh]">
-                           <Table>
-                                <TableHeader className="bg-muted/50"><TableRow><TableHead className="text-[10px] font-bold uppercase">Ref / User</TableHead><TableHead className="text-[10px] font-bold uppercase">Volume</TableHead><TableHead className="text-right text-[10px] font-bold uppercase">View</TableHead></TableRow></TableHeader>
-                                <TableBody>
-                                    {filteredSellOrders.map(order => (
-                                        <TableRow key={order.id} className="hover:bg-muted/30 transition-colors">
-                                            <TableCell>
-                                                <div className="text-[10px] font-black font-mono text-destructive flex items-center gap-1"><Hash className="h-3 w-3" /> {order.id.slice(-6)}</div>
-                                                <div className="text-[10px] text-muted-foreground font-medium truncate max-w-[120px]">{order.email}</div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="font-black text-destructive text-xs">{order.usdtAmount} USDT</div>
-                                                <div className="text-[9px] text-muted-foreground font-bold">₹{order.inrAmount?.toLocaleString()}</div>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Dialog onOpenChange={(open) => open && setApprovedAmount(String(order.usdtAmount))}>
-                                                    <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button></DialogTrigger>
-                                                    <DialogContent className="max-w-xl mx-4">
-                                                        <DialogHeader><DialogTitle className="text-xl font-black text-destructive">Sell Order Process</DialogTitle><DialogDescription className="text-xs">Ref: {order.id}</DialogDescription></DialogHeader>
-                                                        <ScrollArea className="max-h-[70vh] py-4 pr-4">
-                                                            <div className="border-2 border-dashed rounded-xl bg-muted/10 px-4 py-2 space-y-0.5">
-                                                                <DetailRow label="Created" value={order.createdAt ? format(new Date(order.createdAt), 'PPp') : 'N/A'} />
-                                                                <DetailRow label="User" value={order.email} />
-                                                                <DetailRow label="Status" value={getStatusBadge(order.status)} />
-                                                                <DetailRow label="Method" value={<Badge variant="secondary" className="font-bold text-[10px]">{order.paymentMode}</Badge>} />
-                                                                {order.paymentMode === 'UPI' ? (
-                                                                    <>
-                                                                        <DetailRow label="UPI ID" value={order.upiId} />
-                                                                        <DetailRow label="Name" value={order.upiHolderName} />
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <DetailRow label="Bank" value={order.bankName} />
-                                                                        <DetailRow label="Acc No" value={<span className="font-mono text-[10px]">{order.accountNumber}</span>} />
-                                                                        <DetailRow label="IFSC" value={<span className="font-mono text-[10px]">{order.ifsc}</span>} />
-                                                                        <DetailRow label="Holder" value={order.bankHolderName} />
-                                                                    </>
-                                                                )}
-                                                                <DetailRow label="Network" value={<Badge variant="outline" className="text-[10px]">{order.network}</Badge>} />
-                                                                <DetailRow label="Volume" value={`${order.usdtAmount} USDT`} />
-                                                                <DetailRow label="Settlement" value={<span className="text-destructive font-black text-lg">₹{order.inrAmount?.toLocaleString()}</span>} />
-                                                            </div>
-                                                        </ScrollArea>
-                                                        <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-xl space-y-3 mt-4">
-                                                            <Label htmlFor="approved-amount-sell" className="text-xs font-bold uppercase tracking-wider">Final USDT Settled (Adjust if needed)</Label>
-                                                            <div className="relative">
-                                                                <Input 
-                                                                    id="approved-amount-sell"
-                                                                    type="number" 
-                                                                    value={approvedAmount} 
-                                                                    onChange={(e) => setApprovedAmount(e.target.value)}
-                                                                    className="font-black text-lg border-destructive/30"
-                                                                />
-                                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-destructive">USDT</span>
-                                                            </div>
-                                                            <p className="text-[10px] text-muted-foreground italic">Requested: {order.usdtAmount} USDT. Adjusting down credits back the difference to the user's wallet.</p>
-                                                        </div>
-                                                        <DialogFooter className="flex-row gap-2 mt-4">
-                                                            <Button variant="outline" className="flex-1 font-bold text-xs h-10" onClick={() => handleStatusUpdate('sellOrders', order.id, 'failed', order.userId, order.usdtAmount)} disabled={actionLoading === order.id}>Reject & Refund</Button>
-                                                            <Button className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold text-xs h-10" onClick={() => handleStatusUpdate('sellOrders', order.id, 'completed', order.userId, order.usdtAmount, parseFloat(approvedAmount))} disabled={actionLoading === order.id}>Finalize & Confirm</Button>
-                                                        </DialogFooter>
-                                                    </DialogContent>
-                                                </Dialog>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </ScrollArea>
-                    </TabsContent>
-
-                    <TabsContent value="deposits" className="m-0">
-                        <ScrollArea className="h-[60vh] md:h-[65vh]">
+                    <TabsContent value="settled" className="m-0">
+                        <ScrollArea className="h-[65vh]">
                             <Table>
-                                <TableHeader className="bg-muted/50"><TableRow><TableHead className="text-[10px] font-bold uppercase">Hash / Net</TableHead><TableHead className="text-[10px] font-bold uppercase">Amount</TableHead><TableHead className="text-right text-[10px] font-bold uppercase">View</TableHead></TableRow></TableHeader>
+                                <TableHeader className="bg-muted/50"><TableRow><TableHead className="text-[10px] font-bold uppercase">Type / Ref</TableHead><TableHead className="text-[10px] font-bold uppercase">Volume</TableHead><TableHead className="text-right text-[10px] font-bold uppercase">Details</TableHead></TableRow></TableHeader>
                                 <TableBody>
-                                    {filteredDeposits.map(dep => (
-                                        <TableRow key={dep.id}>
-                                            <TableCell>
-                                                <div className="text-[9px] font-mono font-bold text-primary truncate max-w-[100px]">{dep.txHash || 'PENDING TXID'}</div>
-                                                <div className="text-[9px] font-bold text-muted-foreground uppercase">{dep.network}</div>
-                                            </TableCell>
-                                            <TableCell className="font-black text-green-600 text-xs">+{dep.amount} USDT</TableCell>
-                                            <TableCell className="text-right">
-                                                <Dialog onOpenChange={(open) => open && setApprovedAmount(String(dep.amount))}>
-                                                    <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button></DialogTrigger>
-                                                    <DialogContent className="mx-4">
-                                                        <DialogHeader><DialogTitle className="text-xl font-black">Blockchain Verification</DialogTitle></DialogHeader>
-                                                        <ScrollArea className="max-h-[50vh] pr-4">
-                                                            <div className="space-y-0.5 py-4 border rounded-xl bg-muted/10 px-4">
-                                                                <DetailRow label="UID" value={dep.userId} />
-                                                                <DetailRow label="Network" value={dep.network} />
-                                                                <DetailRow label="TXID" value={<span className="font-mono text-[10px] break-all text-primary font-bold">{dep.txHash || 'Awaiting Submission'}</span>} />
-                                                                <DetailRow label="Amount" value={<span className="font-black">{dep.amount} USDT</span>} />
-                                                                <DetailRow label="Status" value={getStatusBadge(dep.status)} />
-                                                                <DetailRow label="Date" value={dep.createdAt ? format(new Date(dep.createdAt), 'PPp') : 'N/A'} />
-                                                            </div>
-                                                        </ScrollArea>
-                                                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-3 mt-4">
-                                                            <Label htmlFor="approved-amount-dep" className="text-xs font-bold uppercase tracking-wider">Approved Amount (Adjust if needed)</Label>
-                                                            <div className="relative">
-                                                                <Input 
-                                                                    id="approved-amount-dep"
-                                                                    type="number" 
-                                                                    value={approvedAmount} 
-                                                                    onChange={(e) => setApprovedAmount(e.target.value)}
-                                                                    className="font-black text-lg border-primary/30"
-                                                                />
-                                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-primary">USDT</span>
-                                                            </div>
-                                                            <p className="text-[10px] text-muted-foreground italic">Requested: {dep.amount} USDT. Adjusted amount updates user balance.</p>
-                                                        </div>
-                                                        <DialogFooter className="flex-row gap-2 mt-4">
-                                                            <Button variant="outline" className="flex-1 font-bold h-10 text-xs" onClick={() => handleStatusUpdate('deposits', dep.id, 'failed', dep.userId, dep.amount)} disabled={actionLoading === dep.id}>Reject</Button>
-                                                            <Button className="flex-1 bg-primary font-bold h-10 text-xs" onClick={() => handleStatusUpdate('deposits', dep.id, 'completed', dep.userId, dep.amount, parseFloat(approvedAmount))} disabled={actionLoading === dep.id}>Confirm & Approve</Button>
-                                                        </DialogFooter>
-                                                    </DialogContent>
-                                                </Dialog>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </ScrollArea>
-                    </TabsContent>
-
-                    <TabsContent value="withdrawals" className="m-0">
-                        <ScrollArea className="h-[60vh] md:h-[65vh]">
-                            <Table>
-                                <TableHeader className="bg-muted/50"><TableRow><TableHead className="text-[10px] font-bold uppercase">Address / Net</TableHead><TableHead className="text-[10px] font-bold uppercase">Volume</TableHead><TableHead className="text-right text-[10px] font-bold uppercase">View</TableHead></TableRow></TableHeader>
-                                <TableBody>
-                                    {filteredWithdrawals.map(wd => (
-                                        <TableRow key={wd.id}>
-                                            <TableCell>
-                                                <div className="text-[9px] font-mono font-bold text-destructive truncate max-w-[100px]">{wd.address}</div>
-                                                <div className="text-[9px] font-bold text-muted-foreground uppercase">{wd.network}</div>
-                                            </TableCell>
-                                            <TableCell className="font-black text-destructive text-xs">-{wd.amount} USDT</TableCell>
-                                            <TableCell className="text-right">
-                                                <Dialog onOpenChange={(open) => open && setApprovedAmount(String(wd.amount))}>
-                                                    <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button></DialogTrigger>
-                                                    <DialogContent className="mx-4">
-                                                        <DialogHeader><DialogTitle className="text-xl font-black text-destructive">Withdrawal Process</DialogTitle></DialogHeader>
-                                                        <ScrollArea className="max-h-[50vh] pr-4">
-                                                            <div className="py-4 border rounded-xl bg-muted/10 px-4 space-y-0.5">
-                                                                <DetailRow label="UID" value={wd.userId} />
-                                                                <DetailRow label="Address" value={<span className="font-mono text-[10px] break-all text-destructive font-bold">{wd.address}</span>} />
-                                                                <DetailRow label="Network" value={wd.network} />
-                                                                <DetailRow label="Volume" value={<span className="font-black">{wd.amount} USDT</span>} />
-                                                                <DetailRow label="Status" value={getStatusBadge(wd.status)} />
-                                                                <DetailRow label="Date" value={wd.createdAt ? format(new Date(wd.createdAt), 'PPp') : 'N/A'} />
-                                                            </div>
-                                                        </ScrollArea>
-                                                        <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-xl space-y-3 mt-4">
-                                                            <Label htmlFor="approved-amount-wd" className="text-xs font-bold uppercase tracking-wider">Final Amount Sent (Adjust if needed)</Label>
-                                                            <div className="relative">
-                                                                <Input 
-                                                                    id="approved-amount-wd"
-                                                                    type="number" 
-                                                                    value={approvedAmount} 
-                                                                    onChange={(e) => setApprovedAmount(e.target.value)}
-                                                                    className="font-black text-lg border-destructive/30"
-                                                                />
-                                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-destructive">USDT</span>
-                                                            </div>
-                                                            <p className="text-[10px] text-muted-foreground italic">Requested: {wd.amount} USDT. Adjusting down credits back difference to user account.</p>
-                                                        </div>
-                                                        <DialogFooter className="flex-row gap-2 mt-4">
-                                                            <Button variant="destructive" className="flex-1 font-bold h-10 text-xs" onClick={() => handleStatusUpdate('withdrawals', wd.id, 'failed', wd.userId, wd.amount)} disabled={actionLoading === wd.id}>Reject & Refund</Button>
-                                                            <Button className="flex-1 bg-primary font-bold h-10 text-xs" onClick={() => handleStatusUpdate('withdrawals', wd.id, 'completed', wd.userId, wd.amount, parseFloat(approvedAmount))} disabled={actionLoading === wd.id}>Confirm Sent</Button>
-                                                        </DialogFooter>
-                                                    </DialogContent>
-                                                </Dialog>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {settledTransactions.length === 0 ? (
+                                        <TableRow><TableCell colSpan={3} className="text-center py-24 text-muted-foreground font-medium italic">Archive is empty.</TableCell></TableRow>
+                                    ) : settledTransactions.map(renderTransactionRow)}
                                 </TableBody>
                             </Table>
                         </ScrollArea>
                     </TabsContent>
                     
                     <TabsContent value="contact" className="m-0">
-                         <ScrollArea className="h-[60vh] md:h-[65vh]">
+                         <ScrollArea className="h-[65vh]">
                            <Table>
                                 <TableHeader className="bg-muted/50"><TableRow><TableHead className="text-[10px] font-bold uppercase">Name / Date</TableHead><TableHead className="text-[10px] font-bold uppercase">Email</TableHead><TableHead className="text-right text-[10px] font-bold uppercase">View</TableHead></TableRow></TableHeader>
                                 <TableBody>
@@ -550,7 +507,7 @@ export function AdminDataView() {
                     </TabsContent>
 
                     <TabsContent value="users" className="m-0">
-                        <ScrollArea className="h-[60vh] md:h-[65vh]">
+                        <ScrollArea className="h-[65vh]">
                             <Table>
                                 <TableHeader className="bg-muted/50"><TableRow><TableHead className="text-[10px] font-bold uppercase">Name / Joined</TableHead><TableHead className="text-[10px] font-bold uppercase">Balance</TableHead><TableHead className="text-right text-[10px] font-bold uppercase">Actions</TableHead></TableRow></TableHeader>
                                 <TableBody>
