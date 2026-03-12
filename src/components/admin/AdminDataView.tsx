@@ -96,18 +96,23 @@ export function AdminDataView() {
 
         try {
             const orderRef = doc(firestore, type, id);
-            await updateDoc(orderRef, { 
-                status,
-                processedAmount: finalAmount // Record the actually processed amount
-            });
+            const updateData: any = { status };
+            
+            // Only set processedAmount if it's a valid number to avoid FirebaseError
+            if (typeof finalAmount === 'number' && !isNaN(finalAmount)) {
+                updateData.processedAmount = finalAmount;
+            }
 
-            if ((type === 'deposits' || type === 'buyOrders') && status === 'completed' && userId && finalAmount) {
+            await updateDoc(orderRef, updateData);
+
+            // Handle successful completions (add to user balance)
+            if ((type === 'deposits' || type === 'buyOrders') && status === 'completed' && userId && typeof finalAmount === 'number') {
                 const userRef = doc(firestore, 'users', userId);
                 await updateDoc(userRef, { balance: increment(finalAmount) });
             }
             
-            if (type === 'withdrawals' && status === 'failed' && userId && amount) {
-                // If a withdrawal fails, refund the ORIGINAL amount to balance
+            // Handle withdrawal failures (refund original balance to user)
+            if (type === 'withdrawals' && status === 'failed' && userId && typeof amount === 'number') {
                 const userRef = doc(firestore, 'users', userId);
                 await updateDoc(userRef, { balance: increment(amount) });
             }
