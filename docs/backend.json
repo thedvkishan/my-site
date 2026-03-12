@@ -63,6 +63,19 @@
         "amount": { "type": "number" },
         "status": { "type": "string" }
       }
+    },
+    "Notification": {
+      "title": "Notification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["info", "success", "warning", "error"] },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "auth": {
@@ -74,6 +87,12 @@
         "path": "/users/{userId}",
         "definition": {
           "schema": { "$ref": "#/backend/entities/UserProfile" }
+        }
+      },
+      {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": {
+          "schema": { "$ref": "#/backend/entities/Notification" }
         }
       }
     ]

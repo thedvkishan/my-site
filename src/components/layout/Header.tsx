@@ -9,6 +9,7 @@ import { LogOut, User as UserIcon, Wallet, ChevronDown, Settings, UserCircle } f
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 export function Header() {
   const { user, isUserLoading } = useUser();
@@ -48,6 +49,8 @@ export function Header() {
                     </span>
                   </div>
                   
+                  <NotificationBell />
+
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-10 gap-2 px-2 hover:bg-muted/50">

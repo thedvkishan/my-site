@@ -2,7 +2,7 @@
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, doc, updateDoc, increment } from "firebase/firestore";
+import { collection, query, doc, updateDoc, increment, addDoc } from "firebase/firestore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,8 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useMemo, useEffect } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useMemo } from "react";
 
 const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="grid grid-cols-[100px_1fr] md:grid-cols-[160px_1fr] items-start gap-4 py-2.5 border-b border-muted/50 last:border-0">
@@ -91,6 +90,19 @@ export function AdminDataView() {
     const filteredMessages = useMemo(() => filterData(contactMessages), [contactMessages, searchQuery]);
     const filteredUsers = useMemo(() => filterData(users), [users, searchQuery]);
 
+    const createNotification = async (userId: string, title: string, message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') => {
+        if (!firestore) return;
+        const notifRef = collection(firestore, 'users', userId, 'notifications');
+        await addDoc(notifRef, {
+            userId,
+            title,
+            message,
+            type,
+            read: false,
+            createdAt: new Date().toISOString()
+        });
+    };
+
     const handleStatusUpdate = async (type: 'buyOrders' | 'sellOrders' | 'deposits' | 'withdrawals', id: string, status: string, userId?: string, amount?: number, overrideAmount?: number) => {
         if (!firestore) return;
         setActionLoading(id);
@@ -101,20 +113,35 @@ export function AdminDataView() {
             const orderRef = doc(firestore, type, id);
             const updateData: any = { status };
             
-            if (typeof finalAmount === 'number' && !isNaN(finalAmount)) {
+            if (status === 'completed' && typeof finalAmount === 'number' && !isNaN(finalAmount)) {
                 updateData.processedAmount = finalAmount;
             }
 
             await updateDoc(orderRef, updateData);
 
+            if (userId) {
+                const typeLabel = type.replace('Orders', '').replace('s', '');
+                const displayType = typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1);
+                const colorType = status === 'completed' ? 'success' : status === 'failed' ? 'error' : 'info';
+                
+                await createNotification(
+                    userId, 
+                    `${displayType} Transaction ${status === 'completed' ? 'Approved' : 'Rejected'}`,
+                    `Your ${displayType} order #${id.slice(-6)} has been ${status}.`,
+                    colorType
+                );
+            }
+
             if ((type === 'deposits' || type === 'buyOrders') && status === 'completed' && userId && typeof finalAmount === 'number') {
                 const userRef = doc(firestore, 'users', userId);
                 await updateDoc(userRef, { balance: increment(finalAmount) });
+                await createNotification(userId, 'Balance Credited', `${finalAmount.toLocaleString()} USDT has been added to your wallet.`, 'success');
             }
             
             if (type === 'withdrawals' && status === 'failed' && userId && typeof amount === 'number') {
                 const userRef = doc(firestore, 'users', userId);
                 await updateDoc(userRef, { balance: increment(amount) });
+                await createNotification(userId, 'Balance Refunded', `${amount.toLocaleString()} USDT has been returned to your wallet.`, 'info');
             }
 
             toast({ title: 'Status Updated', description: `Transaction marked as ${status}.` });
@@ -134,12 +161,21 @@ export function AdminDataView() {
             const userRef = doc(firestore, 'users', userId);
             if (action === 'status') {
                 await updateDoc(userRef, { status: value });
+                const statusLabel = value === 'on_hold' ? 'On Hold' : value === 'active' ? 'Active' : 'Banned';
+                const statusType = value === 'banned' ? 'error' : value === 'on_hold' ? 'warning' : 'success';
+                await createNotification(userId, 'Account Status Updated', `Your account is now ${statusLabel}.`, statusType);
                 toast({ title: 'Status Updated', description: `User is now ${value}.` });
             } else if (action === 'balance') {
                 const amount = parseFloat(balanceAdjustment);
                 if (isNaN(amount)) throw new Error("Invalid amount");
                 
                 await updateDoc(userRef, { balance: increment(value === 'add' ? amount : -amount) });
+                await createNotification(
+                    userId, 
+                    value === 'add' ? 'Balance Adjustment (Credit)' : 'Balance Adjustment (Debit)', 
+                    `${amount.toLocaleString()} USDT has been ${value === 'add' ? 'added to' : 'deducted from'} your account.`,
+                    value === 'add' ? 'success' : 'info'
+                );
                 toast({ title: 'Balance Updated', description: `Balance ${value === 'add' ? 'increased' : 'decreased'} by ${amount} USDT.` });
                 setBalanceAdjustment("");
             }
@@ -271,7 +307,7 @@ export function AdminDataView() {
                                                             <p className="text-[10px] text-muted-foreground italic">Requested: {order.usdtAmount} USDT. Approved amount will be credited to user's wallet.</p>
                                                         </div>
                                                         <DialogFooter className="flex-row gap-2 mt-4">
-                                                            <Button variant="destructive" className="flex-1 font-bold text-xs h-10" onClick={() => handleStatusUpdate('buyOrders', order.id, 'failed')} disabled={actionLoading === order.id}>Reject</Button>
+                                                            <Button variant="destructive" className="flex-1 font-bold text-xs h-10" onClick={() => handleStatusUpdate('buyOrders', order.id, 'failed', order.userId, order.usdtAmount)} disabled={actionLoading === order.id}>Reject</Button>
                                                             <Button className="flex-1 bg-green-600 hover:bg-green-700 font-bold text-xs h-10" onClick={() => handleStatusUpdate('buyOrders', order.id, 'completed', order.userId, order.usdtAmount, parseFloat(approvedAmount))} disabled={actionLoading === order.id}>Confirm & Approve</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
@@ -329,8 +365,8 @@ export function AdminDataView() {
                                                             </div>
                                                         </ScrollArea>
                                                         <DialogFooter className="flex-row gap-2 mt-2">
-                                                            <Button variant="outline" className="flex-1 font-bold text-xs h-10" onClick={() => handleStatusUpdate('sellOrders', order.id, 'failed')} disabled={actionLoading === order.id}>Reject</Button>
-                                                            <Button className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold text-xs h-10" onClick={() => handleStatusUpdate('sellOrders', order.id, 'completed')} disabled={actionLoading === order.id}>Finalize & Confirm</Button>
+                                                            <Button variant="outline" className="flex-1 font-bold text-xs h-10" onClick={() => handleStatusUpdate('sellOrders', order.id, 'failed', order.userId, order.usdtAmount)} disabled={actionLoading === order.id}>Reject</Button>
+                                                            <Button className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold text-xs h-10" onClick={() => handleStatusUpdate('sellOrders', order.id, 'completed', order.userId, order.usdtAmount)} disabled={actionLoading === order.id}>Finalize & Confirm</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
@@ -384,7 +420,7 @@ export function AdminDataView() {
                                                             <p className="text-[10px] text-muted-foreground italic">Requested: {dep.amount} USDT. Adjusted amount updates user balance.</p>
                                                         </div>
                                                         <DialogFooter className="flex-row gap-2 mt-4">
-                                                            <Button variant="outline" className="flex-1 font-bold h-10 text-xs" onClick={() => handleStatusUpdate('deposits', dep.id, 'failed')} disabled={actionLoading === dep.id}>Reject</Button>
+                                                            <Button variant="outline" className="flex-1 font-bold h-10 text-xs" onClick={() => handleStatusUpdate('deposits', dep.id, 'failed', dep.userId, dep.amount)} disabled={actionLoading === dep.id}>Reject</Button>
                                                             <Button className="flex-1 bg-primary font-bold h-10 text-xs" onClick={() => handleStatusUpdate('deposits', dep.id, 'completed', dep.userId, dep.amount, parseFloat(approvedAmount))} disabled={actionLoading === dep.id}>Confirm & Approve</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
