@@ -56,9 +56,9 @@ export default function SellConfirmationPage() {
         return (
           <>
             <Loader2 className="h-16 w-16 text-primary animate-spin" />
-            <CardTitle className="mt-6">Processing Settlement</CardTitle>
+            <CardTitle className="mt-6">Settlement Initiated</CardTitle>
             <CardDescription className="mt-2">
-              Your liquidation request is being processed by our internal protocol. This usually takes 30-180 minutes.
+              Your liquidation request is being processed by our internal protocol.
             </CardDescription>
           </>
         );

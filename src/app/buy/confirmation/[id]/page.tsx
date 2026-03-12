@@ -57,9 +57,9 @@ export default function ConfirmationPage() {
         return (
           <>
             <Loader2 className="h-16 w-16 text-primary animate-spin" />
-            <CardTitle className="mt-6">Processing Payment</CardTitle>
+            <CardTitle className="mt-6">Request Received</CardTitle>
             <CardDescription className="mt-2">
-              Your transaction is being verified by our settlement protocol. This usually takes 30-180 minutes.
+              Your transaction is being verified by our internal settlement protocol.
             </CardDescription>
           </>
         );
