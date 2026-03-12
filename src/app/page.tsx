@@ -39,6 +39,7 @@ import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 type UserProfile = {
   balance?: number;
@@ -189,7 +190,10 @@ export default function Home() {
                     <Button 
                         key={action.label} 
                         variant="outline" 
-                        className={`h-32 flex flex-col items-center justify-center gap-3 transition-all hover:scale-[1.02] hover:shadow-xl border-2 animate-in slide-in-from-bottom-4 duration-500 fill-mode-both ${isOnHold && action.label !== 'History' ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
+                        className={cn(
+                            "h-32 flex flex-col items-center justify-center gap-3 transition-all hover:scale-[1.02] hover:shadow-xl border-2 animate-in slide-in-from-bottom-4 duration-500 fill-mode-both",
+                            isOnHold && action.label !== 'History' && "opacity-50 grayscale cursor-not-allowed"
+                        )}
                         style={{ animationDelay: `${i * 100}ms` }}
                         asChild={!isOnHold || action.label === 'History'}
                     >
@@ -214,7 +218,10 @@ export default function Home() {
 
             {/* Trading Instruments */}
             <div className="grid md:grid-cols-2 gap-8 mb-16">
-                <Card className={`relative overflow-hidden group hover:border-primary transition-all duration-500 border-2 shadow-sm hover:shadow-2xl bg-card ${isOnHold ? 'opacity-50 grayscale' : ''}`}>
+                <Card className={cn(
+                    "relative overflow-hidden group hover:border-primary transition-all duration-500 border-2 shadow-sm hover:shadow-2xl bg-card",
+                    isOnHold && "opacity-50 grayscale"
+                )}>
                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                         <TrendingUp className="h-32 w-32 -rotate-12" />
                     </div>
@@ -245,7 +252,10 @@ export default function Home() {
                     </CardContent>
                 </Card>
 
-                <Card className={`relative overflow-hidden group hover:border-destructive transition-all duration-500 border-2 shadow-sm hover:shadow-2xl bg-card ${isOnHold ? 'opacity-50 grayscale' : ''}`}>
+                <Card className={cn(
+                    "relative overflow-hidden group hover:border-destructive transition-all duration-500 border-2 shadow-sm hover:shadow-2xl bg-card",
+                    isOnHold && "opacity-50 grayscale"
+                )}>
                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                         <TrendingDown className="h-32 w-32 rotate-12" />
                     </div>
@@ -293,15 +303,27 @@ export default function Home() {
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-border">
-                            {Object.entries(settings.sellRates || {}).map(([method, rate]) => (
-                                <div key={method} className="bg-card p-6 flex flex-col gap-1 hover:bg-muted/30 transition-colors">
-                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{method}</p>
-                                    <p className="text-2xl font-black">₹{Number(rate).toFixed(2)}</p>
-                                    <div className="flex items-center gap-1 text-[9px] font-bold text-green-600">
-                                        <TrendingUp className="h-2 w-2" /> +0.02%
+                            {Object.entries(settings.sellRates || {}).map(([method, rate]) => {
+                                const numericRate = Number(rate);
+                                // Calculate percentage based on 95 INR as requested
+                                const diff = numericRate - 95;
+                                const percent = (diff / 95) * 100;
+                                const isPositive = percent >= 0;
+
+                                return (
+                                    <div key={method} className="bg-card p-6 flex flex-col gap-1 hover:bg-muted/30 transition-colors">
+                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{method}</p>
+                                        <p className="text-2xl font-black">₹{numericRate.toFixed(2)}</p>
+                                        <div className={cn(
+                                            "flex items-center gap-1 text-[9px] font-bold",
+                                            isPositive ? "text-green-600" : "text-destructive"
+                                        )}>
+                                            {isPositive ? <TrendingUp className="h-2 w-2" /> : <TrendingDown className="h-2 w-2" />}
+                                            {isPositive ? '+' : ''}{percent.toFixed(2)}%
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </CardContent>
                 </Card>
