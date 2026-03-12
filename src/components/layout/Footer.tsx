@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
 import { AppLogo } from './AppLogo';
 
 export function Footer() {
@@ -20,9 +19,6 @@ export function Footer() {
         <div className="flex items-center gap-6">
           <Link href="/contact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             Support
-          </Link>
-          <Link href="/admin/login" aria-label="Admin Login" className="text-muted-foreground hover:text-primary transition-colors">
-            <Plus className="h-4 w-4" />
           </Link>
         </div>
       </div>
