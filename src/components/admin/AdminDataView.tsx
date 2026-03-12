@@ -1,7 +1,7 @@
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, doc, updateDoc, increment, addDoc } from "firebase/firestore";
+import { collection, query, doc, updateDoc, increment, addDoc, orderBy } from "firebase/firestore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -33,32 +33,32 @@ export function AdminDataView() {
 
     const buyOrdersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'buyOrders'));
+        return query(collection(firestore, 'buyOrders'), orderBy('createdAt', 'desc'));
     }, [firestore]);
 
     const sellOrdersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'sellOrders'));
+        return query(collection(firestore, 'sellOrders'), orderBy('createdAt', 'desc'));
     }, [firestore]);
     
     const depositsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'deposits'));
+        return query(collection(firestore, 'deposits'), orderBy('createdAt', 'desc'));
     }, [firestore]);
 
     const withdrawalsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'withdrawals'));
+        return query(collection(firestore, 'withdrawals'), orderBy('createdAt', 'desc'));
     }, [firestore]);
 
     const contactMessagesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'contactMessages'));
+        return query(collection(firestore, 'contactMessages'), orderBy('submittedAt', 'desc'));
     }, [firestore]);
 
     const usersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'users'));
+        return query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
     }, [firestore]);
 
     const { data: buyOrders, isLoading: buyOrdersLoading } = useCollection(buyOrdersQuery);
@@ -76,8 +76,12 @@ export function AdminDataView() {
         
         const q = searchQuery.toLowerCase();
         return data.filter(item => {
+            // Check ID explicitly
+            if (item.id && item.id.toLowerCase().includes(q)) return true;
+            
+            // Check all other values
             return Object.values(item).some(val => 
-                String(val).toLowerCase().includes(q)
+                val !== null && val !== undefined && String(val).toLowerCase().includes(q)
             );
         });
     };
