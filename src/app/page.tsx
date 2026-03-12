@@ -172,6 +172,24 @@ export default function Home() {
   // GUEST VIEW (MARKETING LANDING)
   return (
     <div className="flex flex-col w-full overflow-hidden">
+      {/* Branding Hero Section */}
+      <section className="py-20 border-b bg-muted/5">
+        <div className="container mx-auto px-4 text-center space-y-6">
+          <div className="flex justify-center items-center gap-4">
+            <div className="p-3 bg-white rounded-2xl shadow-sm border">
+                <AppLogo />
+            </div>
+            <div className="text-left">
+                <h2 className="text-3xl font-black tracking-tighter leading-none">TetherSwap Zone</h2>
+                <p className="text-primary font-bold text-xs uppercase tracking-widest mt-1">INSTITUTIONAL GRADE TRADING</p>
+            </div>
+          </div>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed font-medium">
+            TetherSwap Zone is a leading global digital asset platform providing professional-grade USDT exchange services. We combine security, speed, and competitive pricing to deliver the best trading experience.
+          </p>
+        </div>
+      </section>
+
       {/* Hero Section */}
       <section className="relative pt-20 pb-20 md:pt-32 md:pb-32 px-4">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-background -z-10" />
@@ -312,24 +330,6 @@ export default function Home() {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-        </div>
-      </section>
-
-      {/* Enhanced Branding Section */}
-      <section className="py-20 border-t bg-muted/5">
-        <div className="container mx-auto px-4 text-center space-y-6">
-          <div className="flex justify-center items-center gap-4">
-            <div className="p-3 bg-white rounded-2xl shadow-sm border">
-                <AppLogo />
-            </div>
-            <div className="text-left">
-                <h2 className="text-3xl font-black tracking-tighter leading-none">TetherSwap Zone</h2>
-                <p className="text-primary font-bold text-xs uppercase tracking-widest mt-1">Institutional Grade Trading</p>
-            </div>
-          </div>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed font-medium">
-            TetherSwap Zone is a leading global digital asset platform providing professional-grade USDT exchange services. We combine security, speed, and competitive pricing to deliver the best trading experience.
-          </p>
         </div>
       </section>
 
