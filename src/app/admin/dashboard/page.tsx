@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -112,7 +113,13 @@ export default function AdminDashboardPage() {
                 description = 'App logo has been updated.';
                 break;
             case 'rates':
-                newSettings = { buyRate: values.buyRate, sellRate: values.sellRate, minBuyAmount: values.minBuyAmount, minSellAmount: values.minSellAmount };
+                newSettings = { 
+                    buyRate: values.buyRate, 
+                    sellRate: values.sellRate, 
+                    minBuyAmount: values.minBuyAmount, 
+                    minSellAmount: values.minSellAmount,
+                    minDepositAmount: values.minDepositAmount
+                };
                 description = 'Exchange rates and limits have been updated.';
                 break;
             case 'bank':
@@ -284,6 +291,7 @@ export default function AdminDashboardPage() {
                                                          <FormField control={form.control} name="sellRate" render={({ field }) => (<FormItem><FormLabel>Sell Rate (INR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                                          <FormField control={form.control} name="minBuyAmount" render={({ field }) => (<FormItem><FormLabel>Min. Buy Amount (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                                          <FormField control={form.control} name="minSellAmount" render={({ field }) => (<FormItem><FormLabel>Min. Sell Amount (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                         <FormField control={form.control} name="minDepositAmount" render={({ field }) => (<FormItem><FormLabel>Min. Deposit Amount (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                                     </div>
                                                     <Button className="w-full" onClick={() => handleSave('rates')} disabled={isSaving}>
                                                         {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

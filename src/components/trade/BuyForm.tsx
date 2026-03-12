@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,7 +42,7 @@ export function BuyForm() {
 
   const buyFormSchema = useMemo(() => z.object({
     network: z.enum(NETWORKS as [string, ...string[]], { required_error: 'Please select a network.' }),
-    usdtAmount: z.coerce.number().min(settings?.minBuyAmount ?? 1, `Minimum buy amount is ${settings?.minBuyAmount ?? 1} USDT.`),
+    usdtAmount: z.coerce.number().min(settings?.minBuyAmount ?? 100, `Minimum buy amount is ${settings?.minBuyAmount ?? 100} USDT.`),
     inrAmount: z.coerce.number().min(1, 'Amount must be at least 1.'),
     usdtAddress: z.string().min(10, 'Please enter a valid USDT address.'),
     paymentMode: z.enum(PAYMENT_METHODS_BUY as [string, ...string[]], { required_error: 'Please select a payment mode.' }),

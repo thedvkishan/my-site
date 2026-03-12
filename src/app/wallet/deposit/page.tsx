@@ -18,6 +18,7 @@ import { TetherIcon } from '@/components/icons/TetherIcon';
 import { NETWORKS } from '@/lib/constants';
 
 type Settings = {
+  minDepositAmount?: number;
   depositDetails: {
     [key: string]: {
       address: string;
@@ -85,9 +86,16 @@ export default function DepositPage() {
 
   const startDeposit = async () => {
     const numAmount = parseFloat(amount);
+    const minDeposit = settings?.minDepositAmount ?? 100;
+
     if (!numAmount || numAmount <= 0) {
       toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid amount to deposit.' });
       return;
+    }
+
+    if (numAmount < minDeposit) {
+        toast({ variant: 'destructive', title: 'Minimum Deposit', description: `Minimum deposit amount is ${minDeposit} USDT.` });
+        return;
     }
 
     setIsLoading(true);
@@ -171,10 +179,11 @@ export default function DepositPage() {
               <Input
                 id="amount"
                 type="number"
-                placeholder="0.00"
+                placeholder={`Min ${settings?.minDepositAmount ?? 100}`}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
+              <p className="text-xs text-muted-foreground">Minimum deposit: {settings?.minDepositAmount ?? 100} USDT</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="network">Network</Label>
