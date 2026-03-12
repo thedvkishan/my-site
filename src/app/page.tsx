@@ -49,47 +49,47 @@ export default function Home() {
   // If user is logged in, show a dashboard-style trading view
   if (user) {
     return (
-        <div className="container mx-auto max-w-6xl px-4 py-8 md:py-12">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 md:mb-12">
+        <div className="container mx-auto max-w-6xl px-4 py-6 md:py-12">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                 <div className="w-full">
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Welcome back!</h1>
-                    <p className="text-muted-foreground mt-1 text-sm md:text-lg">Your secure portal for USDT trading is ready.</p>
+                    <h1 className="text-xl md:text-3xl font-bold tracking-tight">Welcome back!</h1>
+                    <p className="text-muted-foreground mt-0.5 text-xs md:text-lg">Your secure portal for USDT trading is ready.</p>
                 </div>
                 <Card className="bg-primary/5 border-primary/20 w-full md:w-auto shrink-0">
-                    <CardContent className="p-4 flex items-center gap-4">
+                    <CardContent className="p-3 md:p-4 flex items-center gap-3 md:gap-4">
                         <div className="p-2 bg-primary/10 rounded-full">
-                            <Wallet className="h-6 w-6 text-primary" />
+                            <Wallet className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                         </div>
                         <div>
                             <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Wallet Balance</p>
-                            <p className="text-xl md:text-2xl font-bold">{(profile?.balance || 0).toLocaleString()} USDT</p>
+                            <p className="text-lg md:text-2xl font-bold">{(profile?.balance || 0).toLocaleString()} USDT</p>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-12">
-                <Button variant="outline" className="h-20 md:h-24 flex flex-col gap-1 md:gap-2 text-xs md:text-sm" asChild>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 mb-8 md:mb-12">
+                <Button variant="outline" className="h-16 md:h-24 flex flex-col gap-1 md:gap-2 text-[10px] md:text-sm" asChild>
                     <Link href="/wallet/deposit">
-                        <CircleDollarSign className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                        <CircleDollarSign className="h-4 w-4 md:h-6 md:w-6 text-primary" />
                         Deposit
                     </Link>
                 </Button>
-                <Button variant="outline" className="h-20 md:h-24 flex flex-col gap-1 md:gap-2 text-xs md:text-sm" asChild>
+                <Button variant="outline" className="h-16 md:h-24 flex flex-col gap-1 md:gap-2 text-[10px] md:text-sm" asChild>
                     <Link href="/wallet/withdrawal">
-                        <Wallet className="h-5 w-5 md:h-6 md:w-6 text-accent" />
+                        <Wallet className="h-4 w-4 md:h-6 md:w-6 text-accent" />
                         Withdraw
                     </Link>
                 </Button>
-                <Button variant="outline" className="h-20 md:h-24 flex flex-col gap-1 md:gap-2 text-xs md:text-sm" asChild>
+                <Button variant="outline" className="h-16 md:h-24 flex flex-col gap-1 md:gap-2 text-[10px] md:text-sm" asChild>
                     <Link href="/buy">
-                        <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-green-500" />
+                        <TrendingUp className="h-4 w-4 md:h-6 md:w-6 text-green-500" />
                         Buy USDT
                     </Link>
                 </Button>
-                <Button variant="outline" className="h-20 md:h-24 flex flex-col gap-1 md:gap-2 text-xs md:text-sm" asChild>
+                <Button variant="outline" className="h-16 md:h-24 flex flex-col gap-1 md:gap-2 text-[10px] md:text-sm" asChild>
                     <Link href="/wallet/history">
-                        <History className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground" />
+                        <History className="h-4 w-4 md:h-6 md:w-6 text-muted-foreground" />
                         History
                     </Link>
                 </Button>
@@ -101,16 +101,16 @@ export default function Home() {
                         <TrendingUp className="w-24 h-24 md:w-32 md:h-32" />
                     </div>
                     <CardHeader className="p-5 md:p-6">
-                        <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
-                            <CircleDollarSign className="h-6 w-6 text-primary" />
+                        <CardTitle className="flex items-center gap-2 text-lg md:text-2xl">
+                            <CircleDollarSign className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                             Buy USDT
                         </CardTitle>
-                        <CardDescription>Instant purchase with local payment.</CardDescription>
+                        <CardDescription className="text-xs md:text-sm">Instant purchase with local payment.</CardDescription>
                     </CardHeader>
                     <CardContent className="p-5 md:p-6 pt-0 space-y-4 md:space-y-6">
                         <div className="bg-secondary p-4 rounded-lg">
-                            <p className="text-xs text-muted-foreground">Current Buy Rate</p>
-                            <p className="text-lg md:text-2xl font-bold">1 USDT ≈ ₹{settings.buyRate?.toFixed(2)}</p>
+                            <p className="text-[10px] md:text-xs text-muted-foreground">Current Buy Rate</p>
+                            <p className="text-base md:text-2xl font-bold">1 USDT ≈ ₹{settings.buyRate?.toFixed(2)}</p>
                         </div>
                         <Button className="w-full" asChild>
                             <Link href="/buy">
@@ -125,16 +125,16 @@ export default function Home() {
                         <Wallet className="w-24 h-24 md:w-32 md:h-32" />
                     </div>
                     <CardHeader className="p-5 md:p-6">
-                        <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
-                            <TetherIcon className="h-6 w-6" />
+                        <CardTitle className="flex items-center gap-2 text-lg md:text-2xl">
+                            <TetherIcon className="h-5 w-5 md:h-6 md:w-6" />
                             Sell USDT
                         </CardTitle>
-                        <CardDescription>Convert USDT to local currency.</CardDescription>
+                        <CardDescription className="text-xs md:text-sm">Convert USDT to local currency.</CardDescription>
                     </CardHeader>
                     <CardContent className="p-5 md:p-6 pt-0 space-y-4 md:space-y-6">
                         <div className="bg-secondary p-4 rounded-lg">
-                            <p className="text-xs text-muted-foreground">Current Sell Rate</p>
-                            <p className="text-lg md:text-2xl font-bold">1 USDT ≈ ₹{settings.sellRate?.toFixed(2)}</p>
+                            <p className="text-[10px] md:text-xs text-muted-foreground">Current Sell Rate</p>
+                            <p className="text-base md:text-2xl font-bold">1 USDT ≈ ₹{settings.sellRate?.toFixed(2)}</p>
                         </div>
                         <Button variant="destructive" className="w-full" asChild>
                             <Link href="/sell">
@@ -146,13 +146,13 @@ export default function Home() {
             </div>
 
             <Card className="mb-12 border-primary/20 bg-primary/5">
-                <CardContent className="p-6 md:p-8 flex flex-col md:flex-row items-center gap-4 md:gap-6">
-                    <div className="bg-primary/10 p-3 md:p-4 rounded-full">
-                        <ShieldCheck className="h-8 w-8 md:h-10 md:w-10 text-primary" />
+                <CardContent className="p-5 md:p-8 flex flex-col md:flex-row items-center gap-3 md:gap-6">
+                    <div className="bg-primary/10 p-2 md:p-4 rounded-full">
+                        <ShieldCheck className="h-6 w-6 md:h-10 md:w-10 text-primary" />
                     </div>
                     <div className="text-center md:text-left">
-                        <h3 className="text-lg md:text-xl font-bold">Security Tip</h3>
-                        <p className="text-muted-foreground text-xs md:text-sm">Always double-check your wallet address before confirming a transaction. TetherSwap Zone will never ask for your private keys via email or chat.</p>
+                        <h3 className="text-base md:text-xl font-bold">Security Tip</h3>
+                        <p className="text-muted-foreground text-[10px] md:text-sm">Always double-check your wallet address before confirming a transaction. TetherSwap Zone will never ask for your private keys via email or chat.</p>
                     </div>
                 </CardContent>
             </Card>
