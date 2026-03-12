@@ -1,5 +1,19 @@
+
 {
   "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "type": "object",
+      "description": "Stores additional information about a registered user.",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "email", "createdAt"]
+    },
     "BuyOrder": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "BuyOrder",
@@ -254,12 +268,21 @@
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "password"
     ]
   },
   "firestore": {
     "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile data."
+        }
+      },
       {
         "path": "/buyOrders/{buyOrderId}",
         "definition": {

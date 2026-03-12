@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Inter } from 'next/font/google';
@@ -6,7 +7,6 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
-import { AnonymousAuthProvider } from '@/components/AnonymousAuthProvider';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -29,14 +29,12 @@ export default function RootLayout({
       </head>
       <body className={cn('font-body antialiased', inter.variable)}>
         <FirebaseClientProvider>
-          <AnonymousAuthProvider>
             <div className="relative flex min-h-screen flex-col bg-background">
               <Header />
               <main className="flex-1">{children}</main>
               <Footer />
             </div>
             <Toaster />
-          </AnonymousAuthProvider>
         </FirebaseClientProvider>
       </body>
     </html>
