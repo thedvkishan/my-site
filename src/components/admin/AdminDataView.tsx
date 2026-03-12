@@ -195,7 +195,16 @@ export function AdminDataView() {
                                                                 <DetailRow label="Network" value={<Badge variant="outline" className="font-mono text-[10px]">{order.network}</Badge>} />
                                                                 <DetailRow label="Method" value={order.paymentMode} />
                                                                 <DetailRow label="Email" value={order.email} />
-                                                                <DetailRow label="Receipt" value={order.paymentReceiptUrl ? <a href={order.paymentReceiptUrl} target="_blank" className="text-primary hover:underline font-bold flex items-center gap-1">View Proof <ArrowUpRight className="h-3 w-3" /></a> : <span className="text-muted-foreground italic">No proof uploaded</span>} />
+                                                                <DetailRow label="Receipt" value={order.paymentReceiptUrl ? (
+                                                                    <div className="space-y-2 pt-1">
+                                                                        <a href={order.paymentReceiptUrl} target="_blank" className="text-primary hover:underline font-bold flex items-center gap-1 text-xs">View Full Proof <ArrowUpRight className="h-3 w-3" /></a>
+                                                                        {order.paymentReceiptUrl.startsWith('data:image') && (
+                                                                            <div className="relative h-40 w-full mt-2 border rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                                                                                <img src={order.paymentReceiptUrl} alt="Receipt Preview" className="object-contain w-full h-full" />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                ) : <span className="text-muted-foreground italic">No proof uploaded</span>} />
                                                             </div>
                                                         </ScrollArea>
                                                         <DialogFooter className="flex-row gap-2 mt-2">
