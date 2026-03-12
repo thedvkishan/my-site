@@ -12,8 +12,9 @@ import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="grid grid-cols-[100px_1fr] md:grid-cols-[160px_1fr] items-start gap-4 py-2.5 border-b border-muted/50 last:border-0">
@@ -27,6 +28,7 @@ export function AdminDataView() {
     const { toast } = useToast();
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [approvedAmount, setApprovedAmount] = useState<string>("");
 
     const buyOrdersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -86,19 +88,26 @@ export function AdminDataView() {
     const filteredMessages = useMemo(() => filterData(contactMessages), [contactMessages, searchQuery]);
     const filteredUsers = useMemo(() => filterData(users), [users, searchQuery]);
 
-    const handleStatusUpdate = async (type: 'buyOrders' | 'sellOrders' | 'deposits' | 'withdrawals', id: string, status: string, userId?: string, amount?: number) => {
+    const handleStatusUpdate = async (type: 'buyOrders' | 'sellOrders' | 'deposits' | 'withdrawals', id: string, status: string, userId?: string, amount?: number, overrideAmount?: number) => {
         if (!firestore) return;
         setActionLoading(id);
+        
+        const finalAmount = overrideAmount !== undefined ? overrideAmount : amount;
+
         try {
             const orderRef = doc(firestore, type, id);
-            await updateDoc(orderRef, { status });
+            await updateDoc(orderRef, { 
+                status,
+                processedAmount: finalAmount // Record the actually processed amount
+            });
 
-            if ((type === 'deposits' || type === 'buyOrders') && status === 'completed' && userId && amount) {
+            if ((type === 'deposits' || type === 'buyOrders') && status === 'completed' && userId && finalAmount) {
                 const userRef = doc(firestore, 'users', userId);
-                await updateDoc(userRef, { balance: increment(amount) });
+                await updateDoc(userRef, { balance: increment(finalAmount) });
             }
             
             if (type === 'withdrawals' && status === 'failed' && userId && amount) {
+                // If a withdrawal fails, refund the ORIGINAL amount to balance
                 const userRef = doc(firestore, 'users', userId);
                 await updateDoc(userRef, { balance: increment(amount) });
             }
@@ -109,6 +118,7 @@ export function AdminDataView() {
             toast({ variant: 'destructive', title: 'Update Failed', description: 'Could not update transaction status.' });
         } finally {
             setActionLoading(null);
+            setApprovedAmount(""); // Reset for next use
         }
     };
 
@@ -181,11 +191,11 @@ export function AdminDataView() {
                                                 <div className="text-[9px] text-muted-foreground font-bold">₹{order.inrAmount?.toLocaleString()}</div>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Dialog>
+                                                <Dialog onOpenChange={(open) => open && setApprovedAmount(String(order.usdtAmount))}>
                                                     <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button></DialogTrigger>
                                                     <DialogContent className="max-w-xl mx-4">
                                                         <DialogHeader><DialogTitle className="text-xl font-black">Buy Order Details</DialogTitle><DialogDescription className="text-xs">Ref: {order.id}</DialogDescription></DialogHeader>
-                                                        <ScrollArea className="max-h-[70vh] py-4 pr-4">
+                                                        <ScrollArea className="max-h-[60vh] py-4 pr-4">
                                                             <div className="border-2 border-dashed rounded-xl bg-muted/10 px-4 py-2 space-y-0.5">
                                                                 <DetailRow label="Created" value={order.createdAt ? format(new Date(order.createdAt), 'PPp') : 'N/A'} />
                                                                 <DetailRow label="User UID" value={order.userId} />
@@ -205,22 +215,32 @@ export function AdminDataView() {
                                                                         >
                                                                             View Full Receipt <ArrowUpRight className="h-3.5 w-3.5" />
                                                                         </a>
-                                                                        {order.paymentReceiptUrl.startsWith('data:image') ? (
+                                                                        {order.paymentReceiptUrl.startsWith('data:image') && (
                                                                             <div className="relative w-full mt-2 border-2 border-primary/20 rounded-xl overflow-hidden bg-white shadow-inner flex items-center justify-center min-h-[200px]">
                                                                                 <img src={order.paymentReceiptUrl} alt="Receipt Preview" className="max-w-full h-auto max-h-[400px]" />
-                                                                            </div>
-                                                                        ) : (
-                                                                            <div className="p-4 border border-dashed rounded-lg bg-muted text-center text-xs text-muted-foreground">
-                                                                                (Non-image document attached)
                                                                             </div>
                                                                         )}
                                                                     </div>
                                                                 ) : <span className="text-muted-foreground italic">No receipt provided</span>} />
                                                             </div>
                                                         </ScrollArea>
-                                                        <DialogFooter className="flex-row gap-2 mt-2">
+                                                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-3 mt-4">
+                                                            <Label htmlFor="approved-amount-buy" className="text-xs font-bold uppercase tracking-wider">Approved Volume (Adjust if needed)</Label>
+                                                            <div className="relative">
+                                                                <Input 
+                                                                    id="approved-amount-buy"
+                                                                    type="number" 
+                                                                    value={approvedAmount} 
+                                                                    onChange={(e) => setApprovedAmount(e.target.value)}
+                                                                    className="font-black text-lg border-primary/30"
+                                                                />
+                                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-primary">USDT</span>
+                                                            </div>
+                                                            <p className="text-[10px] text-muted-foreground italic">Requested: {order.usdtAmount} USDT. Approved amount will be credited to user's wallet.</p>
+                                                        </div>
+                                                        <DialogFooter className="flex-row gap-2 mt-4">
                                                             <Button variant="destructive" className="flex-1 font-bold text-xs h-10" onClick={() => handleStatusUpdate('buyOrders', order.id, 'failed')} disabled={actionLoading === order.id}>Reject</Button>
-                                                            <Button className="flex-1 bg-green-600 hover:bg-green-700 font-bold text-xs h-10" onClick={() => handleStatusUpdate('buyOrders', order.id, 'completed', order.userId, order.usdtAmount)} disabled={actionLoading === order.id}>Approve</Button>
+                                                            <Button className="flex-1 bg-green-600 hover:bg-green-700 font-bold text-xs h-10" onClick={() => handleStatusUpdate('buyOrders', order.id, 'completed', order.userId, order.usdtAmount, parseFloat(approvedAmount))} disabled={actionLoading === order.id}>Confirm & Approve</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
@@ -278,7 +298,7 @@ export function AdminDataView() {
                                                         </ScrollArea>
                                                         <DialogFooter className="flex-row gap-2 mt-2">
                                                             <Button variant="outline" className="flex-1 font-bold text-xs h-10" onClick={() => handleStatusUpdate('sellOrders', order.id, 'failed')} disabled={actionLoading === order.id}>Reject</Button>
-                                                            <Button className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold text-xs h-10" onClick={() => handleStatusUpdate('sellOrders', order.id, 'completed')} disabled={actionLoading === order.id}>Finalize</Button>
+                                                            <Button className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold text-xs h-10" onClick={() => handleStatusUpdate('sellOrders', order.id, 'completed')} disabled={actionLoading === order.id}>Finalize & Confirm</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
@@ -303,21 +323,37 @@ export function AdminDataView() {
                                             </TableCell>
                                             <TableCell className="font-black text-green-600 text-xs">+{dep.amount} USDT</TableCell>
                                             <TableCell className="text-right">
-                                                <Dialog>
+                                                <Dialog onOpenChange={(open) => open && setApprovedAmount(String(dep.amount))}>
                                                     <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button></DialogTrigger>
                                                     <DialogContent className="mx-4">
                                                         <DialogHeader><DialogTitle className="text-xl font-black">Blockchain Verification</DialogTitle></DialogHeader>
-                                                        <div className="space-y-0.5 py-4 border rounded-xl bg-muted/10 px-4">
-                                                            <DetailRow label="UID" value={dep.userId} />
-                                                            <DetailRow label="Network" value={dep.network} />
-                                                            <DetailRow label="TXID" value={<span className="font-mono text-[10px] break-all text-primary font-bold">{dep.txHash || 'Awaiting Submission'}</span>} />
-                                                            <DetailRow label="Amount" value={<span className="font-black">{dep.amount} USDT</span>} />
-                                                            <DetailRow label="Status" value={getStatusBadge(dep.status)} />
-                                                            <DetailRow label="Date" value={dep.createdAt ? format(new Date(dep.createdAt), 'PPp') : 'N/A'} />
+                                                        <ScrollArea className="max-h-[50vh] pr-4">
+                                                            <div className="space-y-0.5 py-4 border rounded-xl bg-muted/10 px-4">
+                                                                <DetailRow label="UID" value={dep.userId} />
+                                                                <DetailRow label="Network" value={dep.network} />
+                                                                <DetailRow label="TXID" value={<span className="font-mono text-[10px] break-all text-primary font-bold">{dep.txHash || 'Awaiting Submission'}</span>} />
+                                                                <DetailRow label="Amount" value={<span className="font-black">{dep.amount} USDT</span>} />
+                                                                <DetailRow label="Status" value={getStatusBadge(dep.status)} />
+                                                                <DetailRow label="Date" value={dep.createdAt ? format(new Date(dep.createdAt), 'PPp') : 'N/A'} />
+                                                            </div>
+                                                        </ScrollArea>
+                                                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-3 mt-4">
+                                                            <Label htmlFor="approved-amount-dep" className="text-xs font-bold uppercase tracking-wider">Approved Amount (Adjust if needed)</Label>
+                                                            <div className="relative">
+                                                                <Input 
+                                                                    id="approved-amount-dep"
+                                                                    type="number" 
+                                                                    value={approvedAmount} 
+                                                                    onChange={(e) => setApprovedAmount(e.target.value)}
+                                                                    className="font-black text-lg border-primary/30"
+                                                                />
+                                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-primary">USDT</span>
+                                                            </div>
+                                                            <p className="text-[10px] text-muted-foreground italic">Requested: {dep.amount} USDT. Adjusted amount updates user balance.</p>
                                                         </div>
-                                                        <DialogFooter className="flex-row gap-2 mt-2">
+                                                        <DialogFooter className="flex-row gap-2 mt-4">
                                                             <Button variant="outline" className="flex-1 font-bold h-10 text-xs" onClick={() => handleStatusUpdate('deposits', dep.id, 'failed')} disabled={actionLoading === dep.id}>Reject</Button>
-                                                            <Button className="flex-1 bg-primary font-bold h-10 text-xs" onClick={() => handleStatusUpdate('deposits', dep.id, 'completed', dep.userId, dep.amount)} disabled={actionLoading === dep.id}>Confirm</Button>
+                                                            <Button className="flex-1 bg-primary font-bold h-10 text-xs" onClick={() => handleStatusUpdate('deposits', dep.id, 'completed', dep.userId, dep.amount, parseFloat(approvedAmount))} disabled={actionLoading === dep.id}>Confirm & Approve</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
@@ -342,21 +378,37 @@ export function AdminDataView() {
                                             </TableCell>
                                             <TableCell className="font-black text-destructive text-xs">-{wd.amount} USDT</TableCell>
                                             <TableCell className="text-right">
-                                                <Dialog>
+                                                <Dialog onOpenChange={(open) => open && setApprovedAmount(String(wd.amount))}>
                                                     <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button></DialogTrigger>
                                                     <DialogContent className="mx-4">
                                                         <DialogHeader><DialogTitle className="text-xl font-black text-destructive">Withdrawal Process</DialogTitle></DialogHeader>
-                                                        <div className="py-4 border rounded-xl bg-muted/10 px-4 space-y-0.5">
-                                                            <DetailRow label="UID" value={wd.userId} />
-                                                            <DetailRow label="Address" value={<span className="font-mono text-[10px] break-all text-destructive font-bold">{wd.address}</span>} />
-                                                            <DetailRow label="Network" value={wd.network} />
-                                                            <DetailRow label="Volume" value={<span className="font-black">{wd.amount} USDT</span>} />
-                                                            <DetailRow label="Status" value={getStatusBadge(wd.status)} />
-                                                            <DetailRow label="Date" value={wd.createdAt ? format(new Date(wd.createdAt), 'PPp') : 'N/A'} />
+                                                        <ScrollArea className="max-h-[50vh] pr-4">
+                                                            <div className="py-4 border rounded-xl bg-muted/10 px-4 space-y-0.5">
+                                                                <DetailRow label="UID" value={wd.userId} />
+                                                                <DetailRow label="Address" value={<span className="font-mono text-[10px] break-all text-destructive font-bold">{wd.address}</span>} />
+                                                                <DetailRow label="Network" value={wd.network} />
+                                                                <DetailRow label="Volume" value={<span className="font-black">{wd.amount} USDT</span>} />
+                                                                <DetailRow label="Status" value={getStatusBadge(wd.status)} />
+                                                                <DetailRow label="Date" value={wd.createdAt ? format(new Date(wd.createdAt), 'PPp') : 'N/A'} />
+                                                            </div>
+                                                        </ScrollArea>
+                                                        <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-xl space-y-3 mt-4">
+                                                            <Label htmlFor="approved-amount-wd" className="text-xs font-bold uppercase tracking-wider">Final Amount Sent (Adjust if needed)</Label>
+                                                            <div className="relative">
+                                                                <Input 
+                                                                    id="approved-amount-wd"
+                                                                    type="number" 
+                                                                    value={approvedAmount} 
+                                                                    onChange={(e) => setApprovedAmount(e.target.value)}
+                                                                    className="font-black text-lg border-destructive/30"
+                                                                />
+                                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-destructive">USDT</span>
+                                                            </div>
+                                                            <p className="text-[10px] text-muted-foreground italic">Requested: {wd.amount} USDT. Adjusting down credits back difference to user.</p>
                                                         </div>
-                                                        <DialogFooter className="flex-row gap-2 mt-2">
-                                                            <Button variant="destructive" className="flex-1 font-bold h-10 text-xs" onClick={() => handleStatusUpdate('withdrawals', wd.id, 'failed', wd.userId, wd.amount)} disabled={actionLoading === wd.id}>Reject</Button>
-                                                            <Button className="flex-1 bg-primary font-bold h-10 text-xs" onClick={() => handleStatusUpdate('withdrawals', wd.id, 'completed')} disabled={actionLoading === wd.id}>Sent</Button>
+                                                        <DialogFooter className="flex-row gap-2 mt-4">
+                                                            <Button variant="destructive" className="flex-1 font-bold h-10 text-xs" onClick={() => handleStatusUpdate('withdrawals', wd.id, 'failed', wd.userId, wd.amount)} disabled={actionLoading === wd.id}>Reject & Refund</Button>
+                                                            <Button className="flex-1 bg-primary font-bold h-10 text-xs" onClick={() => handleStatusUpdate('withdrawals', wd.id, 'completed', wd.userId, wd.amount, parseFloat(approvedAmount))} disabled={actionLoading === wd.id}>Confirm Sent</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
