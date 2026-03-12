@@ -17,7 +17,10 @@ import {
   Globe, 
   CheckCircle2,
   BarChart3,
-  Clock
+  Clock,
+  ShieldAlert,
+  Verified,
+  Scale
 } from 'lucide-react';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -173,7 +176,7 @@ export default function Home() {
   return (
     <div className="flex flex-col w-full overflow-hidden">
       {/* Branding Hero Section */}
-      <section className="py-20 border-b bg-muted/5">
+      <section className="py-12 border-b bg-muted/5">
         <div className="container mx-auto px-4 text-center space-y-6">
           <div className="flex justify-center items-center gap-4">
             <div className="p-3 bg-white rounded-2xl shadow-sm border">
@@ -226,6 +229,63 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Interactive Trade Section */}
+      <section className="py-20 bg-muted/20">
+        <div className="container mx-auto max-w-6xl px-4">
+            <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4">Live Markets</h2>
+                <p className="text-muted-foreground">Select your trade type to begin institutional verification.</p>
+            </div>
+            <div className="grid md:grid-cols-2 gap-8">
+                <Card className="relative overflow-hidden group hover:border-primary transition-all duration-300 border-2 shadow-sm hover:shadow-xl bg-card">
+                    <CardHeader className="p-8">
+                        <div className="flex items-center gap-3 mb-2">
+                             <div className="p-2 bg-primary/10 rounded-lg">
+                                <CircleDollarSign className="h-6 w-6 text-primary" />
+                             </div>
+                             <CardTitle className="text-2xl font-bold">Buy USDT</CardTitle>
+                        </div>
+                        <CardDescription>Instant purchase with zero hidden fees.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-8 pt-0 space-y-6">
+                        <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
+                            <div>
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Buy Rate</p>
+                                <p className="text-3xl font-black">₹{(Number(settings.buyRate) || 0).toFixed(2)}</p>
+                            </div>
+                            <Button size="sm" className="rounded-full" asChild>
+                                <Link href="/signup">Buy Now</Link>
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="relative overflow-hidden group hover:border-destructive transition-all duration-300 border-2 shadow-sm hover:shadow-xl bg-card">
+                    <CardHeader className="p-8">
+                        <div className="flex items-center gap-3 mb-2">
+                             <div className="p-2 bg-destructive/10 rounded-lg">
+                                <TetherIcon className="h-6 w-6" />
+                             </div>
+                             <CardTitle className="text-2xl font-bold">Sell USDT</CardTitle>
+                        </div>
+                        <CardDescription>Convert USDT to INR with high liquidity.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-8 pt-0 space-y-6">
+                        <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
+                            <div>
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Sell Rate</p>
+                                <p className="text-3xl font-black">₹{(Number(settings.sellRate) || 0).toFixed(2)}</p>
+                            </div>
+                            <Button variant="destructive" size="sm" className="rounded-full" asChild>
+                                <Link href="/signup">Sell Now</Link>
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+      </section>
+
       {/* Feature Grid */}
       <section className="py-24 bg-card border-y">
         <div className="container mx-auto max-w-6xl px-4">
@@ -258,6 +318,31 @@ export default function Home() {
               </p>
             </Card>
           </div>
+        </div>
+      </section>
+
+      {/* Why Institutional Traders Choose Us (New Trust Section) */}
+      <section className="py-24 bg-primary/5">
+        <div className="container mx-auto max-w-6xl px-4 text-center">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-16">Unrivaled Platform Integrity</h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-12">
+                {[
+                    { title: "1:1 Reserves", icon: Verified, desc: "Every USDT is backed 1:1 by real-world assets in audited institutional accounts." },
+                    { title: "Regulatory Compliance", icon: Scale, desc: "Adhering to the highest standards of international financial regulations and AML protocols." },
+                    { title: "Deep Liquidity", icon: TrendingUp, desc: "Our liquidity pools ensure minimal slippage even on high-volume institutional trades." },
+                    { title: "Priority Support", icon: ShieldAlert, desc: "Our elite trading desk provides 24/7 priority assistance for all account holders." }
+                ].map((item, i) => (
+                    <div key={i} className="space-y-4">
+                        <div className="flex justify-center">
+                            <div className="p-4 bg-white rounded-3xl shadow-sm border border-primary/10">
+                                <item.icon className="h-10 w-10 text-primary" />
+                            </div>
+                        </div>
+                        <h4 className="text-xl font-bold">{item.title}</h4>
+                        <p className="text-sm text-muted-foreground leading-relaxed px-4">{item.desc}</p>
+                    </div>
+                ))}
+            </div>
         </div>
       </section>
 
@@ -330,28 +415,6 @@ export default function Home() {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-        </div>
-      </section>
-
-      {/* CTA Footer */}
-      <section className="py-24 px-4">
-        <div className="container mx-auto max-w-5xl">
-          <div className="bg-primary rounded-[3rem] p-12 md:p-24 text-center text-primary-foreground space-y-8 relative overflow-hidden shadow-2xl shadow-primary/20">
-            <div className="absolute top-0 right-0 p-12 opacity-10 rotate-12">
-                <TetherIcon className="w-64 h-64" />
-            </div>
-            <h2 className="text-4xl md:text-7xl font-black tracking-tight leading-none relative z-10">
-                Join the Future of <br className="hidden md:block" /> Digital Asset Trading.
-            </h2>
-            <p className="text-xl opacity-90 relative z-10 max-w-2xl mx-auto">
-                Open a free account in minutes and start trading USDT with the most trusted platform in the market.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 relative z-10">
-                <Button size="lg" variant="secondary" className="h-16 px-12 text-xl font-bold rounded-2xl hover:scale-105 transition-all" asChild>
-                    <Link href="/signup">Create Free Account</Link>
-                </Button>
-            </div>
-          </div>
         </div>
       </section>
     </div>
