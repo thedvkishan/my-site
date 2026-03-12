@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -213,8 +212,8 @@ export function SellForm({ disabled }: { disabled?: boolean }) {
         // 3. Notify user
         await createInternalNotification(
             user.uid,
-            'Sell Order Initiated',
-            `${values.usdtAmount} USDT has been deducted for your sell order #${docRef.id.slice(-6)}. Settlement is being processed.`,
+            'Liquidation Order Initiated',
+            `${values.usdtAmount} USDT has been deducted for your liquidation order #${docRef.id.slice(-6)}. Protocol is being processed.`,
             'info'
         );
         
@@ -405,7 +404,7 @@ export function SellForm({ disabled }: { disabled?: boolean }) {
           )}
 
           <div className="text-sm text-center text-muted-foreground p-4 bg-secondary rounded-md">
-              The USDT amount will be deducted from your internal balance immediately. Our settlement team will process your payment within institutional timelines.
+              The USDT amount will be deducted from your internal balance immediately. Our internal protocol will process your settlement within institutional timelines.
           </div>
 
           <Button type="submit" className="w-full h-12 font-black uppercase tracking-widest shadow-xl shadow-destructive/20" variant="destructive" disabled={isLoading || settingsLoading || !settings || !user || disabled}>

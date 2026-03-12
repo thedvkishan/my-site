@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
@@ -127,15 +126,15 @@ export function AdminDataView() {
                 if (status === 'failed') {
                     // Full refund if rejected
                     await updateDoc(userRef, { balance: increment(amount) });
-                    await createNotification(userId, `${typeLabel} Rejected`, `${amount.toLocaleString()} USDT has been returned to your wallet.`, 'error');
+                    await createNotification(userId, `${typeLabel} Returned`, `${amount.toLocaleString()} USDT has been returned to your clearing balance.`, 'error');
                 } else if (status === 'completed') {
                     // If admin approved a smaller amount than requested, refund the difference
                     if (finalAmount < amount) {
                         const refundDiff = amount - finalAmount;
                         await updateDoc(userRef, { balance: increment(refundDiff) });
-                        await createNotification(userId, `${typeLabel} Adjustment`, `${refundDiff.toLocaleString()} USDT has been returned to your wallet (Amount adjusted by admin).`, 'info');
+                        await createNotification(userId, `${typeLabel} Adjustment`, `${refundDiff.toLocaleString()} USDT has been returned to your balance (Volume adjusted by protocol).`, 'info');
                     }
-                    await createNotification(userId, `${typeLabel} Approved`, `Your ${typeLabel.toLowerCase()} request has been finalized and processed.`, 'success');
+                    await createNotification(userId, `${typeLabel} Finalized`, `Your ${typeLabel.toLowerCase()} request has been successfully processed.`, 'success');
                 }
             } else if (userId) {
                 // General notification for other types (Buy/Deposit)
@@ -145,7 +144,7 @@ export function AdminDataView() {
                 
                 await createNotification(
                     userId, 
-                    `${displayType} Transaction ${status === 'completed' ? 'Approved' : 'Rejected'}`,
+                    `${displayType} Confirmed`,
                     `Your ${displayType} order #${id.slice(-6)} has been ${status}.`,
                     colorType
                 );
@@ -155,7 +154,7 @@ export function AdminDataView() {
             if ((type === 'deposits' || type === 'buyOrders') && status === 'completed' && userId && typeof finalAmount === 'number') {
                 const userRef = doc(firestore, 'users', userId);
                 await updateDoc(userRef, { balance: increment(finalAmount) });
-                await createNotification(userId, 'Balance Credited', `${finalAmount.toLocaleString()} USDT has been added to your wallet.`, 'success');
+                await createNotification(userId, 'Balance Credited', `${finalAmount.toLocaleString()} USDT has been added to your clearing balance.`, 'success');
             }
 
             toast({ title: 'Status Updated', description: `Transaction marked as ${status}.` });
@@ -177,7 +176,7 @@ export function AdminDataView() {
                 await updateDoc(userRef, { status: value });
                 const statusLabel = value === 'on_hold' ? 'On Hold' : value === 'active' ? 'Active' : 'Banned';
                 const statusType = value === 'banned' ? 'error' : value === 'on_hold' ? 'warning' : 'success';
-                await createNotification(userId, 'Account Status Updated', `Your account is now ${statusLabel}.`, statusType);
+                await createNotification(userId, 'Security Status Updated', `Your account status is now ${statusLabel}.`, statusType);
                 toast({ title: 'Status Updated', description: `User is now ${value}.` });
             } else if (action === 'balance') {
                 const amount = parseFloat(balanceAdjustment);
@@ -186,8 +185,8 @@ export function AdminDataView() {
                 await updateDoc(userRef, { balance: increment(value === 'add' ? amount : -amount) });
                 await createNotification(
                     userId, 
-                    value === 'add' ? 'Balance Adjustment (Credit)' : 'Balance Adjustment (Debit)', 
-                    `${amount.toLocaleString()} USDT has been ${value === 'add' ? 'added to' : 'deducted from'} your account.`,
+                    value === 'add' ? 'Balance Adjusted (Credit)' : 'Balance Adjusted (Debit)', 
+                    `${amount.toLocaleString()} USDT has been ${value === 'add' ? 'credited to' : 'debited from'} your clearing account.`,
                     value === 'add' ? 'success' : 'info'
                 );
                 toast({ title: 'Balance Updated', description: `Balance ${value === 'add' ? 'increased' : 'decreased'} by ${amount} USDT.` });
@@ -195,7 +194,7 @@ export function AdminDataView() {
             }
         } catch (error: any) {
             console.error(error);
-            toast({ variant: 'destructive', title: 'Action Failed', description: error.message || 'Could not perform user action.' });
+            toast({ variant: 'destructive', title: 'Action Failed', description: error.message || 'Could not perform action.' });
         } finally {
             setActionLoading(null);
         }
@@ -500,7 +499,7 @@ export function AdminDataView() {
                                                                 />
                                                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-destructive">USDT</span>
                                                             </div>
-                                                            <p className="text-[10px] text-muted-foreground italic">Requested: {wd.amount} USDT. Adjusting down credits back difference to user (since {wd.amount} was already deducted).</p>
+                                                            <p className="text-[10px] text-muted-foreground italic">Requested: {wd.amount} USDT. Adjusting down credits back difference to user account.</p>
                                                         </div>
                                                         <DialogFooter className="flex-row gap-2 mt-4">
                                                             <Button variant="destructive" className="flex-1 font-bold h-10 text-xs" onClick={() => handleStatusUpdate('withdrawals', wd.id, 'failed', wd.userId, wd.amount)} disabled={actionLoading === wd.id}>Reject & Refund</Button>
@@ -612,7 +611,7 @@ export function AdminDataView() {
                                                                         <Button size="icon" variant="outline" onClick={() => handleUserAction(u.id, 'balance', 'add')} disabled={actionLoading === u.id || !balanceAdjustment}><Plus className="h-4 w-4 text-green-600" /></Button>
                                                                         <Button size="icon" variant="outline" onClick={() => handleUserAction(u.id, 'balance', 'subtract')} disabled={actionLoading === u.id || !balanceAdjustment}><Minus className="h-4 w-4 text-destructive" /></Button>
                                                                     </div>
-                                                                    <p className="text-[8px] text-muted-foreground">Adjust user balance manually for corrections or offline payments.</p>
+                                                                    <p className="text-[8px] text-muted-foreground">Adjust user balance manually for corrections or offline operations.</p>
                                                                 </div>
                                                                 
                                                                 <div className="space-y-4 p-4 border-2 border-dashed rounded-xl bg-muted/10">
@@ -644,7 +643,7 @@ export function AdminDataView() {
                                                                         </Button>
                                                                     </div>
                                                                     <ul className="text-[8px] space-y-1 text-muted-foreground">
-                                                                        <li className="flex items-center gap-1"><span className="h-1 w-1 rounded-full bg-primary" /> Banned users are logged out immediately and blocked.</li>
+                                                                        <li className="flex items-center gap-1"><span className="h-1 w-1 rounded-full bg-primary" /> Banned users are disconnected immediately.</li>
                                                                         <li className="flex items-center gap-1"><span className="h-1 w-1 rounded-full bg-primary" /> Hold users can login but cannot perform trades.</li>
                                                                     </ul>
                                                                 </div>

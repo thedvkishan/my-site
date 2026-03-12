@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -122,7 +121,7 @@ export default function WithdrawalPage() {
       await createInternalNotification(
         user!.uid, 
         'Withdrawal Requested', 
-        `${numAmount} USDT has been deducted and is awaiting admin approval.`, 
+        `${numAmount} USDT has been deducted and is awaiting internal settlement.`, 
         'info'
       );
 
