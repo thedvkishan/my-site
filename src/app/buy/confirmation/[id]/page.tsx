@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
@@ -57,30 +57,18 @@ export default function ConfirmationPage() {
         return (
           <>
             <Loader2 className="h-16 w-16 text-primary animate-spin" />
-            <CardTitle className="mt-6">Request Received</CardTitle>
-            <CardDescription className="mt-2">
-              Your transaction is being verified by our internal settlement protocol.
-            </CardDescription>
           </>
         );
       case 'verified':
         return (
           <>
             <CheckCircle2 className="h-16 w-16 text-green-500" />
-            <CardTitle className="mt-6">Transaction Verified!</CardTitle>
-            <CardDescription className="mt-2">
-              Your USDT has been sent to your address.
-            </CardDescription>
           </>
         );
       case 'failed':
         return (
           <>
             <XCircle className="h-16 w-16 text-destructive" />
-            <CardTitle className="mt-6">Verification Failed</CardTitle>
-            <CardDescription className="mt-2">
-              The verification could not be completed. Please contact support.
-            </CardDescription>
           </>
         );
     }
@@ -97,7 +85,7 @@ export default function ConfirmationPage() {
   return (
     <div className="container mx-auto max-w-lg py-12">
       <Card>
-        <CardHeader className="items-center text-center">
+        <CardHeader className="items-center text-center py-12">
           {renderStatus()}
         </CardHeader>
         <CardFooter>
