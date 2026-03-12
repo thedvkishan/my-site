@@ -3,21 +3,34 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { SellForm } from '@/components/trade/SellForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { TetherIcon } from '@/components/icons/TetherIcon';
-import { Loader2 } from 'lucide-react';
+import { Loader2, History } from 'lucide-react';
+import { collection, query, where } from 'firebase/firestore';
+import { format } from 'date-fns';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function SellPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const firestore = useFirestore();
 
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login?redirect=/sell');
     }
   }, [user, isUserLoading, router]);
+
+  const sellOrdersQuery = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return query(collection(firestore, 'sellOrders'), where('userId', '==', user.uid));
+  }, [firestore, user]);
+
+  const { data: sellOrders, isLoading: ordersLoading } = useCollection(sellOrdersQuery);
 
   if (isUserLoading) {
     return (
@@ -29,9 +42,21 @@ export default function SellPage() {
 
   if (!user) return null;
 
+  const sortedOrders = sellOrders?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+        case 'completed': return <Badge className="bg-green-500">Completed</Badge>;
+        case 'payment_processing': return <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-600 border-yellow-200">Processing</Badge>;
+        case 'pending_deposit': return <Badge variant="outline">Awaiting Deposit</Badge>;
+        case 'expired': return <Badge variant="destructive">Expired</Badge>;
+        default: return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8 md:py-12">
-      <Card className="shadow-lg border-2">
+    <div className="container mx-auto max-w-4xl px-4 py-8 md:py-12 space-y-8">
+      <Card className="shadow-lg border-2 max-w-2xl mx-auto">
         <CardHeader className="text-center">
              <div className='flex justify-center mb-4'>
                 <div className='p-3 bg-primary/10 rounded-full border-4 border-primary/20'>
@@ -39,10 +64,56 @@ export default function SellPage() {
                 </div>
             </div>
           <CardTitle className="text-2xl font-bold">Sell Tether (USDT)</CardTitle>
-          <CardDescription>Fill in your details to sell USDT and receive INR.</CardDescription>
+          <CardDescription>Sell your USDT and receive INR directly to your account.</CardDescription>
         </CardHeader>
         <CardContent>
           <SellForm />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-3">
+          <History className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <CardTitle className="text-lg">Recent Sell Orders</CardTitle>
+            <CardDescription>Your transaction history for selling USDT.</CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <ScrollArea className="h-[400px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>INR</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                      No sell history found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  sortedOrders.map(order => (
+                    <TableRow key={order.id} className="cursor-pointer hover:bg-muted/50" onClick={() => order.status === 'pending_deposit' && router.push(`/sell/deposit/${order.id}`)}>
+                      <TableCell className="text-xs">
+                        {format(new Date(order.createdAt), 'PPp')}
+                      </TableCell>
+                      <TableCell className="font-semibold text-destructive">
+                        -{order.usdtAmount} USDT
+                      </TableCell>
+                      <TableCell>₹{order.inrAmount.toLocaleString()}</TableCell>
+                      <TableCell>{getStatusBadge(order.status)}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </ScrollArea>
         </CardContent>
       </Card>
     </div>

@@ -12,9 +12,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { COUNTRIES, NETWORKS, PAYMENT_METHODS_SELL, CASH_DEPOSIT_BANKS } from '@/lib/constants';
+import { NETWORKS, PAYMENT_METHODS_SELL, CASH_DEPOSIT_BANKS } from '@/lib/constants';
 import { Loader2 } from 'lucide-react';
-import { useAuth, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useAuth, useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { collection, addDoc, doc } from 'firebase/firestore';
 
 type Settings = {
@@ -32,6 +32,7 @@ export function SellForm() {
 
   const auth = useAuth();
   const firestore = useFirestore();
+  const { user } = useUser();
 
   const settingsRef = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -45,9 +46,6 @@ export function SellForm() {
     usdtAmount: z.coerce.number().min(settings?.minSellAmount ?? 100, `Minimum sell amount is ${settings?.minSellAmount ?? 100} USDT.`),
     inrAmount: z.coerce.number().min(1, 'Amount must be at least 1.'),
     paymentMode: z.enum(PAYMENT_METHODS_SELL as [string, ...string[]], { required_error: 'Please select a payment mode.' }),
-    email: z.string().email('Please enter a valid email address.'),
-    phone: z.string().optional(),
-    country: z.enum(COUNTRIES as [string, ...string[]], { required_error: 'Please select your country.' }),
   }).and(z.discriminatedUnion('paymentMode', [
     z.object({
         paymentMode: z.literal('UPI'),
@@ -92,10 +90,7 @@ export function SellForm() {
       network: 'BEP20',
       usdtAmount: 0,
       paymentMode: 'UPI',
-      country: 'India',
       inrAmount: 0,
-      email: '',
-      phone: '',
       upiHolderName: '',
       upiId: '',
       bankHolderName: '',
@@ -138,7 +133,7 @@ export function SellForm() {
   async function onSubmit(values: SellFormValues) {
     setIsLoading(true);
 
-    if (!auth.currentUser || !firestore) {
+    if (!user || !firestore) {
         toast({ title: 'Error', description: 'User not authenticated or database not available.', variant: 'destructive'});
         setIsLoading(false);
         return;
@@ -147,7 +142,10 @@ export function SellForm() {
     try {
         const orderData = {
           ...values,
-          userId: auth.currentUser.uid,
+          userId: user.uid,
+          email: user.email || '',
+          contactNumber: '', // Redundant if they already have one in profile
+          country: 'India',
           type: 'sell',
           status: 'pending_deposit',
           createdAt: new Date().toISOString(),
@@ -307,7 +305,7 @@ export function SellForm() {
             )}
 
             <FormField control={control} name="accountNumber" render={({ field }) => (
-              <FormItem><FormLabel>Account Number</FormLabel><FormControl><Input placeholder="1234567890" {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem><FormLabel>Account Number</TableLabel><FormControl><Input placeholder="1234567890" {...field} /></FormControl><FormMessage /></FormItem>
             )}/>
             <FormField control={control} name="ifsc" render={({ field }) => (
               <FormItem><FormLabel>IFSC Code</FormLabel><FormControl><Input placeholder="BANK0001234" {...field} /></FormControl><FormMessage /></FormItem>
@@ -315,50 +313,11 @@ export function SellForm() {
           </div>
         )}
 
-        <FormField
-          control={control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Your Contact Email</FormLabel>
-              <FormControl><Input type="email" placeholder="you@example.com" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Your Contact Number (Optional)</FormLabel>
-              <FormControl><Input type="tel" placeholder="+91 12345 67890" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name="country"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Country</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger><SelectValue placeholder="Select your country" /></SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {COUNTRIES.map(country => (
-                    <SelectItem key={country} value={country}>{country}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="text-sm text-center text-muted-foreground p-4 bg-secondary rounded-md">
+            Please deposit your USDT within 3 hours after creating this order.
+        </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading || settingsLoading || !settings || !auth.currentUser}>
+        <Button type="submit" className="w-full" disabled={isLoading || settingsLoading || !settings || !user}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Deposit and Receive
         </Button>
