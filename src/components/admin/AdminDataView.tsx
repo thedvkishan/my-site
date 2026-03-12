@@ -16,8 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo } from "react";
 
 const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
-    <div className="grid grid-cols-[120px_1fr] md:grid-cols-[160px_1fr] items-start gap-4 py-2.5 border-b border-muted/50 last:border-0">
-        <span className="text-muted-foreground text-left text-[10px] md:text-sm font-bold uppercase tracking-wider">{label}</span>
+    <div className="grid grid-cols-[100px_1fr] md:grid-cols-[160px_1fr] items-start gap-4 py-2.5 border-b border-muted/50 last:border-0">
+        <span className="text-muted-foreground text-left text-[10px] md:text-xs font-bold uppercase tracking-wider">{label}</span>
         <div className="font-semibold break-words text-xs md:text-sm">{value || 'N/A'}</div>
     </div>
 );
@@ -114,9 +114,9 @@ export function AdminDataView() {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'completed': return <Badge className="bg-green-500">Completed</Badge>;
-            case 'payment_processing': return <Badge className="bg-blue-500">Processing</Badge>;
-            case 'waiting_confirmation': return <Badge className="bg-yellow-500 text-yellow-950">Verifying</Badge>;
+            case 'completed': return <Badge className="bg-green-500 text-white border-0">Completed</Badge>;
+            case 'payment_processing': return <Badge className="bg-blue-500 text-white border-0">Processing</Badge>;
+            case 'waiting_confirmation': return <Badge className="bg-yellow-500 text-yellow-950 border-0">Verifying</Badge>;
             case 'pending_payment':
             case 'pending_deposit':
             case 'pending_hash': return <Badge variant="outline">Pending</Badge>;
@@ -195,16 +195,27 @@ export function AdminDataView() {
                                                                 <DetailRow label="Network" value={<Badge variant="outline" className="font-mono text-[10px]">{order.network}</Badge>} />
                                                                 <DetailRow label="Method" value={order.paymentMode} />
                                                                 <DetailRow label="Email" value={order.email} />
-                                                                <DetailRow label="Receipt" value={order.paymentReceiptUrl ? (
-                                                                    <div className="space-y-2 pt-1">
-                                                                        <a href={order.paymentReceiptUrl} target="_blank" className="text-primary hover:underline font-bold flex items-center gap-1 text-xs">View Full Proof <ArrowUpRight className="h-3 w-3" /></a>
-                                                                        {order.paymentReceiptUrl.startsWith('data:image') && (
-                                                                            <div className="relative h-40 w-full mt-2 border rounded-md overflow-hidden bg-muted flex items-center justify-center">
-                                                                                <img src={order.paymentReceiptUrl} alt="Receipt Preview" className="object-contain w-full h-full" />
+                                                                <DetailRow label="Proof" value={order.paymentReceiptUrl ? (
+                                                                    <div className="space-y-3 pt-1">
+                                                                        <a 
+                                                                            href={order.paymentReceiptUrl} 
+                                                                            target="_blank" 
+                                                                            rel="noopener noreferrer"
+                                                                            className="text-primary hover:underline font-bold flex items-center gap-2 text-xs bg-primary/10 w-fit px-3 py-1.5 rounded-full"
+                                                                        >
+                                                                            View Full Receipt <ArrowUpRight className="h-3.5 w-3.5" />
+                                                                        </a>
+                                                                        {order.paymentReceiptUrl.startsWith('data:image') ? (
+                                                                            <div className="relative w-full mt-2 border-2 border-primary/20 rounded-xl overflow-hidden bg-white shadow-inner flex items-center justify-center min-h-[200px]">
+                                                                                <img src={order.paymentReceiptUrl} alt="Receipt Preview" className="max-w-full h-auto max-h-[400px]" />
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="p-4 border border-dashed rounded-lg bg-muted text-center text-xs text-muted-foreground">
+                                                                                (Non-image document attached)
                                                                             </div>
                                                                         )}
                                                                     </div>
-                                                                ) : <span className="text-muted-foreground italic">No proof uploaded</span>} />
+                                                                ) : <span className="text-muted-foreground italic">No receipt provided</span>} />
                                                             </div>
                                                         </ScrollArea>
                                                         <DialogFooter className="flex-row gap-2 mt-2">
