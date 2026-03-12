@@ -239,7 +239,7 @@ export default function Home() {
                         </div>
                         <Button className="w-full h-16 text-lg font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20 group-hover:scale-[1.01] transition-transform" asChild={!isOnHold} disabled={isOnHold}>
                             <Link href="/buy">
-                                Open Clearing Portal <ArrowRight className="ml-2 h-5 w-5" />
+                                BUY USDT <ArrowRight className="ml-2 h-5 w-5" />
                             </Link>
                         </Button>
                     </CardContent>
@@ -270,7 +270,7 @@ export default function Home() {
                         </div>
                         <Button variant="destructive" className="w-full h-16 text-lg font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-destructive/20 group-hover:scale-[1.01] transition-transform" asChild={!isOnHold} disabled={isOnHold}>
                             <Link href="/sell">
-                                Execute Settlement <ArrowRight className="ml-2 h-5 w-5" />
+                                SELL USDT <ArrowRight className="ml-2 h-5 w-5" />
                             </Link>
                         </Button>
                     </CardContent>
@@ -287,13 +287,13 @@ export default function Home() {
                                 <BarChart3 className="h-5 w-5 text-primary" />
                                 <CardTitle className="text-xl font-black uppercase tracking-tight">Market Intelligence</CardTitle>
                             </div>
-                            <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest animate-pulse border-primary/30 text-primary">LIVE Clearing</Badge>
+                            <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest animate-pulse border-primary/30 text-primary">LIVE Selling</Badge>
                         </div>
-                        <CardDescription className="font-medium">Real-time rates across all supported settlement channels.</CardDescription>
+                        <CardDescription className="font-medium">Real-time selling rates across all supported settlement channels.</CardDescription>
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-border">
-                            {Object.entries(settings.buyRates || {}).map(([method, rate]) => (
+                            {Object.entries(settings.sellRates || {}).map(([method, rate]) => (
                                 <div key={method} className="bg-card p-6 flex flex-col gap-1 hover:bg-muted/30 transition-colors">
                                     <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{method}</p>
                                     <p className="text-2xl font-black">₹{Number(rate).toFixed(2)}</p>
