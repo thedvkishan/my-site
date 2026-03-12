@@ -23,6 +23,8 @@ import { TetherIcon } from '@/components/icons/TetherIcon';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { MOCK_SETTINGS } from '@/lib/constants';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 // Define the shape of your settings data
 export type Settings = SettingsFormValues;
@@ -50,8 +52,18 @@ export default function AdminDashboardPage() {
     const isInitialized = !settingsLoading && !isUserLoading;
 
     const saveSettings = useCallback(async (newSettings: Partial<Settings>) => {
-        if (settingsRef) {
+        if (!settingsRef) return;
+        
+        try {
             await setDoc(settingsRef, newSettings, { merge: true });
+        } catch (serverError: any) {
+            const permissionError = new FirestorePermissionError({
+                path: settingsRef.path,
+                operation: 'update',
+                requestResourceData: newSettings,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            throw serverError;
         }
     }, [settingsRef]);
     // --- End of Direct Firestore integration ---
@@ -114,13 +126,13 @@ export default function AdminDashboardPage() {
                 break;
             case 'rates':
                 newSettings = { 
-                    buyRateBank: values.buyRateBank, 
-                    buyRateCDM: values.buyRateCDM,
-                    sellRateBank: values.sellRateBank, 
-                    sellRateCDM: values.sellRateCDM,
-                    minBuyAmount: values.minBuyAmount, 
-                    minSellAmount: values.minSellAmount,
-                    minDepositAmount: values.minDepositAmount
+                    buyRateBank: Number(values.buyRateBank), 
+                    buyRateCDM: Number(values.buyRateCDM),
+                    sellRateBank: Number(values.sellRateBank), 
+                    sellRateCDM: Number(values.sellRateCDM),
+                    minBuyAmount: Number(values.minBuyAmount), 
+                    minSellAmount: Number(values.minSellAmount),
+                    minDepositAmount: Number(values.minDepositAmount)
                 };
                 description = 'Exchange rates and limits have been updated.';
                 break;
