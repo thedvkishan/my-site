@@ -29,7 +29,8 @@ import {
     Zap,
     History,
     MessageSquare,
-    Users
+    Users,
+    Filter
 } from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,8 @@ const PENDING_STATUSES = [
     'pending_hash', 
     'pending'
 ];
+
+const SETTLED_STATUSES = ['completed', 'failed', 'expired'];
 
 export function AdminDataView() {
     const firestore = useFirestore();
@@ -103,22 +106,7 @@ export function AdminDataView() {
     
     const isMainLoading = buyOrdersLoading || sellOrdersLoading || depositsLoading || withdrawalsLoading;
 
-    // Consolidate all transactions for unified pending/confirmed views
-    const allTransactions = useMemo(() => {
-        const combined = [
-            ...(buyOrders || []).map(o => ({ ...o, category: 'buy' })),
-            ...(sellOrders || []).map(o => ({ ...o, category: 'sell' })),
-            ...(deposits || []).map(o => ({ ...o, category: 'deposit' })),
-            ...(withdrawals || []).map(o => ({ ...o, category: 'withdrawal' })),
-        ];
-        return combined.sort((a, b) => {
-            const dateA = new Date(a.createdAt || 0).getTime();
-            const dateB = new Date(b.createdAt || 0).getTime();
-            return dateB - dateA;
-        });
-    }, [buyOrders, sellOrders, deposits, withdrawals]);
-
-    const filterData = (data: any[]) => {
+    const filterBySearch = (data: any[]) => {
         if (!searchQuery.trim()) return data;
         const q = searchQuery.toLowerCase();
         return data.filter(item => {
@@ -129,21 +117,20 @@ export function AdminDataView() {
         });
     };
 
-    const pendingTransactions = useMemo(() => 
-        filterData(allTransactions.filter(t => PENDING_STATUSES.includes(t.status))),
-    [allTransactions, searchQuery]);
+    const buyPending = useMemo(() => filterBySearch((buyOrders || []).filter(o => PENDING_STATUSES.includes(o.status))), [buyOrders, searchQuery]);
+    const buySettled = useMemo(() => filterBySearch((buyOrders || []).filter(o => SETTLED_STATUSES.includes(o.status))), [buyOrders, searchQuery]);
 
-    const settledTransactions = useMemo(() => 
-        filterData(allTransactions.filter(t => !PENDING_STATUSES.includes(t.status))),
-    [allTransactions, searchQuery]);
+    const sellPending = useMemo(() => filterBySearch((sellOrders || []).filter(o => PENDING_STATUSES.includes(o.status))), [sellOrders, searchQuery]);
+    const sellSettled = useMemo(() => filterBySearch((sellOrders || []).filter(o => SETTLED_STATUSES.includes(o.status))), [sellOrders, searchQuery]);
 
-    const filteredMessages = useMemo(() => 
-        filterData(contactMessages || []),
-    [contactMessages, searchQuery]);
+    const depositsPending = useMemo(() => filterBySearch((deposits || []).filter(o => PENDING_STATUSES.includes(o.status))), [deposits, searchQuery]);
+    const depositsSettled = useMemo(() => filterBySearch((deposits || []).filter(o => SETTLED_STATUSES.includes(o.status))), [deposits, searchQuery]);
 
-    const filteredUsers = useMemo(() => 
-        filterData(users || []),
-    [users, searchQuery]);
+    const withdrawalsPending = useMemo(() => filterBySearch((withdrawals || []).filter(o => PENDING_STATUSES.includes(o.status))), [withdrawals, searchQuery]);
+    const withdrawalsSettled = useMemo(() => filterBySearch((withdrawals || []).filter(o => SETTLED_STATUSES.includes(o.status))), [withdrawals, searchQuery]);
+
+    const filteredMessages = useMemo(() => filterBySearch(contactMessages || []), [contactMessages, searchQuery]);
+    const filteredUsers = useMemo(() => filterBySearch(users || []), [users, searchQuery]);
 
     const createNotification = async (userId: string, title: string, message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') => {
         if (!firestore) return;
@@ -268,29 +255,21 @@ export function AdminDataView() {
         }
     };
 
-    const renderTransactionRow = (order: any) => (
+    const renderTransactionRow = (order: any, category: 'buy' | 'sell' | 'deposit' | 'withdrawal') => (
         <TableRow key={order.id} className="hover:bg-muted/30 transition-colors">
             <TableCell>
                 <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className={cn(
-                        "font-black text-[8px] uppercase px-1.5 py-0",
-                        order.category === 'buy' && "bg-green-500/10 text-green-600 border-green-200",
-                        order.category === 'sell' && "bg-destructive/10 text-destructive border-destructive/20",
-                        order.category === 'deposit' && "bg-blue-500/10 text-blue-600 border-blue-200",
-                        order.category === 'withdrawal' && "bg-orange-500/10 text-orange-600 border-orange-200",
-                    )}>
-                        {order.category}
-                    </Badge>
                     <div className="text-[10px] font-black font-mono text-muted-foreground"><Hash className="h-2 w-2 inline" /> {order.id.slice(-6)}</div>
+                    {getStatusBadge(order.status)}
                 </div>
                 <div className="text-[10px] text-muted-foreground font-medium truncate max-w-[120px] mt-1">{order.email || order.userId?.slice(-8)}</div>
             </TableCell>
             <TableCell>
                 <div className={cn(
                     "font-black text-xs",
-                    (order.category === 'buy' || order.category === 'deposit') ? "text-primary" : "text-destructive"
+                    (category === 'buy' || category === 'deposit') ? "text-primary" : "text-destructive"
                 )}>
-                    {(order.category === 'buy' || order.category === 'deposit') ? '+' : '-'}{order.usdtAmount || order.amount} USDT
+                    {(category === 'buy' || category === 'deposit') ? '+' : '-'}{order.usdtAmount || order.amount} USDT
                 </div>
                 {order.inrAmount && <div className="text-[9px] text-muted-foreground font-bold">₹{order.inrAmount.toLocaleString()}</div>}
             </TableCell>
@@ -304,7 +283,7 @@ export function AdminDataView() {
                     <DialogContent className="max-w-xl mx-4">
                         <DialogHeader>
                             <DialogTitle className="text-xl font-black uppercase flex items-center gap-2">
-                                {order.category} Protocol Details
+                                {category.toUpperCase()} Protocol Details
                             </DialogTitle>
                             <DialogDescription className="text-xs">Transaction ID: {order.id}</DialogDescription>
                         </DialogHeader>
@@ -316,7 +295,7 @@ export function AdminDataView() {
                                 <DetailRow label="User Context" value={order.email || order.userId} />
                                 <DetailRow label="Volume" value={<span className="font-black">{(order.usdtAmount || order.amount).toLocaleString()} USDT</span>} />
                                 
-                                {order.category === 'buy' && (
+                                {category === 'buy' && (
                                     <>
                                         <DetailRow label="Bank Amount" value={<span className="text-primary font-black">₹{order.inrAmount?.toLocaleString()}</span>} />
                                         <DetailRow label="Method" value={order.paymentMode} />
@@ -335,7 +314,7 @@ export function AdminDataView() {
                                     </>
                                 )}
 
-                                {order.category === 'sell' && (
+                                {category === 'sell' && (
                                     <>
                                         <DetailRow label="Settlement" value={<span className="text-destructive font-black text-lg">₹{order.inrAmount?.toLocaleString()}</span>} />
                                         <DetailRow label="Method" value={<Badge variant="secondary" className="font-bold text-[10px]">{order.paymentMode}</Badge>} />
@@ -355,14 +334,14 @@ export function AdminDataView() {
                                     </>
                                 )}
 
-                                {order.category === 'deposit' && (
+                                {category === 'deposit' && (
                                     <>
                                         <DetailRow label="Network" value={order.network} />
                                         <DetailRow label="TXID Hash" value={<span className="font-mono text-[10px] break-all text-primary font-bold">{order.txHash || 'Awaiting Submission'}</span>} />
                                     </>
                                 )}
 
-                                {order.category === 'withdrawal' && (
+                                {category === 'withdrawal' && (
                                     <>
                                         <DetailRow label="Recipient" value={<span className="font-mono text-[10px] break-all text-destructive font-bold">{order.address}</span>} />
                                         <DetailRow label="Network" value={order.network} />
@@ -387,8 +366,8 @@ export function AdminDataView() {
                                     <p className="text-[10px] text-muted-foreground italic">Original request: {order.usdtAmount || order.amount} USDT.</p>
                                 </div>
                                 <DialogFooter className="flex-row gap-2 mt-4">
-                                    <Button variant="outline" className="flex-1 font-bold text-xs h-10" onClick={() => handleStatusUpdate(order.category, order.id, 'failed', order.userId, order.usdtAmount || order.amount)} disabled={actionLoading === order.id}>Reject & Refund</Button>
-                                    <Button className="flex-1 bg-primary font-bold text-xs h-10" onClick={() => handleStatusUpdate(order.category, order.id, 'completed', order.userId, order.usdtAmount || order.amount, parseFloat(approvedAmount))} disabled={actionLoading === order.id}>Confirm & Complete</Button>
+                                    <Button variant="outline" className="flex-1 font-bold text-xs h-10" onClick={() => handleStatusUpdate(category, order.id, 'failed', order.userId, order.usdtAmount || order.amount)} disabled={actionLoading === order.id}>Reject & Refund</Button>
+                                    <Button className="flex-1 bg-primary font-bold text-xs h-10" onClick={() => handleStatusUpdate(category, order.id, 'completed', order.userId, order.usdtAmount || order.amount, parseFloat(approvedAmount))} disabled={actionLoading === order.id}>Confirm & Complete</Button>
                                 </DialogFooter>
                             </>
                         )}
@@ -398,7 +377,44 @@ export function AdminDataView() {
         </TableRow>
     );
 
-    const SETTLED_STATUSES = ['completed', 'failed', 'expired'];
+    const renderSubTabs = (pendingData: any[], settledData: any[], category: 'buy' | 'sell' | 'deposit' | 'withdrawal') => (
+        <Tabs defaultValue="pending" className="w-full">
+            <div className="flex justify-start px-4 border-b bg-muted/5">
+                <TabsList className="bg-transparent h-auto p-0 border-b-0">
+                    <TabsTrigger value="pending" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3 font-bold text-[10px] uppercase tracking-wider">
+                        Pending Actions ({pendingData.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="settled" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3 font-bold text-[10px] uppercase tracking-wider">
+                        Settled Archives ({settledData.length})
+                    </TabsTrigger>
+                </TabsList>
+            </div>
+            <TabsContent value="pending" className="m-0">
+                <ScrollArea className="h-[60vh]">
+                    <Table>
+                        <TableHeader className="bg-muted/50"><TableRow><TableHead className="text-[10px] font-bold uppercase">Reference / Status</TableHead><TableHead className="text-[10px] font-bold uppercase">Volume</TableHead><TableHead className="text-right text-[10px] font-bold uppercase">View</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                            {pendingData.length === 0 ? (
+                                <TableRow><TableCell colSpan={3} className="text-center py-24 text-muted-foreground font-medium italic">No pending {category} orders found.</TableCell></TableRow>
+                            ) : pendingData.map(o => renderTransactionRow(o, category))}
+                        </TableBody>
+                    </Table>
+                </ScrollArea>
+            </TabsContent>
+            <TabsContent value="settled" className="m-0">
+                <ScrollArea className="h-[60vh]">
+                    <Table>
+                        <TableHeader className="bg-muted/50"><TableRow><TableHead className="text-[10px] font-bold uppercase">Reference / Status</TableHead><TableHead className="text-[10px] font-bold uppercase">Volume</TableHead><TableHead className="text-right text-[10px] font-bold uppercase">View</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                            {settledData.length === 0 ? (
+                                <TableRow><TableCell colSpan={3} className="text-center py-24 text-muted-foreground font-medium italic">Archive is empty.</TableCell></TableRow>
+                            ) : settledData.map(o => renderTransactionRow(o, category))}
+                        </TableBody>
+                    </Table>
+                </ScrollArea>
+            </TabsContent>
+        </Tabs>
+    );
 
     return (
         <Card className="overflow-hidden border-2 shadow-lg">
@@ -407,7 +423,7 @@ export function AdminDataView() {
                     <div>
                         <CardTitle className="text-xl md:text-2xl font-black tracking-tight">Terminal Control Center</CardTitle>
                         <CardDescription className="text-xs md:text-sm">
-                            Real-time monitoring of all settlement protocols.
+                            Granular monitoring of all settlement protocols.
                         </CardDescription>
                     </div>
                     <div className="relative w-full md:w-96">
@@ -422,21 +438,27 @@ export function AdminDataView() {
                 </div>
             </CardHeader>
             <CardContent className="p-0">
-                <Tabs defaultValue="pending" className="w-full">
+                <Tabs defaultValue="buy" className="w-full">
                     <div className="border-b bg-muted/10">
                         <ScrollArea className="w-full whitespace-nowrap">
                             <TabsList className="flex w-full justify-start h-auto p-2 bg-transparent border-b-0 gap-2">
-                                <TabsTrigger value="pending" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center gap-2">
-                                    <Zap className="h-3 w-3" /> Pending Actions ({pendingTransactions.length})
+                                <TabsTrigger value="buy" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center gap-2">
+                                    <TrendingUp className="h-3 w-3" /> Buy Protocol ({buyPending.length})
                                 </TabsTrigger>
-                                <TabsTrigger value="settled" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center gap-2">
-                                    <History className="h-3 w-3" /> Settled Archives ({settledTransactions.length})
+                                <TabsTrigger value="sell" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center gap-2">
+                                    <TrendingDown className="h-3 w-3" /> Liquidation Hub ({sellPending.length})
+                                </TabsTrigger>
+                                <TabsTrigger value="deposit" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center gap-2">
+                                    <ArrowDownCircle className="h-3 w-3" /> Wallet Credit ({depositsPending.length})
+                                </TabsTrigger>
+                                <TabsTrigger value="withdrawal" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center gap-2">
+                                    <ArrowUpCircle className="h-3 w-3" /> Wallet Debit ({withdrawalsPending.length})
                                 </TabsTrigger>
                                 <TabsTrigger value="contact" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center gap-2">
-                                    <MessageSquare className="h-3 w-3" /> Support tickets ({filteredMessages.length})
+                                    <MessageSquare className="h-3 w-3" /> Tickets ({filteredMessages.length})
                                 </TabsTrigger>
                                 <TabsTrigger value="users" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center gap-2">
-                                    <Users className="h-3 w-3" /> User registry ({filteredUsers.length})
+                                    <Users className="h-3 w-3" /> Users ({filteredUsers.length})
                                 </TabsTrigger>
                             </TabsList>
                             <ScrollBar orientation="horizontal" />
@@ -445,31 +467,10 @@ export function AdminDataView() {
                     
                     {isMainLoading && <div className="flex justify-center items-center py-24"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" /></div>}
                     
-                    <TabsContent value="pending" className="m-0">
-                        <ScrollArea className="h-[65vh]">
-                            <Table>
-                                <TableHeader className="bg-muted/50"><TableRow><TableHead className="text-[10px] font-bold uppercase">Type / Ref</TableHead><TableHead className="text-[10px] font-bold uppercase">Volume</TableHead><TableHead className="text-right text-[10px] font-bold uppercase">Actions</TableHead></TableRow></TableHeader>
-                                <TableBody>
-                                    {pendingTransactions.length === 0 ? (
-                                        <TableRow><TableCell colSpan={3} className="text-center py-24 text-muted-foreground font-medium italic">No pending actions found.</TableCell></TableRow>
-                                    ) : pendingTransactions.map(renderTransactionRow)}
-                                </TableBody>
-                            </Table>
-                        </ScrollArea>
-                    </TabsContent>
-                    
-                    <TabsContent value="settled" className="m-0">
-                        <ScrollArea className="h-[65vh]">
-                            <Table>
-                                <TableHeader className="bg-muted/50"><TableRow><TableHead className="text-[10px] font-bold uppercase">Type / Ref</TableHead><TableHead className="text-[10px] font-bold uppercase">Volume</TableHead><TableHead className="text-right text-[10px] font-bold uppercase">Details</TableHead></TableRow></TableHeader>
-                                <TableBody>
-                                    {settledTransactions.length === 0 ? (
-                                        <TableRow><TableCell colSpan={3} className="text-center py-24 text-muted-foreground font-medium italic">Archive is empty.</TableCell></TableRow>
-                                    ) : settledTransactions.map(renderTransactionRow)}
-                                </TableBody>
-                            </Table>
-                        </ScrollArea>
-                    </TabsContent>
+                    <TabsContent value="buy" className="m-0">{renderSubTabs(buyPending, buySettled, 'buy')}</TabsContent>
+                    <TabsContent value="sell" className="m-0">{renderSubTabs(sellPending, sellSettled, 'sell')}</TabsContent>
+                    <TabsContent value="deposit" className="m-0">{renderSubTabs(depositsPending, depositsSettled, 'deposit')}</TabsContent>
+                    <TabsContent value="withdrawal" className="m-0">{renderSubTabs(withdrawalsPending, withdrawalsSettled, 'withdrawal')}</TabsContent>
                     
                     <TabsContent value="contact" className="m-0">
                          <ScrollArea className="h-[65vh]">
