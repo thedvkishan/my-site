@@ -1,10 +1,24 @@
+
 'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ShieldCheck, Zap, MessageCircle, Loader2, Wallet, TrendingUp, CircleDollarSign, History } from 'lucide-react';
+import { 
+  ArrowRight, 
+  ShieldCheck, 
+  Zap, 
+  MessageCircle, 
+  Loader2, 
+  Wallet, 
+  TrendingUp, 
+  CircleDollarSign, 
+  History, 
+  Lock, 
+  Globe, 
+  CheckCircle2 
+} from 'lucide-react';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
@@ -49,113 +63,131 @@ export default function Home() {
   // If user is logged in, show a dashboard-style trading view
   if (user) {
     return (
-        <div className="container mx-auto max-w-6xl px-4 py-6 md:py-12">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                <div className="w-full">
-                    <h1 className="text-xl md:text-3xl font-bold tracking-tight">Welcome back!</h1>
-                    <p className="text-muted-foreground mt-0.5 text-xs md:text-lg">Your secure portal for USDT trading is ready.</p>
+        <div className="container mx-auto max-w-6xl px-4 py-8 md:py-16 animate-in fade-in duration-1000">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
+                <div className="space-y-2">
+                    <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
+                        Trading Hub
+                    </h1>
+                    <p className="text-muted-foreground md:text-xl">
+                        Welcome back, <span className="text-foreground font-semibold">{user.email?.split('@')[0]}</span>. Your secure portal is ready.
+                    </p>
                 </div>
-                <Card className="bg-primary/5 border-primary/20 w-full md:w-auto shrink-0">
-                    <CardContent className="p-3 md:p-4 flex items-center gap-3 md:gap-4">
-                        <div className="p-2 bg-primary/10 rounded-full">
-                            <Wallet className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                <Card className="bg-primary/5 border-primary/20 w-full md:w-auto overflow-hidden relative group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <CardContent className="p-6 flex items-center gap-6 relative">
+                        <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20 shadow-inner">
+                            <Wallet className="h-8 w-8 text-primary" />
                         </div>
                         <div>
-                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Wallet Balance</p>
-                            <p className="text-lg md:text-2xl font-bold">{(profile?.balance || 0).toLocaleString()} USDT</p>
+                            <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest mb-1">Total Assets</p>
+                            <p className="text-3xl font-black text-primary">{(profile?.balance || 0).toLocaleString()} <span className="text-sm font-medium">USDT</span></p>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 mb-8 md:mb-12">
-                <Button variant="outline" className="h-16 md:h-24 flex flex-col gap-1 md:gap-2 text-[10px] md:text-sm" asChild>
-                    <Link href="/wallet/deposit">
-                        <CircleDollarSign className="h-4 w-4 md:h-6 md:w-6 text-primary" />
-                        Deposit
-                    </Link>
-                </Button>
-                <Button variant="outline" className="h-16 md:h-24 flex flex-col gap-1 md:gap-2 text-[10px] md:text-sm" asChild>
-                    <Link href="/wallet/withdrawal">
-                        <Wallet className="h-4 w-4 md:h-6 md:w-6 text-accent" />
-                        Withdraw
-                    </Link>
-                </Button>
-                <Button variant="outline" className="h-16 md:h-24 flex flex-col gap-1 md:gap-2 text-[10px] md:text-sm" asChild>
-                    <Link href="/buy">
-                        <TrendingUp className="h-4 w-4 md:h-6 md:w-6 text-green-500" />
-                        Buy USDT
-                    </Link>
-                </Button>
-                <Button variant="outline" className="h-16 md:h-24 flex flex-col gap-1 md:gap-2 text-[10px] md:text-sm" asChild>
-                    <Link href="/wallet/history">
-                        <History className="h-4 w-4 md:h-6 md:w-6 text-muted-foreground" />
-                        History
-                    </Link>
-                </Button>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+                {[
+                    { label: 'Deposit', icon: CircleDollarSign, href: '/wallet/deposit', color: 'text-primary', bg: 'bg-primary/5' },
+                    { label: 'Withdraw', icon: Wallet, href: '/wallet/withdrawal', color: 'text-accent', bg: 'bg-accent/5' },
+                    { label: 'Buy USDT', icon: TrendingUp, href: '/buy', color: 'text-green-500', bg: 'bg-green-500/5' },
+                    { label: 'History', icon: History, href: '/wallet/history', color: 'text-muted-foreground', bg: 'bg-muted/5' },
+                ].map((action, i) => (
+                    <Button 
+                        key={action.label} 
+                        variant="outline" 
+                        className={`h-28 flex flex-col items-center justify-center gap-3 transition-all hover:scale-105 hover:shadow-lg border-2 animate-in slide-in-from-bottom-4 duration-500 fill-mode-both`}
+                        style={{ animationDelay: `${i * 100}ms` }}
+                        asChild
+                    >
+                        <Link href={action.href}>
+                            <div className={`p-3 rounded-full ${action.bg}`}>
+                                <action.icon className={`h-6 w-6 ${action.color}`} />
+                            </div>
+                            <span className="font-bold tracking-tight">{action.label}</span>
+                        </Link>
+                    </Button>
+                ))}
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6 md:gap-8 mb-12">
-                <Card className="relative overflow-hidden group hover:border-primary transition-colors border-2">
-                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-                        <TrendingUp className="w-24 h-24 md:w-32 md:h-32" />
+            <div className="grid md:grid-cols-2 gap-8 mb-16">
+                <Card className="relative overflow-hidden group hover:border-primary transition-all duration-300 border-2 shadow-sm hover:shadow-xl">
+                    <div className="absolute -top-12 -right-12 p-12 opacity-5 group-hover:opacity-10 transition-all duration-500 rotate-12 group-hover:rotate-0">
+                        <TrendingUp className="w-48 h-48" />
                     </div>
-                    <CardHeader className="p-5 md:p-6">
-                        <CardTitle className="flex items-center gap-2 text-lg md:text-2xl">
-                            <CircleDollarSign className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-                            Buy USDT
-                        </CardTitle>
-                        <CardDescription className="text-xs md:text-sm">Instant purchase with local payment.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-5 md:p-6 pt-0 space-y-4 md:space-y-6">
-                        <div className="bg-secondary p-4 rounded-lg">
-                            <p className="text-[10px] md:text-xs text-muted-foreground">Current Buy Rate</p>
-                            <p className="text-base md:text-2xl font-bold">1 USDT ≈ ₹{settings.buyRate?.toFixed(2)}</p>
+                    <CardHeader className="p-8">
+                        <div className="flex items-center gap-3 mb-2">
+                             <div className="p-2 bg-primary/10 rounded-lg">
+                                <CircleDollarSign className="h-6 w-6 text-primary" />
+                             </div>
+                             <CardTitle className="text-2xl font-bold">Buy USDT</CardTitle>
                         </div>
-                        <Button className="w-full" asChild>
+                        <CardDescription>Instant purchase with verified local payment methods.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-8 pt-0 space-y-6">
+                        <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center group-hover:bg-secondary transition-colors">
+                            <div>
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Market Rate</p>
+                                <p className="text-3xl font-black">₹{settings.buyRate?.toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
+                            </div>
+                            <div className="h-10 w-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                                <TrendingUp className="h-5 w-5 text-green-500" />
+                            </div>
+                        </div>
+                        <Button className="w-full h-14 text-lg font-bold rounded-xl" asChild>
                             <Link href="/buy">
-                                Buy Now <ArrowRight className="ml-2 h-4 w-4" />
+                                Buy Now <ArrowRight className="ml-2 h-5 w-5" />
                             </Link>
                         </Button>
                     </CardContent>
                 </Card>
 
-                <Card className="relative overflow-hidden group hover:border-destructive transition-colors border-2">
-                     <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-                        <Wallet className="w-24 h-24 md:w-32 md:h-32" />
+                <Card className="relative overflow-hidden group hover:border-destructive transition-all duration-300 border-2 shadow-sm hover:shadow-xl">
+                     <div className="absolute -top-12 -right-12 p-12 opacity-5 group-hover:opacity-10 transition-all duration-500 rotate-12 group-hover:rotate-0">
+                        <Wallet className="w-48 h-48" />
                     </div>
-                    <CardHeader className="p-5 md:p-6">
-                        <CardTitle className="flex items-center gap-2 text-lg md:text-2xl">
-                            <TetherIcon className="h-5 w-5 md:h-6 md:w-6" />
-                            Sell USDT
-                        </CardTitle>
-                        <CardDescription className="text-xs md:text-sm">Convert USDT to local currency.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-5 md:p-6 pt-0 space-y-4 md:space-y-6">
-                        <div className="bg-secondary p-4 rounded-lg">
-                            <p className="text-[10px] md:text-xs text-muted-foreground">Current Sell Rate</p>
-                            <p className="text-base md:text-2xl font-bold">1 USDT ≈ ₹{settings.sellRate?.toFixed(2)}</p>
+                    <CardHeader className="p-8">
+                        <div className="flex items-center gap-3 mb-2">
+                             <div className="p-2 bg-destructive/10 rounded-lg">
+                                <TetherIcon className="h-6 w-6" />
+                             </div>
+                             <CardTitle className="text-2xl font-bold">Sell USDT</CardTitle>
                         </div>
-                        <Button variant="destructive" className="w-full" asChild>
+                        <CardDescription>Convert your crypto to local currency with zero hassle.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-8 pt-0 space-y-6">
+                        <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center group-hover:bg-secondary transition-colors">
+                            <div>
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Market Rate</p>
+                                <p className="text-3xl font-black">₹{settings.sellRate?.toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
+                            </div>
+                            <div className="h-10 w-10 rounded-full bg-destructive/20 flex items-center justify-center">
+                                <TrendingUp className="h-5 w-5 text-destructive rotate-180" />
+                            </div>
+                        </div>
+                        <Button variant="destructive" className="w-full h-14 text-lg font-bold rounded-xl" asChild>
                             <Link href="/sell">
-                                Sell Now <ArrowRight className="ml-2 h-4 w-4" />
+                                Sell Now <ArrowRight className="ml-2 h-5 w-5" />
                             </Link>
                         </Button>
                     </CardContent>
                 </Card>
             </div>
 
-            <Card className="mb-12 border-primary/20 bg-primary/5">
-                <CardContent className="p-5 md:p-8 flex flex-col md:flex-row items-center gap-3 md:gap-6">
-                    <div className="bg-primary/10 p-2 md:p-4 rounded-full">
-                        <ShieldCheck className="h-6 w-6 md:h-10 md:w-10 text-primary" />
+            <div className="grid md:grid-cols-3 gap-6">
+                {[
+                    { title: 'Secure Vault', desc: 'Industry-standard encryption for your funds.', icon: Lock },
+                    { title: 'Global Access', desc: 'Trade 24/7 from anywhere in the world.', icon: Globe },
+                    { title: 'Verified Only', desc: 'Secure verification for all transactions.', icon: CheckCircle2 },
+                ].map((feature) => (
+                    <div key={feature.title} className="p-6 rounded-2xl border bg-card hover:bg-accent/5 transition-colors">
+                        <feature.icon className="h-8 w-8 text-primary mb-4" />
+                        <h3 className="font-bold text-lg mb-2">{feature.title}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
                     </div>
-                    <div className="text-center md:text-left">
-                        <h3 className="text-base md:text-xl font-bold">Security Tip</h3>
-                        <p className="text-muted-foreground text-[10px] md:text-sm">Always double-check your wallet address before confirming a transaction. TetherSwap Zone will never ask for your private keys via email or chat.</p>
-                    </div>
-                </CardContent>
-            </Card>
+                ))}
+            </div>
         </div>
     );
   }
@@ -163,140 +195,186 @@ export default function Home() {
   // Marketing Home for Guests
   return (
     <>
-      <div className="container mx-auto max-w-6xl px-4 py-12 md:py-20">
-        <div className="flex flex-col items-center mb-12 text-center">
-          <TetherIcon className="w-16 h-16 md:w-20 md:h-20 mb-6 text-primary" />
-          <h1 className="text-3xl md:text-6xl font-extrabold tracking-tighter text-foreground">
-            TetherSwap Zone
-          </h1>
-          <p className="text-muted-foreground text-base md:text-lg mt-4 max-w-3xl">
-            Welcome to the premier destination for seamless and secure Tether (USDT) transactions. Join thousands of users trading USDT with the most trusted platform in the region.
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-             <Button size="lg" className="w-full sm:w-auto" asChild>
-                <Link href="/signup">Get Started</Link>
-             </Button>
-             <Button variant="outline" size="lg" className="w-full sm:w-auto" asChild>
-                <Link href="/contact">Learn More</Link>
-             </Button>
-          </div>
+      <div className="relative overflow-hidden">
+        {/* Animated Background Element */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none -z-10 overflow-hidden">
+            <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[80%] rounded-full bg-primary/5 blur-[120px] animate-pulse" />
+            <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[80%] rounded-full bg-accent/5 blur-[120px] animate-pulse" />
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 md:gap-8 mb-20">
-          <Link href="/buy">
-            <Card className="h-full flex flex-col group hover:border-primary hover:shadow-lg transition-all duration-300 border-2">
-              <CardHeader className="p-5 md:p-6">
-                <CardTitle className="text-xl md:text-2xl font-semibold">Buy Tether (USDT)</CardTitle>
-              </CardHeader>
-              <CardContent className="flex-grow flex flex-col justify-between p-5 md:p-6 pt-0">
-                <div className="relative aspect-video mb-4 rounded-md overflow-hidden bg-muted">
-                  <Image 
-                    src={settings.buyBannerUrl || ''} 
-                    alt="Buy Tether" 
-                    fill
-                    style={{ objectFit: 'cover' }}
-                    data-ai-hint="crypto buy"
-                    className="group-hover:scale-105 transition-transform duration-300"
-                  />
+        <div className="container mx-auto max-w-6xl px-4 py-20 md:py-32">
+            <div className="flex flex-col items-center text-center space-y-8 animate-in fade-in slide-in-from-top-10 duration-1000">
+                <div className="relative">
+                    <TetherIcon className="w-20 h-20 md:w-32 md:h-32 text-primary drop-shadow-[0_0_30px_rgba(38,161,123,0.3)] animate-bounce" />
+                    <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150 -z-10" />
                 </div>
-                <p className="text-muted-foreground mb-4 text-xs md:text-sm">
-                  Purchase USDT effortlessly with your preferred local payment methods. Instant delivery guaranteed.
-                </p>
-                <Button className="w-full mt-auto">
-                  Buy Now <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
-          </Link>
+                
+                <div className="space-y-4">
+                    <h1 className="text-5xl md:text-8xl font-black tracking-tighter leading-none">
+                        TetherSwap <span className="text-primary italic">Zone</span>
+                    </h1>
+                    <p className="text-muted-foreground text-lg md:text-2xl max-w-3xl mx-auto font-medium">
+                        Secure. Fast. Trusted. The ultimate destination for seamless Tether (USDT) transactions.
+                    </p>
+                </div>
 
-          <Link href="/sell">
-            <Card className="h-full flex flex-col group hover:border-destructive hover:shadow-lg transition-all duration-300 border-2">
-              <CardHeader className="p-5 md:p-6">
-                <CardTitle className="text-xl md:text-2xl font-semibold">Sell Tether (USDT)</CardTitle>
-              </CardHeader>
-              <CardContent className="flex-grow flex flex-col justify-between p-5 md:p-6 pt-0">
-                 <div className="relative aspect-video mb-4 rounded-md overflow-hidden bg-muted">
-                  <Image 
-                    src={settings.sellBannerUrl || ''} 
-                    alt="Sell Tether"
-                    fill
-                    style={{ objectFit: 'cover' }}
-                    data-ai-hint="crypto sell"
-                    className="group-hover:scale-105 transition-transform duration-300"
-                  />
+                <div className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto pt-4">
+                    <Button size="lg" className="h-16 px-10 text-xl font-bold rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all hover:scale-105" asChild>
+                        <Link href="/signup">Start Trading Now</Link>
+                    </Button>
+                    <Button variant="outline" size="lg" className="h-16 px-10 text-xl font-bold rounded-2xl border-2 hover:bg-secondary transition-all" asChild>
+                        <Link href="/contact">Contact Support</Link>
+                    </Button>
                 </div>
-                <p className="text-muted-foreground mb-4 text-xs md:text-sm">
-                  Convert your USDT to local currency instantly. Best market rates and secure transfers.
-                </p>
-                <Button className="w-full mt-auto" variant="destructive">
-                  Sell Now <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
-          </Link>
+
+                <div className="flex items-center gap-8 pt-12 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all">
+                    <div className="flex items-center gap-2">
+                        <ShieldCheck className="h-5 w-5" />
+                        <span className="text-sm font-bold uppercase tracking-widest">ISO Certified</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Lock className="h-5 w-5" />
+                        <span className="text-sm font-bold uppercase tracking-widest">PCI Compliant</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Globe className="h-5 w-5" />
+                        <span className="text-sm font-bold uppercase tracking-widest">Global Support</span>
+                    </div>
+                </div>
+            </div>
         </div>
       </div>
 
-      <section className="bg-secondary py-12 md:py-20">
+      <section className="bg-card py-24 md:py-32 border-y">
         <div className="container mx-auto max-w-6xl px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-4xl font-bold tracking-tight">Why Choose TetherSwap Zone?</h2>
-            <p className="text-muted-foreground mt-4 max-w-2xl mx-auto text-sm md:text-base">
-              We are committed to providing a superior trading experience.
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div className="space-y-6">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest">
+                        <Zap className="h-3 w-3" /> Lightning Fast
+                    </div>
+                    <h2 className="text-4xl md:text-6xl font-black tracking-tight">
+                        Experience Real-Time Trading.
+                    </h2>
+                    <p className="text-lg text-muted-foreground leading-relaxed">
+                        No more waiting days for bank transfers. Our system is optimized for speed, ensuring your USDT or local currency is delivered in record time.
+                    </p>
+                    <ul className="space-y-4">
+                        {[
+                            'Instant USDT delivery upon payment confirmation.',
+                            'Highest liquidity and best market rates.',
+                            'Dedicated account managers for large volume trades.'
+                        ].map((item) => (
+                            <li key={item} className="flex items-center gap-3 font-semibold">
+                                <CheckCircle2 className="h-5 w-5 text-primary" />
+                                {item}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <Card className="aspect-square flex flex-col items-center justify-center p-8 text-center border-2 hover:border-primary transition-colors">
+                        <TrendingUp className="h-12 w-12 text-primary mb-4" />
+                        <h3 className="text-3xl font-black">₹{settings.buyRate?.toFixed(2)}</h3>
+                        <p className="text-sm font-bold text-muted-foreground uppercase mt-1">Buy Rate</p>
+                    </Card>
+                    <Card className="aspect-square flex flex-col items-center justify-center p-8 text-center border-2 hover:border-destructive transition-colors mt-8">
+                        <TrendingUp className="h-12 w-12 text-destructive rotate-180 mb-4" />
+                        <h3 className="text-3xl font-black">₹{settings.sellRate?.toFixed(2)}</h3>
+                        <p className="text-sm font-bold text-muted-foreground uppercase mt-1">Sell Rate</p>
+                    </Card>
+                </div>
+            </div>
+        </div>
+      </section>
+
+      <section className="py-24 md:py-32 bg-secondary/30">
+        <div className="container mx-auto max-w-6xl px-4">
+          <div className="text-center mb-20 space-y-4">
+            <h2 className="text-4xl md:text-6xl font-black tracking-tight">Security You Can Trust.</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              We employ military-grade security to protect your assets and privacy.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6 md:gap-8 text-center">
-            <div className="flex flex-col items-center p-6 bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow">
-              <div className="p-3 md:p-4 bg-primary/10 rounded-full mb-4 border-4 border-primary/20">
-                <ShieldCheck className="w-8 h-8 md:w-10 md:h-10 text-primary" />
-              </div>
-              <h3 className="text-lg md:text-xl font-semibold mb-2">Rock-Solid Security</h3>
-              <p className="text-muted-foreground text-xs md:text-sm">
-                State-of-the-art security measures to protect your assets and personal information.
-              </p>
-            </div>
-            <div className="flex flex-col items-center p-6 bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow">
-              <div className="p-3 md:p-4 bg-primary/10 rounded-full mb-4 border-4 border-primary/20">
-                <Zap className="w-8 h-8 md:w-10 md:h-10 text-primary" />
-              </div>
-              <h3 className="text-lg md:text-xl font-semibold mb-2">Lightning-Fast</h3>
-              <p className="text-muted-foreground text-xs md:text-sm">
-                Optimized transaction processing ensures your trades are settled in record time.
-              </p>
-            </div>
-            <div className="flex flex-col items-center p-6 bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow">
-              <div className="p-3 md:p-4 bg-primary/10 rounded-full mb-4 border-4 border-primary/20">
-                <MessageCircle className="w-8 h-8 md:w-10 md:h-10 text-primary" />
-              </div>
-              <h3 className="text-lg md:text-xl font-semibold mb-2">24/7 Support</h3>
-              <p className="text-muted-foreground text-xs md:text-sm">
-                Our dedicated support team is available around the clock to assist you via our contact page.
-              </p>
-            </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                title: 'Cold Storage',
+                desc: '98% of digital assets are stored in offline multi-signature vaults.',
+                icon: Lock,
+              },
+              {
+                title: 'Real-time Monitoring',
+                desc: 'Our automated systems monitor for suspicious activity 24/7.',
+                icon: ShieldCheck,
+              },
+              {
+                title: 'Privacy Guaranteed',
+                desc: 'We never share your personal data with third parties.',
+                icon: ShieldCheck,
+              },
+            ].map((feature) => (
+              <Card key={feature.title} className="p-8 border-2 hover:border-primary transition-all group">
+                <div className="p-4 bg-primary/10 rounded-2xl w-fit mb-6 group-hover:bg-primary/20 transition-colors">
+                  <feature.icon className="h-10 w-10 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold mb-4">{feature.title}</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  {feature.desc}
+                </p>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="py-12 md:py-20">
+      <section className="py-24 bg-card">
         <div className="container mx-auto max-w-4xl px-4">
-          <div className="text-center mb-8 md:mb-12">
-            <h2 className="text-2xl md:text-4xl font-bold tracking-tight">Frequently Asked Questions</h2>
+          <div className="text-center mb-16 space-y-4">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">FAQs</h2>
+            <p className="text-muted-foreground">Everything you need to know about the platform.</p>
           </div>
           <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="item-1">
-              <AccordionTrigger className="text-base md:text-lg font-medium">What is Tether (USDT)?</AccordionTrigger>
-              <AccordionContent className="text-sm md:text-base text-muted-foreground">
-                Tether (USDT) is a cryptocurrency known as a "stablecoin," designed to maintain a stable value pegged to the U.S. Dollar.
+            <AccordionItem value="item-1" className="border-2 rounded-2xl px-6 mb-4">
+              <AccordionTrigger className="text-lg font-bold hover:no-underline">What is TetherSwap Zone?</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground text-lg pb-6">
+                TetherSwap Zone is a professional trading platform designed to facilitate secure and rapid exchanges between Tether (USDT) and local currencies. We prioritize security, liquidity, and speed.
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="item-2">
-              <AccordionTrigger className="text-base md:text-lg font-medium">How long do transactions take to complete?</AccordionTrigger>
-              <AccordionContent className="text-sm md:text-base text-muted-foreground">
-                Typically between 15 minutes to 3 hours depending on network congestion and payment verification.
+            <AccordionItem value="item-2" className="border-2 rounded-2xl px-6 mb-4">
+              <AccordionTrigger className="text-lg font-bold hover:no-underline">Is my balance safe?</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground text-lg pb-6">
+                Yes. We use industry-leading encryption and secure wallet protocols. All user funds are segregated and protected by advanced security measures.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-3" className="border-2 rounded-2xl px-6">
+              <AccordionTrigger className="text-lg font-bold hover:no-underline">How fast are withdrawals?</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground text-lg pb-6">
+                Most withdrawal requests are processed within 15-60 minutes, depending on blockchain network traffic and internal verification steps.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
         </div>
+      </section>
+
+      <section className="py-24">
+          <div className="container mx-auto max-w-5xl px-4">
+              <div className="bg-primary rounded-[40px] p-12 md:p-24 text-center text-primary-foreground space-y-8 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-12 opacity-10 rotate-12">
+                      <TetherIcon className="w-64 h-64" />
+                  </div>
+                  <h2 className="text-4xl md:text-7xl font-black tracking-tight leading-none relative z-10">
+                      Ready to start trading?
+                  </h2>
+                  <p className="text-xl md:text-2xl opacity-90 relative z-10">
+                      Join thousands of traders worldwide and experience the future of USDT exchange.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 relative z-10">
+                      <Button size="lg" variant="secondary" className="h-16 px-12 text-xl font-bold rounded-2xl hover:scale-105 transition-transform" asChild>
+                          <Link href="/signup">Create Free Account</Link>
+                      </Button>
+                  </div>
+              </div>
+          </div>
       </section>
     </>
   );
