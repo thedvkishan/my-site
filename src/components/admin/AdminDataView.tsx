@@ -119,7 +119,24 @@ export function AdminDataView() {
 
             await updateDoc(orderRef, updateData);
 
-            if (userId) {
+            // Handle logic for Withdrawals (Deduction happened on request)
+            if (type === 'withdrawals' && userId && typeof amount === 'number' && typeof finalAmount === 'number') {
+                const userRef = doc(firestore, 'users', userId);
+                if (status === 'failed') {
+                    // Full refund if rejected
+                    await updateDoc(userRef, { balance: increment(amount) });
+                    await createNotification(userId, 'Withdrawal Rejected', `${amount.toLocaleString()} USDT has been returned to your wallet.`, 'error');
+                } else if (status === 'completed') {
+                    // If admin approved a smaller amount than requested, refund the difference
+                    if (finalAmount < amount) {
+                        const refundDiff = amount - finalAmount;
+                        await updateDoc(userRef, { balance: increment(refundDiff) });
+                        await createNotification(userId, 'Withdrawal Adjustment', `${refundDiff.toLocaleString()} USDT has been returned to your wallet (Amount adjusted by admin).`, 'info');
+                    }
+                    await createNotification(userId, 'Withdrawal Approved', `Your withdrawal request has been finalized and processed.`, 'success');
+                }
+            } else if (userId) {
+                // General notification for other types
                 const typeLabel = type.replace('Orders', '').replace('s', '');
                 const displayType = typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1);
                 const colorType = status === 'completed' ? 'success' : status === 'failed' ? 'error' : 'info';
@@ -132,16 +149,11 @@ export function AdminDataView() {
                 );
             }
 
+            // Credits for Buy/Deposit happen only on completion
             if ((type === 'deposits' || type === 'buyOrders') && status === 'completed' && userId && typeof finalAmount === 'number') {
                 const userRef = doc(firestore, 'users', userId);
                 await updateDoc(userRef, { balance: increment(finalAmount) });
                 await createNotification(userId, 'Balance Credited', `${finalAmount.toLocaleString()} USDT has been added to your wallet.`, 'success');
-            }
-            
-            if (type === 'withdrawals' && status === 'failed' && userId && typeof amount === 'number') {
-                const userRef = doc(firestore, 'users', userId);
-                await updateDoc(userRef, { balance: increment(amount) });
-                await createNotification(userId, 'Balance Refunded', `${amount.toLocaleString()} USDT has been returned to your wallet.`, 'info');
             }
 
             toast({ title: 'Status Updated', description: `Transaction marked as ${status}.` });
@@ -472,7 +484,7 @@ export function AdminDataView() {
                                                                 />
                                                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-destructive">USDT</span>
                                                             </div>
-                                                            <p className="text-[10px] text-muted-foreground italic">Requested: {wd.amount} USDT. Adjusting down credits back difference to user.</p>
+                                                            <p className="text-[10px] text-muted-foreground italic">Requested: {wd.amount} USDT. Adjusting down credits back difference to user (since {wd.amount} was already deducted).</p>
                                                         </div>
                                                         <DialogFooter className="flex-row gap-2 mt-4">
                                                             <Button variant="destructive" className="flex-1 font-bold h-10 text-xs" onClick={() => handleStatusUpdate('withdrawals', wd.id, 'failed', wd.userId, wd.amount)} disabled={actionLoading === wd.id}>Reject & Refund</Button>

@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@/firebase';
-import { collection, addDoc, doc, query, where } from 'firebase/firestore';
+import { collection, addDoc, doc, query, where, updateDoc, increment } from 'firebase/firestore';
 import { Loader2, Wallet, CheckCircle2, History, Lock } from 'lucide-react';
 import { NETWORKS } from '@/lib/constants';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -64,6 +64,19 @@ export default function WithdrawalPage() {
     }
   }, [user, isUserLoading, router]);
 
+  const createInternalNotification = async (userId: string, title: string, message: string, type: 'info' | 'success' | 'warning' | 'error') => {
+    if (!firestore) return;
+    const notifRef = collection(firestore, 'users', userId, 'notifications');
+    await addDoc(notifRef, {
+        userId,
+        title,
+        message,
+        type,
+        read: false,
+        createdAt: new Date().toISOString()
+    });
+  };
+
   const handleWithdraw = async () => {
     const numAmount = parseFloat(amount);
     const balance = profile?.balance || 0;
@@ -90,6 +103,7 @@ export default function WithdrawalPage() {
 
     setIsLoading(true);
     try {
+      // 1. Create the withdrawal request
       await addDoc(collection(firestore, 'withdrawals'), {
         userId: user!.uid,
         amount: numAmount,
@@ -98,8 +112,22 @@ export default function WithdrawalPage() {
         status: 'pending',
         createdAt: new Date().toISOString(),
       });
+
+      // 2. Immediately deduct the balance
+      if (userProfileRef) {
+        await updateDoc(userProfileRef, { balance: increment(-numAmount) });
+      }
+
+      // 3. Create a notification for the user
+      await createInternalNotification(
+        user!.uid, 
+        'Withdrawal Requested', 
+        `${numAmount} USDT has been deducted and is awaiting admin approval.`, 
+        'info'
+      );
+
       setSubmitted(true);
-      toast({ title: 'Success', description: 'Withdrawal request submitted.' });
+      toast({ title: 'Success', description: 'Withdrawal requested. USDT deducted from balance.' });
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to submit withdrawal request.' });
@@ -141,7 +169,7 @@ export default function WithdrawalPage() {
                       <CardTitle>Withdrawal Requested</CardTitle>
                       <CardDescription>
                           Your withdrawal of {amount} USDT is being processed. 
-                          It will be sent to your {network} address shortly.
+                          The amount has been deducted from your balance.
                       </CardDescription>
                   </div>
                   <Button className="w-full" onClick={() => setSubmitted(false)}>
@@ -161,7 +189,7 @@ export default function WithdrawalPage() {
             <Card className={isOnHold ? 'opacity-60 pointer-events-none' : ''}>
               <CardHeader className="text-center">
                 <div className="flex justify-center mb-4">
-                     <div className="p-3 bg-accent/10 rounded-full border-4 border-accent/20">
+                     <div className="p-3 bg-accent/10 rounded-full border-4 border-primary/20">
                           <Wallet className="h-8 w-8 text-accent" />
                      </div>
                 </div>
