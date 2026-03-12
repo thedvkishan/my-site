@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -35,8 +36,8 @@ type UserProfile = {
 type Settings = {
   buyBannerUrl?: string;
   sellBannerUrl?: string;
-  buyRate?: number;
-  sellRate?: number;
+  buyRateBank?: number;
+  sellRateBank?: number;
 }
 
 export default function Home() {
@@ -130,7 +131,7 @@ export default function Home() {
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
                             <div>
                                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Market Rate</p>
-                                <p className="text-3xl font-black">₹{(Number(settings.buyRate) || 0).toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
+                                <p className="text-3xl font-black">₹{(Number(settings.buyRateBank) || 0).toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
                             </div>
                             <BarChart3 className="h-10 w-10 text-primary opacity-20" />
                         </div>
@@ -156,7 +157,7 @@ export default function Home() {
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
                             <div>
                                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Market Rate</p>
-                                <p className="text-3xl font-black">₹{(Number(settings.sellRate) || 0).toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
+                                <p className="text-3xl font-black">₹{(Number(settings.sellRateBank) || 0).toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
                             </div>
                             <BarChart3 className="h-10 w-10 text-destructive opacity-20 rotate-180" />
                         </div>
@@ -251,7 +252,7 @@ export default function Home() {
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
                             <div>
                                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Buy Rate</p>
-                                <p className="text-3xl font-black">₹{(Number(settings.buyRate) || 0).toFixed(2)}</p>
+                                <p className="text-3xl font-black">₹{(Number(settings.buyRateBank) || 0).toFixed(2)}</p>
                             </div>
                             <Button size="sm" className="rounded-full" asChild>
                                 <Link href="/signup">Buy Now</Link>
@@ -274,7 +275,7 @@ export default function Home() {
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
                             <div>
                                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Sell Rate</p>
-                                <p className="text-3xl font-black">₹{(Number(settings.sellRate) || 0).toFixed(2)}</p>
+                                <p className="text-3xl font-black">₹{(Number(settings.sellRateBank) || 0).toFixed(2)}</p>
                             </div>
                             <Button variant="destructive" size="sm" className="rounded-full" asChild>
                                 <Link href="/signup">Sell Now</Link>
@@ -374,13 +375,13 @@ export default function Home() {
                <Card className="p-8 border-2 relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-4 opacity-5"><TrendingUp className="h-24 w-24" /></div>
                   <p className="text-sm font-bold text-primary uppercase tracking-widest mb-1">Live Buy Price</p>
-                  <h3 className="text-5xl font-black">₹{(Number(settings.buyRate) || 0).toFixed(2)}</h3>
+                  <h3 className="text-5xl font-black">₹{(Number(settings.buyRateBank) || 0).toFixed(2)}</h3>
                   <p className="text-muted-foreground text-sm mt-4">Per 1.00 USDT Token</p>
                </Card>
                <Card className="p-8 border-2 relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-4 opacity-5 rotate-180"><TrendingUp className="h-24 w-24" /></div>
                   <p className="text-sm font-bold text-destructive uppercase tracking-widest mb-1">Live Sell Price</p>
-                  <h3 className="text-5xl font-black">₹{(Number(settings.sellRate) || 0).toFixed(2)}</h3>
+                  <h3 className="text-5xl font-black">₹{(Number(settings.sellRateBank) || 0).toFixed(2)}</h3>
                   <p className="text-muted-foreground text-sm mt-4">Per 1.00 USDT Token</p>
                </Card>
             </div>

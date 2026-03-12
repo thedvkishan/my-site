@@ -67,8 +67,10 @@ const depositNetworkSchema = z.object({
 
 export const settingsSchema = z.object({
   appLogoUrl: z.string().min(1, 'Logo URL is required.'),
-  buyRate: z.coerce.number().positive('Rate must be a positive number.'),
-  sellRate: z.coerce.number().positive('Rate must be a positive number.'),
+  buyRateBank: z.coerce.number().positive('Rate must be a positive number.'),
+  buyRateCDM: z.coerce.number().positive('Rate must be a positive number.'),
+  sellRateBank: z.coerce.number().positive('Rate must be a positive number.'),
+  sellRateCDM: z.coerce.number().positive('Rate must be a positive number.'),
   minBuyAmount: z.coerce.number().positive('Minimum buy amount must be a positive number.'),
   minSellAmount: z.coerce.number().positive('Minimum sell amount must be a positive number.'),
   minDepositAmount: z.coerce.number().positive('Minimum deposit amount must be a positive number.'),

@@ -94,7 +94,7 @@ export default function AdminDashboardPage() {
             const reader = new FileReader();
             reader.onload = (loadEvent) => {
                 const dataUrl = loadEvent.target?.result as string;
-                form.setValue(fieldName, dataUrl, { shouldDirty: true });
+                form.setValue(fieldName as any, dataUrl, { shouldDirty: true });
             };
             reader.readAsDataURL(file);
         }
@@ -114,8 +114,10 @@ export default function AdminDashboardPage() {
                 break;
             case 'rates':
                 newSettings = { 
-                    buyRate: values.buyRate, 
-                    sellRate: values.sellRate, 
+                    buyRateBank: values.buyRateBank, 
+                    buyRateCDM: values.buyRateCDM,
+                    sellRateBank: values.sellRateBank, 
+                    sellRateCDM: values.sellRateCDM,
                     minBuyAmount: values.minBuyAmount, 
                     minSellAmount: values.minSellAmount,
                     minDepositAmount: values.minDepositAmount
@@ -287,8 +289,18 @@ export default function AdminDashboardPage() {
                                                 <AccordionTrigger className="text-lg">Rates & Limits</AccordionTrigger>
                                                 <AccordionContent className="pt-4 space-y-6">
                                                     <div className="grid md:grid-cols-2 gap-6">
-                                                         <FormField control={form.control} name="buyRate" render={({ field }) => (<FormItem><FormLabel>Buy Rate (INR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                         <FormField control={form.control} name="sellRate" render={({ field }) => (<FormItem><FormLabel>Sell Rate (INR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                         <div className="space-y-4 border p-4 rounded-lg bg-muted/20">
+                                                            <h4 className="font-bold flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" /> Buying Rates (INR)</h4>
+                                                            <FormField control={form.control} name="buyRateBank" render={({ field }) => (<FormItem><FormLabel>Bank Transfer Rate</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                            <FormField control={form.control} name="buyRateCDM" render={({ field }) => (<FormItem><FormLabel>CDM / Cash Deposit Rate</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                         </div>
+                                                         
+                                                         <div className="space-y-4 border p-4 rounded-lg bg-muted/20">
+                                                            <h4 className="font-bold flex items-center gap-2"><TetherIcon className="h-4 w-4" /> Selling Rates (INR)</h4>
+                                                            <FormField control={form.control} name="sellRateBank" render={({ field }) => (<FormItem><FormLabel>Bank Transfer Rate</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                            <FormField control={form.control} name="sellRateCDM" render={({ field }) => (<FormItem><FormLabel>CDM / Cash Deposit Rate</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                         </div>
+                                                         
                                                          <FormField control={form.control} name="minBuyAmount" render={({ field }) => (<FormItem><FormLabel>Min. Buy Amount (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                                          <FormField control={form.control} name="minSellAmount" render={({ field }) => (<FormItem><FormLabel>Min. Sell Amount (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                                          <FormField control={form.control} name="minDepositAmount" render={({ field }) => (<FormItem><FormLabel>Min. Deposit Amount (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>

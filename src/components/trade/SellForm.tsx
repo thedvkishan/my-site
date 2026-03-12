@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,9 +18,8 @@ import { useAuth, useFirestore, useDoc, useMemoFirebase, useUser } from '@/fireb
 import { collection, addDoc, doc } from 'firebase/firestore';
 
 type Settings = {
-  buyRate?: number;
-  sellRate?: number;
-  minBuyAmount?: number;
+  sellRateBank?: number;
+  sellRateCDM?: number;
   minSellAmount?: number;
 }
 
@@ -104,31 +104,45 @@ export function SellForm() {
   const inrAmount = watch('inrAmount');
   const paymentMode = watch('paymentMode');
 
-  useEffect(() => {
-    if (settings?.sellRate && settings?.minSellAmount && form.getValues('usdtAmount') === 0) {
-        setValue('usdtAmount', settings.minSellAmount);
-        setValue('inrAmount', parseFloat((settings.minSellAmount * Number(settings.sellRate)).toFixed(2)));
-    }
-  }, [settings, setValue, form]);
+  const currentRate = useMemo(() => {
+    if (!settings) return null;
+    return paymentMode === 'Cash Deposit' ? settings.sellRateCDM : settings.sellRateBank;
+  }, [settings, paymentMode]);
 
   useEffect(() => {
-    if (conversionInputSource.current === 'usdt' && settings?.sellRate) {
-      const newInrAmount = usdtAmount * Number(settings.sellRate);
+    if (currentRate && settings?.minSellAmount && form.getValues('usdtAmount') === 0) {
+        setValue('usdtAmount', settings.minSellAmount);
+        setValue('inrAmount', parseFloat((settings.minSellAmount * currentRate).toFixed(2)));
+    }
+  }, [settings, currentRate, setValue, form]);
+
+  useEffect(() => {
+    if (conversionInputSource.current === 'usdt' && currentRate) {
+      const newInrAmount = usdtAmount * currentRate;
       if (inrAmount !== newInrAmount) {
         setValue('inrAmount', parseFloat(newInrAmount.toFixed(2)));
       }
     }
-  }, [usdtAmount, settings, setValue, inrAmount]);
+  }, [usdtAmount, currentRate, setValue, inrAmount]);
 
   useEffect(() => {
-    if (conversionInputSource.current === 'inr' && settings?.sellRate) {
-      const newUsdtAmount = inrAmount / Number(settings.sellRate);
+    if (conversionInputSource.current === 'inr' && currentRate) {
+      const newUsdtAmount = inrAmount / currentRate;
       if (usdtAmount !== newUsdtAmount) {
         setValue('usdtAmount', parseFloat(newUsdtAmount.toFixed(4)));
       }
     }
-  }, [inrAmount, settings, setValue, usdtAmount]);
+  }, [inrAmount, currentRate, setValue, usdtAmount]);
   
+  // Handle rate changes when switching payment mode
+  useEffect(() => {
+    if (currentRate && conversionInputSource.current === 'usdt') {
+        setValue('inrAmount', parseFloat((usdtAmount * currentRate).toFixed(2)));
+    } else if (currentRate && conversionInputSource.current === 'inr') {
+        setValue('usdtAmount', parseFloat((inrAmount / currentRate).toFixed(4)));
+    }
+  }, [currentRate, setValue]);
+
   async function onSubmit(values: SellFormValues) {
     setIsLoading(true);
 
@@ -143,7 +157,7 @@ export function SellForm() {
           ...values,
           userId: user.uid,
           email: user.email || '',
-          contactNumber: '', // Redundant if they already have one in profile
+          contactNumber: '', 
           country: 'India',
           type: 'sell',
           status: 'pending_deposit',
@@ -229,9 +243,14 @@ export function SellForm() {
             )}
           />
         </div>
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm font-medium text-destructive bg-destructive/5 p-3 rounded-md border border-destructive/20">
           {settingsLoading && 'Fetching rates...'}
-          {settings?.sellRate && `Current Sell Rate: 1 USDT ≈ ${Number(settings.sellRate).toFixed(2)} INR`}
+          {currentRate && (
+            <div className="flex justify-between items-center">
+                <span>Selected Rate ({paymentMode}):</span>
+                <span className="font-bold">1 USDT ≈ ₹{currentRate.toFixed(2)}</span>
+            </div>
+          )}
         </div>
         
         <FormField
