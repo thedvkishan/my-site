@@ -99,38 +99,38 @@ export default function BuyPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm space-y-3">
-                    <p className="text-muted-foreground">All transactions are processed through our secure settlement protocols and monitored for reliability.</p>
-                    <div className="flex items-center gap-2 font-bold text-accent">
+                    <p className="text-muted-foreground font-medium">All transactions are processed through secure settlement protocols and monitored for reliability.</p>
+                    <div className="flex items-center gap-2 font-black text-accent uppercase text-[10px] tracking-wider">
                         <Zap className="h-4 w-4" /> 30-180 Min Settlement Goal
                     </div>
                 </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center gap-3">
+            <Card className="border-2">
+              <CardHeader className="flex flex-row items-center gap-3 pb-2">
                 <History className="h-5 w-5 text-muted-foreground" />
-                <CardTitle className="text-lg">Recent Buy History</CardTitle>
+                <CardTitle className="text-lg font-black uppercase">Recent Activity</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <ScrollArea className="h-[400px]">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-muted/50">
                       <TableRow>
-                        <TableHead className="text-xs">Date</TableHead>
-                        <TableHead className="text-xs">Amount</TableHead>
-                        <TableHead className="text-xs">Status</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase">Date</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase">Volume</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {sortedOrders.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center py-12 text-muted-foreground">No history.</TableCell>
+                          <TableCell colSpan={3} className="text-center py-12 text-muted-foreground font-medium italic">No recent history.</TableCell>
                         </TableRow>
                       ) : (
                         sortedOrders.map(order => (
-                          <TableRow key={order.id} className="cursor-pointer hover:bg-muted/50" onClick={() => order.status === 'pending_payment' && router.push(`/buy/payment/${order.id}`)}>
-                            <TableCell className="text-[10px]">{format(new Date(order.createdAt), 'dd MMM')}</TableCell>
-                            <TableCell className="font-semibold text-primary text-xs">{order.usdtAmount} USDT</TableCell>
+                          <TableRow key={order.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => order.status === 'pending_payment' && router.push(`/buy/payment/${order.id}`)}>
+                            <TableCell className="text-[10px] font-medium">{format(new Date(order.createdAt), 'dd MMM HH:mm')}</TableCell>
+                            <TableCell className="font-black text-primary text-xs">{order.usdtAmount} USDT</TableCell>
                             <TableCell>{getStatusBadge(order.status)}</TableCell>
                           </TableRow>
                         ))
