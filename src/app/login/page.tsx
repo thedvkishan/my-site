@@ -47,7 +47,7 @@ export default function LoginPage() {
             const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
             const user = userCredential.user;
             
-            // Check user status in Firestore
+            // Check user status in Firestore immediately
             const userDoc = await getDoc(doc(firestore, 'users', user.uid));
             const userData = userDoc.data();
             
@@ -121,6 +121,8 @@ export default function LoginPage() {
     async function handlePasswordReset(values: ForgotPasswordValues) {
         setIsForgotLoading(true);
         try {
+            // In a real app, this would use an AI flow or server action to update password via Admin SDK
+            // For prototyping, we simulate success
             await new Promise(resolve => setTimeout(resolve, 1500));
             setForgotStep('success');
             toast({ title: 'Password Updated', description: 'Your password has been reset successfully.' });

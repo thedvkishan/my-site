@@ -26,12 +26,14 @@ import {
 } from 'lucide-react';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, useUser, useAuth } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { AppLogo } from '@/components/layout/AppLogo';
 import { useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useRouter } from 'next/navigation';
+import { signOut } from 'firebase/auth';
 
 type UserProfile = {
   balance?: number;
@@ -46,6 +48,8 @@ type Settings = {
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
   const prevProfile = useRef<UserProfile | null>(null);
@@ -63,9 +67,22 @@ export default function Home() {
   const { data: settings, isLoading: settingsLoading } = useDoc<Settings>(settingsRef);
   const { data: profile, isLoading: profileLoading } = useDoc<UserProfile>(userProfileRef);
 
-  // Real-time notifications for user activity
+  // Status and Balance Change Listener
   useEffect(() => {
     if (!profile) return;
+
+    // Handle Banned Status - Immediate Kick Out
+    if (profile.status === 'banned') {
+        signOut(auth).then(() => {
+            router.push('/login');
+            toast({
+                variant: 'destructive',
+                title: 'Access Revoked',
+                description: 'Your account has been banned. Please contact support.',
+            });
+        });
+        return;
+    }
 
     if (prevProfile.current) {
         // Balance change notification
@@ -78,7 +95,7 @@ export default function Home() {
             });
         }
 
-        // Status change notification
+        // Status change notification (Hold)
         if (profile.status !== prevProfile.current.status) {
             if (profile.status === 'on_hold') {
                 toast({
@@ -96,7 +113,7 @@ export default function Home() {
     }
 
     prevProfile.current = profile;
-  }, [profile, toast]);
+  }, [profile, toast, auth, router]);
 
   if (isUserLoading || settingsLoading || profileLoading || !settings) {
     return (
@@ -169,18 +186,27 @@ export default function Home() {
                         style={{ animationDelay: `${i * 100}ms` }}
                         asChild={!isOnHold || action.label === 'History'}
                     >
-                        <Link href={action.href}>
-                            <div className={`p-3 rounded-full ${action.bg}`}>
-                                <action.icon className={`h-6 w-6 ${action.color}`} />
+                        {isOnHold && action.label !== 'History' ? (
+                            <div className="flex flex-col items-center justify-center gap-3" onClick={() => toast({ variant: 'destructive', title: 'Hold Active', description: 'You are placed in hold, contact support.' })}>
+                                <div className={`p-3 rounded-full ${action.bg}`}>
+                                    <action.icon className={`h-6 w-6 ${action.color}`} />
+                                </div>
+                                <span className="font-bold tracking-tight">{action.label}</span>
                             </div>
-                            <span className="font-bold tracking-tight">{action.label}</span>
-                        </Link>
+                        ) : (
+                            <Link href={action.href}>
+                                <div className={`p-3 rounded-full ${action.bg}`}>
+                                    <action.icon className={`h-6 w-6 ${action.color}`} />
+                                </div>
+                                <span className="font-bold tracking-tight">{action.label}</span>
+                            </Link>
+                        )}
                     </Button>
                 ))}
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 mb-16">
-                <Card className={`relative overflow-hidden group hover:border-primary transition-all duration-300 border-2 shadow-sm hover:shadow-xl ${isOnHold ? 'opacity-50' : ''}`}>
+                <Card className={`relative overflow-hidden group hover:border-primary transition-all duration-300 border-2 shadow-sm hover:shadow-xl ${isOnHold ? 'opacity-50 grayscale' : ''}`}>
                     <CardHeader className="p-8">
                         <div className="flex items-center gap-3 mb-2">
                              <div className="p-2 bg-primary/10 rounded-lg">
@@ -198,7 +224,7 @@ export default function Home() {
                             </div>
                             <BarChart3 className="h-10 w-10 text-primary opacity-20" />
                         </div>
-                        <Button className="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-primary/20" asChild={!isOnHold} disabled={isOnHold}>
+                        <Button className="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-primary/20" asChild={!isOnHold} disabled={isOnHold} onClick={() => isOnHold && toast({ variant: 'destructive', title: 'Hold Active', description: 'You are placed in hold, contact support.' })}>
                             <Link href="/buy">
                                 Buy Now <ArrowRight className="ml-2 h-5 w-5" />
                             </Link>
@@ -206,7 +232,7 @@ export default function Home() {
                     </CardContent>
                 </Card>
 
-                <Card className={`relative overflow-hidden group hover:border-destructive transition-all duration-300 border-2 shadow-sm hover:shadow-xl ${isOnHold ? 'opacity-50' : ''}`}>
+                <Card className={`relative overflow-hidden group hover:border-destructive transition-all duration-300 border-2 shadow-sm hover:shadow-xl ${isOnHold ? 'opacity-50 grayscale' : ''}`}>
                     <CardHeader className="p-8">
                         <div className="flex items-center gap-3 mb-2">
                              <div className="p-2 bg-destructive/10 rounded-lg">
@@ -224,7 +250,7 @@ export default function Home() {
                             </div>
                             <BarChart3 className="h-10 w-10 text-destructive opacity-20 rotate-180" />
                         </div>
-                        <Button variant="destructive" className="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-destructive/20" asChild={!isOnHold} disabled={isOnHold}>
+                        <Button variant="destructive" className="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-destructive/20" asChild={!isOnHold} disabled={isOnHold} onClick={() => isOnHold && toast({ variant: 'destructive', title: 'Hold Active', description: 'You are placed in hold, contact support.' })}>
                             <Link href="/sell">
                                 Sell Now <ArrowRight className="ml-2 h-5 w-5" />
                             </Link>
