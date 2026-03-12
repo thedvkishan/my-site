@@ -129,7 +129,7 @@ export default function Home() {
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center group-hover:bg-secondary transition-colors">
                             <div>
                                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Market Rate</p>
-                                <p className="text-3xl font-black">₹{settings.buyRate?.toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
+                                <p className="text-3xl font-black">₹{(Number(settings.buyRate) || 0).toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
                             </div>
                             <div className="h-10 w-10 rounded-full bg-green-500/20 flex items-center justify-center">
                                 <TrendingUp className="h-5 w-5 text-green-500" />
@@ -160,7 +160,7 @@ export default function Home() {
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center group-hover:bg-secondary transition-colors">
                             <div>
                                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Market Rate</p>
-                                <p className="text-3xl font-black">₹{settings.sellRate?.toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
+                                <p className="text-3xl font-black">₹{(Number(settings.sellRate) || 0).toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
                             </div>
                             <div className="h-10 w-10 rounded-full bg-destructive/20 flex items-center justify-center">
                                 <TrendingUp className="h-5 w-5 text-destructive rotate-180" />
@@ -274,12 +274,12 @@ export default function Home() {
                 <div className="grid grid-cols-2 gap-4">
                     <Card className="aspect-square flex flex-col items-center justify-center p-8 text-center border-2 hover:border-primary transition-colors">
                         <TrendingUp className="h-12 w-12 text-primary mb-4" />
-                        <h3 className="text-3xl font-black">₹{settings.buyRate?.toFixed(2)}</h3>
+                        <h3 className="text-3xl font-black">₹{(Number(settings.buyRate) || 0).toFixed(2)}</h3>
                         <p className="text-sm font-bold text-muted-foreground uppercase mt-1">Buy Rate</p>
                     </Card>
                     <Card className="aspect-square flex flex-col items-center justify-center p-8 text-center border-2 hover:border-destructive transition-colors mt-8">
                         <TrendingUp className="h-12 w-12 text-destructive rotate-180 mb-4" />
-                        <h3 className="text-3xl font-black">₹{settings.sellRate?.toFixed(2)}</h3>
+                        <h3 className="text-3xl font-black">₹{(Number(settings.sellRate) || 0).toFixed(2)}</h3>
                         <p className="text-sm font-bold text-muted-foreground uppercase mt-1">Sell Rate</p>
                     </Card>
                 </div>
