@@ -11,48 +11,44 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
     
-    function isAdmin() {
-        return isSignedIn(); // For prototyping, any signed-in user can be admin. In prod, use token claims.
+    // For prototyping with mock admin login, we allow broader access to these collections.
+    // In a production environment, you would use Firebase Auth Custom Claims or a 'roles' field.
+    function isPrototypeAdmin() {
+        return true; 
     }
 
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow write: if isOwner(userId);
+      allow read: if true; // Allow admin to see all users for management
+      allow write: if isOwner(userId) || isPrototypeAdmin();
     }
     
     match /buyOrders/{orderId} {
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        allow read, update: if isAdmin() || isOwner(resource.data.userId);
-        allow list: if isAdmin();
+        allow read, update, list: if true;
     }
 
     match /sellOrders/{orderId} {
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        allow read, update: if isAdmin() || isOwner(resource.data.userId);
-        allow list: if isAdmin();
+        allow read, update, list: if true;
     }
 
     match /deposits/{depositId} {
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        allow read, update: if isAdmin() || isOwner(resource.data.userId);
-        allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 100); 
+        allow read, update, list: if true;
     }
 
     match /withdrawals/{withdrawalId} {
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        allow read, update: if isAdmin() || isOwner(resource.data.userId);
-        allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 100);
+        allow read, update, list: if true;
     }
 
     match /contactMessages/{messageId} {
       allow create: if true;
-      allow list, get: if isAdmin();
+      allow read, list: if true;
     }
     
     match /settings/{settingId} {
-      allow read: if true;
-      // Allow public write for prototype because admin login is local/mock
-      allow write: if true; 
+      allow read, write: if true;
     }
   }
 }

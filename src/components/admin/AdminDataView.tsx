@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
@@ -7,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, Eye, Search, User as UserIcon, Mail, Phone, Calendar, Wallet } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Eye, Search, User as UserIcon, Mail, Phone, Calendar, Wallet, Hash } from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -15,7 +16,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo } from "react";
 
-// Helper component to render details in a consistent way
 const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="grid grid-cols-[160px_1fr] items-start gap-4 py-2 border-b border-muted/50 last:border-0">
         <span className="text-muted-foreground text-right text-xs md:text-sm font-medium">{label}</span>
@@ -68,7 +68,6 @@ export function AdminDataView() {
     
     const isLoading = buyOrdersLoading || sellOrdersLoading || depositsLoading || withdrawalsLoading || messagesLoading || usersLoading;
 
-    // Search/Filter logic
     const filterData = (data: any[] | null) => {
         if (!data) return [];
         if (!searchQuery.trim()) return data;
@@ -129,18 +128,20 @@ export function AdminDataView() {
     };
 
     return (
-        <Card className="overflow-hidden border-2">
-            <CardHeader className="p-6 bg-muted/30">
+        <Card className="overflow-hidden border-2 shadow-lg">
+            <CardHeader className="p-6 bg-muted/30 border-b">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                        <CardTitle className="text-2xl font-black">Institutional Data Terminal</CardTitle>
-                        <CardDescription>Comprehensive oversight of all platform activity and {users?.length || 0} registered users.</CardDescription>
+                        <CardTitle className="text-2xl font-black tracking-tight">Institutional Data Terminal</CardTitle>
+                        <CardDescription>
+                            Global oversight: {users?.length || 0} Traders | {buyOrders?.length || 0} Buys | {sellOrders?.length || 0} Sells
+                        </CardDescription>
                     </div>
-                    <div className="relative w-full md:w-80">
+                    <div className="relative w-full md:w-96">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
-                            placeholder="Search by ID, Hash, Email..." 
-                            className="pl-10"
+                            placeholder="Search Name, Email, ID, Hash..." 
+                            className="pl-10 h-11 border-primary/20 shadow-sm focus:ring-primary/20"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -149,56 +150,56 @@ export function AdminDataView() {
             </CardHeader>
             <CardContent className="p-0">
                 <Tabs defaultValue="buyOrders" className="w-full">
-                    <div className="px-6 pt-4 border-b">
+                    <div className="px-6 pt-4 border-b bg-muted/10">
                         <ScrollArea className="w-full whitespace-nowrap">
-                            <TabsList className="inline-flex w-auto p-1 bg-transparent border-b-0">
-                                <TabsTrigger value="buyOrders" className="data-[state=active]:bg-muted">Buy Orders ({filteredBuyOrders.length})</TabsTrigger>
-                                <TabsTrigger value="sellOrders" className="data-[state=active]:bg-muted">Sell Orders ({filteredSellOrders.length})</TabsTrigger>
-                                <TabsTrigger value="deposits" className="data-[state=active]:bg-muted">Deposits ({filteredDeposits.length})</TabsTrigger>
-                                <TabsTrigger value="withdrawals" className="data-[state=active]:bg-muted">Withdrawals ({filteredWithdrawals.length})</TabsTrigger>
-                                <TabsTrigger value="contact" className="data-[state=active]:bg-muted">Support ({filteredMessages.length})</TabsTrigger>
-                                <TabsTrigger value="users" className="data-[state=active]:bg-muted">Users ({filteredUsers.length})</TabsTrigger>
+                            <TabsList className="inline-flex w-auto p-1 bg-transparent border-b-0 space-x-1">
+                                <TabsTrigger value="buyOrders" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-xs uppercase tracking-wider">Buy Orders ({filteredBuyOrders.length})</TabsTrigger>
+                                <TabsTrigger value="sellOrders" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-xs uppercase tracking-wider">Sell Orders ({filteredSellOrders.length})</TabsTrigger>
+                                <TabsTrigger value="deposits" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-xs uppercase tracking-wider">Deposits ({filteredDeposits.length})</TabsTrigger>
+                                <TabsTrigger value="withdrawals" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-xs uppercase tracking-wider">Withdrawals ({filteredWithdrawals.length})</TabsTrigger>
+                                <TabsTrigger value="contact" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-xs uppercase tracking-wider">Support ({filteredMessages.length})</TabsTrigger>
+                                <TabsTrigger value="users" className="px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-bold text-xs uppercase tracking-wider">Users ({filteredUsers.length})</TabsTrigger>
                             </TabsList>
                         </ScrollArea>
                     </div>
                     
-                    {isLoading && <div className="flex justify-center items-center py-20"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}
+                    {isLoading && <div className="flex justify-center items-center py-24"><Loader2 className="h-16 w-16 animate-spin text-primary opacity-20" /></div>}
                     
                     <TabsContent value="buyOrders" className="m-0">
-                        <ScrollArea className="h-[60vh]">
+                        <ScrollArea className="h-[65vh]">
                             <Table>
-                                <TableHeader className="bg-muted/50"><TableRow><TableHead>Date</TableHead><TableHead>ID / User</TableHead><TableHead>Status</TableHead><TableHead>Amount</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                                <TableHeader className="bg-muted/50"><TableRow><TableHead>Date</TableHead><TableHead>Order ID / User</TableHead><TableHead>Status</TableHead><TableHead>Amount (USDT/INR)</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {filteredBuyOrders.map(order => (
                                         <TableRow key={order.id} className="hover:bg-muted/30 transition-colors">
-                                            <TableCell className="text-[10px] whitespace-nowrap">{order.createdAt ? format(new Date(order.createdAt), 'PPp') : 'N/A'}</TableCell>
+                                            <TableCell className="text-[10px] whitespace-nowrap font-mono">{order.createdAt ? format(new Date(order.createdAt), 'PPp') : 'N/A'}</TableCell>
                                             <TableCell>
-                                                <div className="text-xs font-bold font-mono">{order.id}</div>
-                                                <div className="text-[10px] text-muted-foreground">{order.email}</div>
+                                                <div className="text-xs font-black font-mono text-primary flex items-center gap-1"><Hash className="h-3 w-3" /> {order.id}</div>
+                                                <div className="text-[10px] text-muted-foreground font-medium">{order.email}</div>
                                             </TableCell>
                                             <TableCell>{getStatusBadge(order.status)}</TableCell>
                                             <TableCell>
-                                                <div className="font-black text-primary">{order.usdtAmount} USDT</div>
-                                                <div className="text-[10px] text-muted-foreground">₹{order.inrAmount}</div>
+                                                <div className="font-black text-primary text-base">{order.usdtAmount} USDT</div>
+                                                <div className="text-[10px] text-muted-foreground font-bold">₹{order.inrAmount?.toLocaleString()}</div>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Dialog>
-                                                    <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 gap-2"><Eye className="h-4 w-4" /> View</Button></DialogTrigger>
+                                                    <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 gap-2 font-bold"><Eye className="h-4 w-4" /> View</Button></DialogTrigger>
                                                     <DialogContent className="max-w-2xl">
-                                                        <DialogHeader><DialogTitle>Buy Order Details</DialogTitle><DialogDescription>Transaction Reference: {order.id}</DialogDescription></DialogHeader>
-                                                        <div className="py-4 border rounded-xl bg-muted/10 px-4">
-                                                            <DetailRow label="User ID" value={order.userId} />
+                                                        <DialogHeader><DialogTitle className="text-2xl font-black">Buy Order Details</DialogTitle><DialogDescription>Reference: {order.id}</DialogDescription></DialogHeader>
+                                                        <div className="py-6 border-2 border-dashed rounded-2xl bg-muted/10 px-6 space-y-1">
+                                                            <DetailRow label="User UID" value={order.userId} />
                                                             <DetailRow label="Status" value={getStatusBadge(order.status)} />
-                                                            <DetailRow label="USDT Amount" value={`${order.usdtAmount} USDT`} />
-                                                            <DetailRow label="INR Amount" value={`₹${order.inrAmount}`} />
-                                                            <DetailRow label="Network" value={order.network} />
-                                                            <DetailRow label="Payment Mode" value={order.paymentMode} />
-                                                            <DetailRow label="User Email" value={order.email} />
-                                                            <DetailRow label="Payment Receipt" value={order.paymentReceiptUrl ? <a href={order.paymentReceiptUrl} target="_blank" className="text-primary hover:underline font-bold">Open Attached Document</a> : 'No Document Provided'} />
+                                                            <DetailRow label="USDT Volume" value={`${order.usdtAmount} USDT`} />
+                                                            <DetailRow label="Settlement (INR)" value={<span className="text-primary font-black">₹{order.inrAmount?.toLocaleString()}</span>} />
+                                                            <DetailRow label="Network Type" value={<Badge variant="outline" className="font-mono">{order.network}</Badge>} />
+                                                            <DetailRow label="Payment Method" value={order.paymentMode} />
+                                                            <DetailRow label="Verified Email" value={order.email} />
+                                                            <DetailRow label="Attached Receipt" value={order.paymentReceiptUrl ? <a href={order.paymentReceiptUrl} target="_blank" className="text-primary hover:underline font-bold flex items-center gap-2">View Document <ArrowUpRight className="h-4 w-4" /></a> : <span className="text-muted-foreground italic">No proof uploaded</span>} />
                                                         </div>
-                                                        <DialogFooter className="gap-2">
-                                                            <Button variant="destructive" size="sm" onClick={() => handleStatusUpdate('buyOrders', order.id, 'failed')} disabled={actionLoading === order.id}><XCircle className="mr-2 h-4 w-4" /> Reject Order</Button>
-                                                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleStatusUpdate('buyOrders', order.id, 'completed', order.userId, order.usdtAmount)} disabled={actionLoading === order.id}><CheckCircle2 className="mr-2 h-4 w-4" /> Approve & Credit</Button>
+                                                        <DialogFooter className="gap-3 mt-4">
+                                                            <Button variant="destructive" className="font-bold h-11" onClick={() => handleStatusUpdate('buyOrders', order.id, 'failed')} disabled={actionLoading === order.id}><XCircle className="mr-2 h-4 w-4" /> Reject</Button>
+                                                            <Button className="bg-green-600 hover:bg-green-700 font-bold h-11" onClick={() => handleStatusUpdate('buyOrders', order.id, 'completed', order.userId, order.usdtAmount)} disabled={actionLoading === order.id}><CheckCircle2 className="mr-2 h-4 w-4" /> Approve & Credit</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
@@ -211,50 +212,50 @@ export function AdminDataView() {
                     </TabsContent>
                     
                     <TabsContent value="sellOrders" className="m-0">
-                        <ScrollArea className="h-[60vh]">
+                        <ScrollArea className="h-[65vh]">
                            <Table>
-                                <TableHeader className="bg-muted/50"><TableRow><TableHead>Date</TableHead><TableHead>ID / User</TableHead><TableHead>Status</TableHead><TableHead>Amount</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                                <TableHeader className="bg-muted/50"><TableRow><TableHead>Date</TableHead><TableHead>Order ID / User</TableHead><TableHead>Status</TableHead><TableHead>Volume (USDT/INR)</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {filteredSellOrders.map(order => (
                                         <TableRow key={order.id} className="hover:bg-muted/30 transition-colors">
-                                            <TableCell className="text-[10px] whitespace-nowrap">{order.createdAt ? format(new Date(order.createdAt), 'PPp') : 'N/A'}</TableCell>
+                                            <TableCell className="text-[10px] whitespace-nowrap font-mono">{order.createdAt ? format(new Date(order.createdAt), 'PPp') : 'N/A'}</TableCell>
                                             <TableCell>
-                                                <div className="text-xs font-bold font-mono">{order.id}</div>
-                                                <div className="text-[10px] text-muted-foreground">{order.email}</div>
+                                                <div className="text-xs font-black font-mono text-destructive flex items-center gap-1"><Hash className="h-3 w-3" /> {order.id}</div>
+                                                <div className="text-[10px] text-muted-foreground font-medium">{order.email}</div>
                                             </TableCell>
                                             <TableCell>{getStatusBadge(order.status)}</TableCell>
                                             <TableCell>
-                                                <div className="font-black text-destructive">{order.usdtAmount} USDT</div>
-                                                <div className="text-[10px] text-muted-foreground">₹{order.inrAmount}</div>
+                                                <div className="font-black text-destructive text-base">{order.usdtAmount} USDT</div>
+                                                <div className="text-[10px] text-muted-foreground font-bold">₹{order.inrAmount?.toLocaleString()}</div>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Dialog>
-                                                    <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 gap-2"><Eye className="h-4 w-4" /> View</Button></DialogTrigger>
+                                                    <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 gap-2 font-bold"><Eye className="h-4 w-4" /> View</Button></DialogTrigger>
                                                     <DialogContent className="max-w-2xl">
-                                                        <DialogHeader><DialogTitle>Sell Order Processing</DialogTitle><DialogDescription>ID: {order.id}</DialogDescription></DialogHeader>
-                                                        <div className="py-4 border rounded-xl bg-muted/10 px-4">
-                                                            <DetailRow label="User Email" value={order.email} />
-                                                            <DetailRow label="Status" value={getStatusBadge(order.status)} />
-                                                            <DetailRow label="Payment Mode" value={order.paymentMode} />
+                                                        <DialogHeader><DialogTitle className="text-2xl font-black text-destructive">Sell Order Process</DialogTitle><DialogDescription>Order: {order.id}</DialogDescription></DialogHeader>
+                                                        <div className="py-6 border-2 border-dashed rounded-2xl bg-muted/10 px-6 space-y-1">
+                                                            <DetailRow label="User Account" value={order.email} />
+                                                            <DetailRow label="Current Status" value={getStatusBadge(order.status)} />
+                                                            <DetailRow label="Settlement Mode" value={<Badge variant="secondary" className="font-bold">{order.paymentMode}</Badge>} />
                                                             {order.paymentMode === 'UPI' ? (
                                                                 <>
-                                                                    <DetailRow label="UPI ID" value={order.upiId} />
-                                                                    <DetailRow label="Holder" value={order.upiHolderName} />
+                                                                    <DetailRow label="Recipient UPI" value={order.upiId} />
+                                                                    <DetailRow label="Legal Name" value={order.upiHolderName} />
                                                                 </>
                                                             ) : (
                                                                 <>
-                                                                    <DetailRow label="Bank Name" value={order.bankName} />
-                                                                    <DetailRow label="A/C Number" value={order.accountNumber} />
-                                                                    <DetailRow label="IFSC Code" value={order.ifsc} />
-                                                                    <DetailRow label="Account Holder" value={order.bankHolderName} />
+                                                                    <DetailRow label="Institution" value={order.bankName} />
+                                                                    <DetailRow label="Account Number" value={<span className="font-mono">{order.accountNumber}</span>} />
+                                                                    <DetailRow label="IFSC Code" value={<span className="font-mono">{order.ifsc}</span>} />
+                                                                    <DetailRow label="Legal Holder" value={order.bankHolderName} />
                                                                 </>
                                                             )}
-                                                            <DetailRow label="USDT Deduct" value={`${order.usdtAmount} USDT`} />
-                                                            <DetailRow label="Pay User" value={<span className="text-green-600 font-black">₹{order.inrAmount}</span>} />
+                                                            <DetailRow label="USDT Liquidation" value={`${order.usdtAmount} USDT`} />
+                                                            <DetailRow label="Disbursement" value={<span className="text-destructive font-black text-xl">₹{order.inrAmount?.toLocaleString()}</span>} />
                                                         </div>
-                                                        <DialogFooter className="gap-2">
-                                                            <Button variant="outline" size="sm" onClick={() => handleStatusUpdate('sellOrders', order.id, 'failed')} disabled={actionLoading === order.id}>Reject</Button>
-                                                            <Button size="sm" onClick={() => handleStatusUpdate('sellOrders', order.id, 'completed')} disabled={actionLoading === order.id}><CheckCircle2 className="mr-2 h-4 w-4" /> Confirm Payment Sent</Button>
+                                                        <DialogFooter className="gap-3 mt-4">
+                                                            <Button variant="outline" className="font-bold h-11" onClick={() => handleStatusUpdate('sellOrders', order.id, 'failed')} disabled={actionLoading === order.id}>Reject</Button>
+                                                            <Button className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold h-11" onClick={() => handleStatusUpdate('sellOrders', order.id, 'completed')} disabled={actionLoading === order.id}><CheckCircle2 className="mr-2 h-4 w-4" /> Finalize Settlement</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
@@ -267,29 +268,33 @@ export function AdminDataView() {
                     </TabsContent>
 
                     <TabsContent value="deposits" className="m-0">
-                        <ScrollArea className="h-[60vh]">
+                        <ScrollArea className="h-[65vh]">
                             <Table>
-                                <TableHeader className="bg-muted/50"><TableRow><TableHead>Date</TableHead><TableHead>Amount</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                                <TableHeader className="bg-muted/50"><TableRow><TableHead>Date</TableHead><TableHead>Hash / Network</TableHead><TableHead>Amount</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {filteredDeposits.map(dep => (
                                         <TableRow key={dep.id}>
-                                            <TableCell className="text-[10px]">{dep.createdAt ? format(new Date(dep.createdAt), 'PPp') : 'N/A'}</TableCell>
-                                            <TableCell className="font-black text-green-600">{dep.amount} USDT</TableCell>
+                                            <TableCell className="text-[10px] whitespace-nowrap font-mono">{dep.createdAt ? format(new Date(dep.createdAt), 'PPp') : 'N/A'}</TableCell>
+                                            <TableCell>
+                                                <div className="text-[10px] font-mono font-bold text-primary truncate max-w-[200px]">{dep.txHash || 'PENDING TXID'}</div>
+                                                <div className="text-[10px] font-bold text-muted-foreground uppercase">{dep.network}</div>
+                                            </TableCell>
+                                            <TableCell className="font-black text-green-600">+{dep.amount} USDT</TableCell>
                                             <TableCell>{getStatusBadge(dep.status)}</TableCell>
                                             <TableCell className="text-right">
                                                 <Dialog>
-                                                    <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 gap-2"><Eye className="h-4 w-4" /> Inspect</Button></DialogTrigger>
+                                                    <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 gap-2 font-bold"><Eye className="h-4 w-4" /> Inspect</Button></DialogTrigger>
                                                     <DialogContent>
-                                                        <DialogHeader><DialogTitle>Deposit Verification</DialogTitle></DialogHeader>
-                                                        <div className="space-y-2 py-4 border rounded-xl bg-muted/10 px-4 text-sm">
-                                                            <DetailRow label="User ID" value={dep.userId} />
-                                                            <DetailRow label="Network" value={dep.network} />
-                                                            <DetailRow label="TXID Hash" value={<span className="font-mono text-xs break-all text-primary">{dep.txHash || 'Pending Submission'}</span>} />
-                                                            <DetailRow label="Amount" value={`${dep.amount} USDT`} />
+                                                        <DialogHeader><DialogTitle className="text-xl font-black">Blockchain Verification</DialogTitle></DialogHeader>
+                                                        <div className="space-y-1 py-4 border rounded-xl bg-muted/10 px-4 text-sm">
+                                                            <DetailRow label="Internal UID" value={dep.userId} />
+                                                            <DetailRow label="Network Protocol" value={dep.network} />
+                                                            <DetailRow label="TXID Hash" value={<span className="font-mono text-xs break-all text-primary font-bold">{dep.txHash || 'Awaiting Hash Submission'}</span>} />
+                                                            <DetailRow label="Reported Amount" value={<span className="font-black">{dep.amount} USDT</span>} />
                                                         </div>
-                                                        <DialogFooter className="gap-2">
-                                                            <Button variant="outline" size="sm" onClick={() => handleStatusUpdate('deposits', dep.id, 'failed')} disabled={actionLoading === dep.id}>Reject</Button>
-                                                            <Button size="sm" className="bg-primary" onClick={() => handleStatusUpdate('deposits', dep.id, 'completed', dep.userId, dep.amount)} disabled={actionLoading === dep.id}>Approve & Credit</Button>
+                                                        <DialogFooter className="gap-2 mt-4">
+                                                            <Button variant="outline" className="font-bold" onClick={() => handleStatusUpdate('deposits', dep.id, 'failed')} disabled={actionLoading === dep.id}>Reject</Button>
+                                                            <Button className="bg-primary font-bold" onClick={() => handleStatusUpdate('deposits', dep.id, 'completed', dep.userId, dep.amount)} disabled={actionLoading === dep.id}>Confirm & Credit Wallet</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
@@ -302,30 +307,33 @@ export function AdminDataView() {
                     </TabsContent>
 
                     <TabsContent value="withdrawals" className="m-0">
-                        <ScrollArea className="h-[60vh]">
+                        <ScrollArea className="h-[65vh]">
                             <Table>
-                                <TableHeader className="bg-muted/50"><TableRow><TableHead>Date</TableHead><TableHead>Amount</TableHead><TableHead>Network</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                                <TableHeader className="bg-muted/50"><TableRow><TableHead>Date</TableHead><TableHead>Destination Address</TableHead><TableHead>Volume</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {filteredWithdrawals.map(wd => (
                                         <TableRow key={wd.id}>
-                                            <TableCell className="text-[10px]">{wd.createdAt ? format(new Date(wd.createdAt), 'PPp') : 'N/A'}</TableCell>
-                                            <TableCell className="font-black text-destructive">{wd.amount} USDT</TableCell>
-                                            <TableCell><Badge variant="outline">{wd.network}</Badge></TableCell>
+                                            <TableCell className="text-[10px] whitespace-nowrap font-mono">{wd.createdAt ? format(new Date(wd.createdAt), 'PPp') : 'N/A'}</TableCell>
+                                            <TableCell>
+                                                <div className="text-[10px] font-mono font-bold text-destructive truncate max-w-[200px]">{wd.address}</div>
+                                                <div className="text-[10px] font-bold text-muted-foreground uppercase">{wd.network}</div>
+                                            </TableCell>
+                                            <TableCell className="font-black text-destructive">-{wd.amount} USDT</TableCell>
                                             <TableCell>{getStatusBadge(wd.status)}</TableCell>
                                             <TableCell className="text-right">
                                                 <Dialog>
-                                                    <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 gap-2"><Eye className="h-4 w-4" /> Details</Button></DialogTrigger>
+                                                    <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 gap-2 font-bold"><Eye className="h-4 w-4" /> Details</Button></DialogTrigger>
                                                     <DialogContent>
-                                                        <DialogHeader><DialogTitle>Withdrawal Request</DialogTitle></DialogHeader>
-                                                        <div className="py-4 border rounded-xl bg-muted/10 px-4 text-sm">
-                                                            <DetailRow label="User ID" value={wd.userId} />
-                                                            <DetailRow label="Recipient" value={<span className="font-mono text-xs break-all text-destructive">{wd.address}</span>} />
+                                                        <DialogHeader><DialogTitle className="text-xl font-black text-destructive">Withdrawal Fulfillment</DialogTitle></DialogHeader>
+                                                        <div className="py-4 border rounded-xl bg-muted/10 px-4 text-sm space-y-1">
+                                                            <DetailRow label="User UID" value={wd.userId} />
+                                                            <DetailRow label="Recipient Wallet" value={<span className="font-mono text-xs break-all text-destructive font-bold">{wd.address}</span>} />
                                                             <DetailRow label="Network" value={wd.network} />
-                                                            <DetailRow label="Amount" value={`${wd.amount} USDT`} />
+                                                            <DetailRow label="Withdraw Volume" value={<span className="font-black">{wd.amount} USDT</span>} />
                                                         </div>
-                                                        <DialogFooter className="gap-2">
-                                                            <Button variant="destructive" size="sm" onClick={() => handleStatusUpdate('withdrawals', wd.id, 'failed', wd.userId, wd.amount)} disabled={actionLoading === wd.id}>Reject & Refund</Button>
-                                                            <Button size="sm" className="bg-primary" onClick={() => handleStatusUpdate('withdrawals', wd.id, 'completed')} disabled={actionLoading === wd.id}>Confirm Sent</Button>
+                                                        <DialogFooter className="gap-2 mt-4">
+                                                            <Button variant="destructive" className="font-bold" onClick={() => handleStatusUpdate('withdrawals', wd.id, 'failed', wd.userId, wd.amount)} disabled={actionLoading === wd.id}>Reject & Refund</Button>
+                                                            <Button className="bg-primary font-bold" onClick={() => handleStatusUpdate('withdrawals', wd.id, 'completed')} disabled={actionLoading === wd.id}>Confirm TX Sent</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
@@ -338,22 +346,25 @@ export function AdminDataView() {
                     </TabsContent>
                     
                     <TabsContent value="contact" className="m-0">
-                         <ScrollArea className="h-[60vh]">
+                         <ScrollArea className="h-[65vh]">
                            <Table>
                                 <TableHeader className="bg-muted/50"><TableRow><TableHead>Date</TableHead><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {filteredMessages.map(msg => (
                                         <TableRow key={msg.id}>
-                                            <TableCell className="text-[10px]">{msg.submittedAt ? format(new Date(msg.submittedAt), 'PPp') : 'N/A'}</TableCell>
-                                            <TableCell className="font-bold">{msg.name}</TableCell>
-                                            <TableCell className="text-xs">{msg.email}</TableCell>
+                                            <TableCell className="text-[10px] font-mono">{msg.submittedAt ? format(new Date(msg.submittedAt), 'PPp') : 'N/A'}</TableCell>
+                                            <TableCell className="font-bold text-xs uppercase tracking-tight">{msg.name}</TableCell>
+                                            <TableCell className="text-xs font-medium text-muted-foreground">{msg.email}</TableCell>
                                             <TableCell className="text-right">
                                                 <Dialog>
                                                     <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button></DialogTrigger>
                                                     <DialogContent className="max-w-2xl">
-                                                        <DialogHeader><DialogTitle>Message from {msg.name}</DialogTitle><DialogDescription>{msg.email}</DialogDescription></DialogHeader>
-                                                        <div className="p-6 bg-muted/20 rounded-xl border-2 border-dashed">
-                                                            <p className="whitespace-pre-wrap text-sm italic">"{msg.description}"</p>
+                                                        <DialogHeader><DialogTitle className="text-2xl font-black">Support Inquiry</DialogTitle><DialogDescription>From: {msg.name} ({msg.email})</DialogDescription></DialogHeader>
+                                                        <div className="p-8 bg-muted/20 rounded-2xl border-4 border-dashed border-primary/10 mt-4">
+                                                            <p className="whitespace-pre-wrap text-base font-medium leading-relaxed italic">"{msg.description}"</p>
+                                                        </div>
+                                                        <div className="mt-4 flex justify-end">
+                                                            <Button variant="outline" className="font-bold">Mark as Resolved</Button>
                                                         </div>
                                                     </DialogContent>
                                                 </Dialog>
@@ -366,40 +377,40 @@ export function AdminDataView() {
                     </TabsContent>
 
                     <TabsContent value="users" className="m-0">
-                        <ScrollArea className="h-[60vh]">
+                        <ScrollArea className="h-[65vh]">
                             <Table>
-                                <TableHeader className="bg-muted/50"><TableRow><TableHead>Joined</TableHead><TableHead>Name</TableHead><TableHead>Balance</TableHead><TableHead className="hidden md:table-cell">Email</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                                <TableHeader className="bg-muted/50"><TableRow><TableHead>Registration</TableHead><TableHead>Legal Name</TableHead><TableHead>Balance</TableHead><TableHead className="hidden md:table-cell">Verified Email</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {filteredUsers.map(u => (
                                         <TableRow key={u.id} className="hover:bg-muted/30">
-                                            <TableCell className="text-[10px]">{u.createdAt ? format(new Date(u.createdAt), 'PPp') : 'N/A'}</TableCell>
-                                            <TableCell className="font-black">{u.name}</TableCell>
-                                            <TableCell className="font-bold text-primary">{(u.balance || 0).toLocaleString()} USDT</TableCell>
-                                            <TableCell className="hidden md:table-cell text-xs font-mono">{u.email}</TableCell>
+                                            <TableCell className="text-[10px] font-mono">{u.createdAt ? format(new Date(u.createdAt), 'PPp') : 'N/A'}</TableCell>
+                                            <TableCell className="font-black text-sm uppercase">{u.name}</TableCell>
+                                            <TableCell className="font-black text-primary text-base">{(u.balance || 0).toLocaleString()} <span className="text-[10px] font-medium">USDT</span></TableCell>
+                                            <TableCell className="hidden md:table-cell text-xs font-medium text-muted-foreground">{u.email}</TableCell>
                                             <TableCell className="text-right">
                                                 <Dialog>
-                                                    <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 gap-2"><UserIcon className="h-4 w-4" /> Profile</Button></DialogTrigger>
+                                                    <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 gap-2 font-bold"><UserIcon className="h-4 w-4" /> Profile</Button></DialogTrigger>
                                                     <DialogContent className="max-w-md">
                                                         <DialogHeader>
                                                             <div className="flex items-center gap-4 mb-2">
-                                                                <div className="p-3 bg-primary/10 rounded-full"><UserIcon className="h-6 w-6 text-primary" /></div>
+                                                                <div className="p-4 bg-primary/10 rounded-2xl shadow-inner"><UserIcon className="h-8 w-8 text-primary" /></div>
                                                                 <div>
-                                                                    <DialogTitle>{u.name}</DialogTitle>
-                                                                    <DialogDescription>Account Overview</DialogDescription>
+                                                                    <DialogTitle className="text-2xl font-black">{u.name}</DialogTitle>
+                                                                    <DialogDescription className="font-bold uppercase tracking-widest text-[10px] text-primary">Institutional Profile</DialogDescription>
                                                                 </div>
                                                             </div>
                                                         </DialogHeader>
-                                                        <div className="space-y-1 py-4">
-                                                            <DetailRow label="Internal UID" value={u.userId} />
-                                                            <DetailRow label="Email Address" value={<div className="flex items-center gap-2"><Mail className="h-3 w-3" /> {u.email}</div>} />
-                                                            <DetailRow label="Phone Number" value={<div className="flex items-center gap-2"><Phone className="h-3 w-3" /> {u.phone}</div>} />
-                                                            <DetailRow label="Wallet Balance" value={<div className="flex items-center gap-2 font-black text-primary text-lg"><Wallet className="h-4 w-4" /> {u.balance || 0} USDT</div>} />
-                                                            <DetailRow label="Registration" value={<div className="flex items-center gap-2"><Calendar className="h-3 w-3" /> {u.createdAt ? format(new Date(u.createdAt), 'PPP') : 'N/A'}</div>} />
-                                                            <DetailRow label="Recovery Question" value={<span className="italic">"{u.securityQuestion}"</span>} />
-                                                            <DetailRow label="Recovery Answer" value={<span className="font-mono text-primary font-bold">{u.securityAnswer}</span>} />
+                                                        <div className="space-y-1 py-6 bg-muted/5 rounded-2xl px-2">
+                                                            <DetailRow label="Internal UID" value={<span className="font-mono text-xs">{u.userId}</span>} />
+                                                            <DetailRow label="Email Identity" value={<div className="flex items-center gap-2 font-bold"><Mail className="h-3 w-3 text-muted-foreground" /> {u.email}</div>} />
+                                                            <DetailRow label="Contact Line" value={<div className="flex items-center gap-2 font-bold"><Phone className="h-3 w-3 text-muted-foreground" /> {u.phone || 'N/A'}</div>} />
+                                                            <DetailRow label="Available Liquidity" value={<div className="flex items-center gap-2 font-black text-primary text-xl"><Wallet className="h-5 w-5" /> {(u.balance || 0).toLocaleString()} USDT</div>} />
+                                                            <DetailRow label="Member Since" value={<div className="flex items-center gap-2 font-medium"><Calendar className="h-3 w-3 text-muted-foreground" /> {u.createdAt ? format(new Date(u.createdAt), 'PPP') : 'N/A'}</div>} />
+                                                            <DetailRow label="Recovery Question" value={<span className="italic text-muted-foreground">"{u.securityQuestion}"</span>} />
+                                                            <DetailRow label="Encrypted Answer" value={<span className="font-mono text-primary font-black uppercase text-xs">{u.securityAnswer}</span>} />
                                                         </div>
-                                                        <DialogFooter>
-                                                            <Button variant="outline" className="w-full" onClick={() => toast({ title: "Admin Note", description: "Password resets are managed via the recovery flow." })}>Close Inspection</Button>
+                                                        <DialogFooter className="mt-4">
+                                                            <Button variant="outline" className="w-full h-11 font-bold" onClick={() => toast({ title: "Admin Action", description: "Audit complete." })}>Close Terminal</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
