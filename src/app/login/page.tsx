@@ -55,8 +55,8 @@ export default function LoginPage() {
                 await signOut(auth);
                 toast({ 
                     variant: 'destructive', 
-                    title: 'Account Banned', 
-                    description: 'Your account is banned, unable to login. Please contact support.' 
+                    title: 'Login Failed', 
+                    description: 'User is banned. Please contact support.' 
                 });
                 setIsLoading(false);
                 return;
@@ -65,8 +65,26 @@ export default function LoginPage() {
             toast({ title: 'Welcome Back!', description: 'You have successfully logged in.' });
             router.push(redirectTo);
         } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Login Failed', description: error.message || 'Invalid email or password.' });
-        } finally { setIsLoading(false); }
+            let errorMessage = 'Invalid email or password.';
+            
+            if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                errorMessage = 'Error: Password is wrong. Please try again.';
+            } else if (error.code === 'auth/user-not-found') {
+                errorMessage = 'No account found with this email.';
+            } else if (error.code === 'auth/too-many-requests') {
+                errorMessage = 'Too many failed login attempts. Please try again later.';
+            } else {
+                errorMessage = error.message || 'An unexpected error occurred during login.';
+            }
+
+            toast({ 
+                variant: 'destructive', 
+                title: 'Login Failed', 
+                description: errorMessage 
+            });
+        } finally { 
+            setIsLoading(false); 
+        }
     }
 
     async function handleForgotCheckEmail() {
