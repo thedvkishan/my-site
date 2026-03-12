@@ -11,6 +11,7 @@
         "email": { "type": "string", "format": "email" },
         "phone": { "type": "string" },
         "balance": { "type": "number", "description": "The current USDT balance of the user." },
+        "status": { "type": "string", "enum": ["active", "banned", "on_hold"], "default": "active" },
         "securityQuestion": { "type": "string" },
         "securityAnswer": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }

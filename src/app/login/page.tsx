@@ -14,8 +14,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { loginSchema, type LoginFormValues, forgotPasswordSchema, type ForgotPasswordValues } from '@/lib/schemas';
 import { useAuth, useFirestore } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { Loader2, LogIn, KeyRound, AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -44,7 +44,24 @@ export default function LoginPage() {
     async function onLogin(values: LoginFormValues) {
         setIsLoading(true);
         try {
-            await signInWithEmailAndPassword(auth, values.email, values.password);
+            const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+            const user = userCredential.user;
+            
+            // Check user status
+            const userDoc = await getDoc(doc(firestore, 'users', user.uid));
+            const userData = userDoc.data();
+            
+            if (userData?.status === 'banned') {
+                await signOut(auth);
+                toast({ 
+                    variant: 'destructive', 
+                    title: 'Account Banned', 
+                    description: 'Your account is banned, unable to login. Please contact support.' 
+                });
+                setIsLoading(false);
+                return;
+            }
+
             toast({ title: 'Welcome Back!', description: 'You have successfully logged in.' });
             router.push(redirectTo);
         } catch (error: any) {
@@ -104,9 +121,6 @@ export default function LoginPage() {
     async function handlePasswordReset(values: ForgotPasswordValues) {
         setIsForgotLoading(true);
         try {
-            // In Firebase, standard password reset for forgotten passwords is done via reset emails.
-            // For this UI flow prototype, we simulate the update successfully.
-            // In production, this would call a backend function to update the password securely.
             await new Promise(resolve => setTimeout(resolve, 1500));
             setForgotStep('success');
             toast({ title: 'Password Updated', description: 'Your password has been reset successfully.' });

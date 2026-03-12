@@ -11,15 +11,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@/firebase';
 import { collection, addDoc, doc, query, where } from 'firebase/firestore';
-import { Loader2, Wallet, CheckCircle2, History } from 'lucide-react';
+import { Loader2, Wallet, CheckCircle2, History, Lock } from 'lucide-react';
 import { NETWORKS } from '@/lib/constants';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type UserProfile = {
   balance?: number;
+  status?: string;
 }
 
 type Withdrawal = {
@@ -53,7 +55,7 @@ export default function WithdrawalPage() {
     return query(collection(firestore, 'withdrawals'), where('userId', '==', user.uid));
   }, [firestore, user]);
 
-  const { data: profile } = useDoc<UserProfile>(userProfileRef);
+  const { data: profile, isLoading: profileLoading } = useDoc<UserProfile>(userProfileRef);
   const { data: withdrawalHistory } = useCollection<Withdrawal>(withdrawalsQuery);
 
   useEffect(() => {
@@ -65,6 +67,11 @@ export default function WithdrawalPage() {
   const handleWithdraw = async () => {
     const numAmount = parseFloat(amount);
     const balance = profile?.balance || 0;
+
+    if (profile?.status === 'on_hold') {
+        toast({ variant: 'destructive', title: 'Action Disabled', description: 'Your account is on hold.' });
+        return;
+    }
 
     if (!numAmount || numAmount <= 0) {
       toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid amount to withdraw.' });
@@ -101,7 +108,7 @@ export default function WithdrawalPage() {
     }
   };
 
-  if (isUserLoading || !user) {
+  if (isUserLoading || profileLoading || !user) {
     return (
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
              <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -110,6 +117,7 @@ export default function WithdrawalPage() {
   }
 
   const sortedHistory = withdrawalHistory?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
+  const isOnHold = profile?.status === 'on_hold';
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -142,67 +150,76 @@ export default function WithdrawalPage() {
               </CardContent>
           </Card>
         ) : (
-          <Card>
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-4">
-                   <div className="p-3 bg-accent/10 rounded-full border-4 border-accent/20">
-                        <Wallet className="h-8 w-8 text-accent" />
-                   </div>
-              </div>
-              <CardTitle>Withdraw USDT</CardTitle>
-              <CardDescription>Available Balance: {(profile?.balance || 0).toLocaleString()} USDT</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Amount (USDT)</Label>
-                  <div className="relative">
-                    <Input
-                        id="amount"
-                        type="number"
-                        placeholder="0.00"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                    />
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-xs h-7"
-                        onClick={() => setAmount((profile?.balance || 0).toString())}
-                    >
-                        MAX
-                    </Button>
+          <>
+            {isOnHold && (
+              <Alert variant="destructive" className="border-2 border-destructive animate-pulse mb-6">
+                  <Lock className="h-5 w-5" />
+                  <AlertTitle className="font-bold">Withdrawals Disabled</AlertTitle>
+                  <AlertDescription>Your account is currently on hold. You cannot perform new withdrawals at this time. Please contact support.</AlertDescription>
+              </Alert>
+            )}
+            <Card className={isOnHold ? 'opacity-60 pointer-events-none' : ''}>
+              <CardHeader className="text-center">
+                <div className="flex justify-center mb-4">
+                     <div className="p-3 bg-accent/10 rounded-full border-4 border-accent/20">
+                          <Wallet className="h-8 w-8 text-accent" />
+                     </div>
+                </div>
+                <CardTitle>Withdraw USDT</CardTitle>
+                <CardDescription>Available Balance: {(profile?.balance || 0).toLocaleString()} USDT</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="amount">Amount (USDT)</Label>
+                    <div className="relative">
+                      <Input
+                          id="amount"
+                          type="number"
+                          placeholder="0.00"
+                          value={amount}
+                          onChange={(e) => setAmount(e.target.value)}
+                      />
+                      <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-xs h-7"
+                          onClick={() => setAmount((profile?.balance || 0).toString())}
+                      >
+                          MAX
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="network">Network</Label>
-                  <Select value={network} onValueChange={setNetwork}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select network" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {NETWORKS.map(net => (
-                        <SelectItem key={net} value={net}>{net}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Recipient Address</Label>
-                  <Input
-                    id="address"
-                    placeholder="Enter your receiving wallet address"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                  />
-                </div>
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full" size="lg" onClick={handleWithdraw} disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Request Withdrawal
-              </Button>
-            </CardFooter>
-          </Card>
+                  <div className="space-y-2">
+                    <Label htmlFor="network">Network</Label>
+                    <Select value={network} onValueChange={setNetwork}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select network" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {NETWORKS.map(net => (
+                          <SelectItem key={net} value={net}>{net}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Recipient Address</Label>
+                    <Input
+                      id="address"
+                      placeholder="Enter your receiving wallet address"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                    />
+                  </div>
+              </CardContent>
+              <CardFooter>
+                <Button className="w-full" size="lg" onClick={handleWithdraw} disabled={isLoading || isOnHold}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Request Withdrawal
+                </Button>
+              </CardFooter>
+            </Card>
+          </>
         )}
       </div>
 

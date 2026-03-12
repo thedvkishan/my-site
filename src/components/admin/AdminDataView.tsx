@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
@@ -7,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, Eye, Search, User as UserIcon, Mail, Phone, Calendar, Wallet, Hash, ArrowUpRight } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Eye, Search, User as UserIcon, Mail, Phone, Calendar, Wallet, Hash, ArrowUpRight, ShieldAlert, ShieldCheck, Lock, Unlock, Plus, Minus } from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -15,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo, useEffect } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="grid grid-cols-[100px_1fr] md:grid-cols-[160px_1fr] items-start gap-4 py-2.5 border-b border-muted/50 last:border-0">
@@ -29,6 +31,7 @@ export function AdminDataView() {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [approvedAmount, setApprovedAmount] = useState<string>("");
+    const [balanceAdjustment, setBalanceAdjustment] = useState<string>("");
 
     const buyOrdersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -98,20 +101,17 @@ export function AdminDataView() {
             const orderRef = doc(firestore, type, id);
             const updateData: any = { status };
             
-            // Only set processedAmount if it's a valid number to avoid FirebaseError
             if (typeof finalAmount === 'number' && !isNaN(finalAmount)) {
                 updateData.processedAmount = finalAmount;
             }
 
             await updateDoc(orderRef, updateData);
 
-            // Handle successful completions (add to user balance)
             if ((type === 'deposits' || type === 'buyOrders') && status === 'completed' && userId && typeof finalAmount === 'number') {
                 const userRef = doc(firestore, 'users', userId);
                 await updateDoc(userRef, { balance: increment(finalAmount) });
             }
             
-            // Handle withdrawal failures (refund original balance to user)
             if (type === 'withdrawals' && status === 'failed' && userId && typeof amount === 'number') {
                 const userRef = doc(firestore, 'users', userId);
                 await updateDoc(userRef, { balance: increment(amount) });
@@ -123,7 +123,31 @@ export function AdminDataView() {
             toast({ variant: 'destructive', title: 'Update Failed', description: 'Could not update transaction status.' });
         } finally {
             setActionLoading(null);
-            setApprovedAmount(""); // Reset for next use
+            setApprovedAmount(""); 
+        }
+    };
+
+    const handleUserAction = async (userId: string, action: 'status' | 'balance', value: any) => {
+        if (!firestore) return;
+        setActionLoading(userId);
+        try {
+            const userRef = doc(firestore, 'users', userId);
+            if (action === 'status') {
+                await updateDoc(userRef, { status: value });
+                toast({ title: 'Status Updated', description: `User is now ${value}.` });
+            } else if (action === 'balance') {
+                const amount = parseFloat(balanceAdjustment);
+                if (isNaN(amount)) throw new Error("Invalid amount");
+                
+                await updateDoc(userRef, { balance: increment(value === 'add' ? amount : -amount) });
+                toast({ title: 'Balance Updated', description: `Balance ${value === 'add' ? 'increased' : 'decreased'} by ${amount} USDT.` });
+                setBalanceAdjustment("");
+            }
+        } catch (error: any) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Action Failed', description: error.message || 'Could not perform user action.' });
+        } finally {
+            setActionLoading(null);
         }
     };
 
@@ -137,6 +161,9 @@ export function AdminDataView() {
             case 'pending_hash': return <Badge variant="outline">Pending</Badge>;
             case 'expired':
             case 'failed': return <Badge variant="destructive">{status}</Badge>;
+            case 'active': return <Badge className="bg-green-500 text-white">Active</Badge>;
+            case 'banned': return <Badge variant="destructive">Banned</Badge>;
+            case 'on_hold': return <Badge className="bg-orange-500 text-white">Hold</Badge>;
             default: return <Badge variant="secondary">{status}</Badge>;
         }
     };
@@ -463,17 +490,20 @@ export function AdminDataView() {
                     <TabsContent value="users" className="m-0">
                         <ScrollArea className="h-[60vh] md:h-[65vh]">
                             <Table>
-                                <TableHeader className="bg-muted/50"><TableRow><TableHead className="text-[10px] font-bold uppercase">Name / Joined</TableHead><TableHead className="text-[10px] font-bold uppercase">Balance</TableHead><TableHead className="text-right text-[10px] font-bold uppercase">View</TableHead></TableRow></TableHeader>
+                                <TableHeader className="bg-muted/50"><TableRow><TableHead className="text-[10px] font-bold uppercase">Name / Joined</TableHead><TableHead className="text-[10px] font-bold uppercase">Balance</TableHead><TableHead className="text-right text-[10px] font-bold uppercase">Actions</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {filteredUsers.map(u => (
                                         <TableRow key={u.id} className="hover:bg-muted/30">
                                             <TableCell>
                                                 <div className="font-black text-[10px] uppercase truncate max-w-[100px]">{u.name}</div>
-                                                <div className="text-[8px] font-mono text-muted-foreground">{u.createdAt ? format(new Date(u.createdAt), 'dd/MM/yy') : 'N/A'}</div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[8px] font-mono text-muted-foreground">{u.createdAt ? format(new Date(u.createdAt), 'dd/MM/yy') : 'N/A'}</span>
+                                                    {getStatusBadge(u.status || 'active')}
+                                                </div>
                                             </TableCell>
                                             <TableCell className="font-black text-primary text-xs">{(u.balance || 0).toLocaleString()} <span className="text-[8px]">USDT</span></TableCell>
                                             <TableCell className="text-right">
-                                                <Dialog>
+                                                <Dialog onOpenChange={(open) => !open && setBalanceAdjustment("")}>
                                                     <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 w-8 p-0"><UserIcon className="h-4 w-4" /></Button></DialogTrigger>
                                                     <DialogContent className="max-w-md mx-4">
                                                         <DialogHeader>
@@ -481,21 +511,84 @@ export function AdminDataView() {
                                                                 <div className="p-3 bg-primary/10 rounded-xl"><UserIcon className="h-6 w-6 text-primary" /></div>
                                                                 <div>
                                                                     <DialogTitle className="text-xl font-black">{u.name}</DialogTitle>
-                                                                    <DialogDescription className="font-bold uppercase tracking-widest text-[8px] text-primary">Terminal Profile</DialogDescription>
+                                                                    <DialogDescription className="font-bold uppercase tracking-widest text-[8px] text-primary">Institutional Terminal Profile</DialogDescription>
                                                                 </div>
                                                             </div>
                                                         </DialogHeader>
-                                                        <div className="space-y-0.5 py-4 bg-muted/5 rounded-xl px-2">
-                                                            <DetailRow label="UID" value={<span className="font-mono text-[10px]">{u.userId}</span>} />
-                                                            <DetailRow label="Email" value={<div className="flex items-center gap-1 font-bold text-xs"><Mail className="h-3 w-3 text-muted-foreground" /> {u.email}</div>} />
-                                                            <DetailRow label="Phone" value={<div className="flex items-center gap-1 font-bold text-xs"><Phone className="h-3 w-3 text-muted-foreground" /> {u.phone || 'N/A'}</div>} />
-                                                            <DetailRow label="Balance" value={<div className="flex items-center gap-1 font-black text-primary text-lg"><Wallet className="h-4 w-4" /> {(u.balance || 0).toLocaleString()} USDT</div>} />
-                                                            <DetailRow label="Joined" value={u.createdAt ? format(new Date(u.createdAt), 'PPp') : 'N/A'} />
-                                                            <DetailRow label="Question" value={<span className="italic text-muted-foreground text-[10px]">"{u.securityQuestion}"</span>} />
-                                                            <DetailRow label="Answer" value={<span className="font-mono text-primary font-black uppercase text-[10px]">{u.securityAnswer}</span>} />
-                                                        </div>
+                                                        
+                                                        <Tabs defaultValue="profile">
+                                                            <TabsList className="grid w-full grid-cols-2 mb-4">
+                                                                <TabsTrigger value="profile">Profile</TabsTrigger>
+                                                                <TabsTrigger value="controls">Management</TabsTrigger>
+                                                            </TabsList>
+                                                            
+                                                            <TabsContent value="profile" className="space-y-0.5 py-2 bg-muted/5 rounded-xl px-2">
+                                                                <DetailRow label="UID" value={<span className="font-mono text-[10px]">{u.userId}</span>} />
+                                                                <DetailRow label="Email" value={<div className="flex items-center gap-1 font-bold text-xs"><Mail className="h-3 w-3 text-muted-foreground" /> {u.email}</div>} />
+                                                                <DetailRow label="Phone" value={<div className="flex items-center gap-1 font-bold text-xs"><Phone className="h-3 w-3 text-muted-foreground" /> {u.phone || 'N/A'}</div>} />
+                                                                <DetailRow label="Balance" value={<div className="flex items-center gap-1 font-black text-primary text-lg"><Wallet className="h-4 w-4" /> {(u.balance || 0).toLocaleString()} USDT</div>} />
+                                                                <DetailRow label="Status" value={getStatusBadge(u.status || 'active')} />
+                                                                <DetailRow label="Joined" value={u.createdAt ? format(new Date(u.createdAt), 'PPp') : 'N/A'} />
+                                                            </TabsContent>
+                                                            
+                                                            <TabsContent value="controls" className="space-y-6 py-4">
+                                                                <div className="space-y-4 p-4 border-2 border-dashed rounded-xl bg-muted/10">
+                                                                    <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Balance Adjustment</Label>
+                                                                    <div className="flex gap-2">
+                                                                        <div className="relative flex-grow">
+                                                                            <Input 
+                                                                                type="number" 
+                                                                                placeholder="Amount" 
+                                                                                className="font-black"
+                                                                                value={balanceAdjustment}
+                                                                                onChange={(e) => setBalanceAdjustment(e.target.value)}
+                                                                            />
+                                                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold opacity-40">USDT</span>
+                                                                        </div>
+                                                                        <Button size="icon" variant="outline" onClick={() => handleUserAction(u.id, 'balance', 'add')} disabled={actionLoading === u.id || !balanceAdjustment}><Plus className="h-4 w-4 text-green-600" /></Button>
+                                                                        <Button size="icon" variant="outline" onClick={() => handleUserAction(u.id, 'balance', 'subtract')} disabled={actionLoading === u.id || !balanceAdjustment}><Minus className="h-4 w-4 text-destructive" /></Button>
+                                                                    </div>
+                                                                    <p className="text-[8px] text-muted-foreground">Adjust user balance manually for corrections or offline payments.</p>
+                                                                </div>
+                                                                
+                                                                <div className="space-y-4 p-4 border-2 border-dashed rounded-xl bg-muted/10">
+                                                                    <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Account Status Terminal</Label>
+                                                                    <div className="grid grid-cols-3 gap-2">
+                                                                        <Button 
+                                                                            variant={u.status === 'active' || !u.status ? 'default' : 'outline'} 
+                                                                            className="text-[9px] font-black h-9 flex items-center gap-1"
+                                                                            onClick={() => handleUserAction(u.id, 'status', 'active')}
+                                                                            disabled={actionLoading === u.id}
+                                                                        >
+                                                                            <Unlock className="h-3 w-3" /> ACTIVE
+                                                                        </Button>
+                                                                        <Button 
+                                                                            variant={u.status === 'on_hold' ? 'default' : 'outline'} 
+                                                                            className="text-[9px] font-black h-9 bg-orange-500 hover:bg-orange-600 text-white flex items-center gap-1"
+                                                                            onClick={() => handleUserAction(u.id, 'status', 'on_hold')}
+                                                                            disabled={actionLoading === u.id}
+                                                                        >
+                                                                            <Lock className="h-3 w-3" /> HOLD
+                                                                        </Button>
+                                                                        <Button 
+                                                                            variant={u.status === 'banned' ? 'destructive' : 'outline'} 
+                                                                            className="text-[9px] font-black h-9 flex items-center gap-1"
+                                                                            onClick={() => handleUserAction(u.id, 'status', 'banned')}
+                                                                            disabled={actionLoading === u.id}
+                                                                        >
+                                                                            <ShieldAlert className="h-3 w-3" /> BAN
+                                                                        </Button>
+                                                                    </div>
+                                                                    <ul className="text-[8px] space-y-1 text-muted-foreground">
+                                                                        <li className="flex items-center gap-1"><span className="h-1 w-1 rounded-full bg-primary" /> Banned users are logged out immediately and blocked.</li>
+                                                                        <li className="flex items-center gap-1"><span className="h-1 w-1 rounded-full bg-primary" /> Hold users can login but cannot perform trades.</li>
+                                                                    </ul>
+                                                                </div>
+                                                            </TabsContent>
+                                                        </Tabs>
+                                                        
                                                         <DialogFooter className="mt-2">
-                                                            <Button variant="outline" className="w-full h-10 font-bold text-xs" onClick={() => toast({ title: "Audit complete" })}>Close Terminal</Button>
+                                                            <Button variant="outline" className="w-full h-10 font-bold text-xs" onClick={() => toast({ title: "Audit complete" })}>Close Profile</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>

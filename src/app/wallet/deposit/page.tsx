@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@/firebase';
 import { collection, addDoc, doc, updateDoc, query, where } from 'firebase/firestore';
-import { Loader2, Copy, TimerIcon, AlertCircle, History } from 'lucide-react';
+import { Loader2, Copy, TimerIcon, AlertCircle, History, Lock } from 'lucide-react';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { NETWORKS } from '@/lib/constants';
@@ -20,6 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type Settings = {
   minDepositAmount?: number;
@@ -54,6 +55,11 @@ export default function DepositPage() {
 
   const firestore = useFirestore();
 
+  const profileRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
   const settingsRef = useMemoFirebase(() => {
     if (!firestore) return null;
     return doc(firestore, 'settings', 'appSettings');
@@ -69,6 +75,7 @@ export default function DepositPage() {
     return query(collection(firestore, 'deposits'), where('userId', '==', user.uid));
   }, [firestore, user]);
 
+  const { data: profile, isLoading: profileLoading } = useDoc(profileRef);
   const { data: settings } = useDoc<Settings>(settingsRef);
   const { data: activeDeposit } = useDoc<Deposit>(activeDepositRef);
   const { data: depositHistory } = useCollection<Deposit>(depositsQuery);
@@ -98,6 +105,11 @@ export default function DepositPage() {
   const startDeposit = async () => {
     const numAmount = parseFloat(amount);
     const minDeposit = settings?.minDepositAmount ?? 100;
+
+    if (profile?.status === 'on_hold') {
+        toast({ variant: 'destructive', title: 'Action Disabled', description: 'Your account is on hold.' });
+        return;
+    }
 
     if (!numAmount || numAmount <= 0) {
       toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid amount to deposit.' });
@@ -163,7 +175,7 @@ export default function DepositPage() {
     }
   };
 
-  if (isUserLoading || !user) {
+  if (isUserLoading || profileLoading || !user) {
     return (
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
              <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -172,6 +184,7 @@ export default function DepositPage() {
   }
 
   const sortedHistory = depositHistory?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
+  const isOnHold = profile?.status === 'on_hold';
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -186,8 +199,15 @@ export default function DepositPage() {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 md:py-12 space-y-8">
       <div className="max-w-xl mx-auto w-full">
+        {isOnHold && step === 'input' && (
+          <Alert variant="destructive" className="border-2 border-destructive animate-pulse mb-6">
+              <Lock className="h-5 w-5" />
+              <AlertTitle className="font-bold">Deposits Disabled</AlertTitle>
+              <AlertDescription>Your account is currently on hold. You cannot perform new deposits at this time. Please contact support.</AlertDescription>
+          </Alert>
+        )}
         {step === 'input' && (
-          <Card>
+          <Card className={isOnHold ? 'opacity-60 pointer-events-none' : ''}>
             <CardHeader className="text-center">
               <div className="flex justify-center mb-4">
                 <div className="p-3 bg-primary/10 rounded-full border-4 border-primary/20">
@@ -224,7 +244,7 @@ export default function DepositPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full" onClick={startDeposit} disabled={isLoading}>
+              <Button className="w-full" onClick={startDeposit} disabled={isLoading || isOnHold}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Continue to Pay
               </Button>

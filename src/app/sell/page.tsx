@@ -3,16 +3,17 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc } from '@/firebase';
 import { SellForm } from '@/components/trade/SellForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { TetherIcon } from '@/components/icons/TetherIcon';
-import { Loader2, History } from 'lucide-react';
-import { collection, query, where } from 'firebase/firestore';
+import { Loader2, History, Lock } from 'lucide-react';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function SellPage() {
   const { user, isUserLoading } = useUser();
@@ -25,14 +26,20 @@ export default function SellPage() {
     }
   }, [user, isUserLoading, router]);
 
+  const profileRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
   const sellOrdersQuery = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'sellOrders'), where('userId', '==', user.uid));
   }, [firestore, user]);
 
+  const { data: profile, isLoading: profileLoading } = useDoc(profileRef);
   const { data: sellOrders, isLoading: ordersLoading } = useCollection(sellOrdersQuery);
 
-  if (isUserLoading) {
+  if (isUserLoading || profileLoading) {
     return (
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
              <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -42,6 +49,7 @@ export default function SellPage() {
 
   if (!user) return null;
 
+  const isOnHold = profile?.status === 'on_hold';
   const sortedOrders = sellOrders?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
 
   const getStatusBadge = (status: string) => {
@@ -56,7 +64,14 @@ export default function SellPage() {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 md:py-12 space-y-8">
-      <Card className="shadow-lg border-2 max-w-2xl mx-auto">
+      {isOnHold && (
+        <Alert variant="destructive" className="border-2 border-destructive animate-pulse max-w-2xl mx-auto">
+            <Lock className="h-5 w-5" />
+            <AlertTitle className="font-bold">Trading Disabled</AlertTitle>
+            <AlertDescription>Your account is currently on hold. You cannot perform new transactions at this time. Please contact support.</AlertDescription>
+        </Alert>
+      )}
+      <Card className={`shadow-lg border-2 max-w-2xl mx-auto ${isOnHold ? 'opacity-60 pointer-events-none' : ''}`}>
         <CardHeader className="text-center">
              <div className='flex justify-center mb-4'>
                 <div className='p-3 bg-primary/10 rounded-full border-4 border-primary/20'>
@@ -67,7 +82,7 @@ export default function SellPage() {
           <CardDescription>Sell your USDT and receive INR directly to your account.</CardDescription>
         </CardHeader>
         <CardContent>
-          <SellForm />
+          <SellForm disabled={isOnHold} />
         </CardContent>
       </Card>
 
