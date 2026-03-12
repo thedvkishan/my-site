@@ -14,15 +14,18 @@ import {
   CircleDollarSign, 
   History, 
   Globe, 
-  CheckCircle2,
-  BarChart3,
   Clock,
   Building2,
   CreditCard,
   Banknote,
   TrendingDown,
   AlertCircle,
-  BellRing
+  BarChart3,
+  Activity,
+  Headphones,
+  Cpu,
+  Lock,
+  MessageSquare
 } from 'lucide-react';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -34,6 +37,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 type UserProfile = {
   balance?: number;
@@ -123,8 +128,8 @@ export default function Home() {
     )
   }
 
-  const bankBuyRate = Number(settings.buyRates?.['Bank Transfer'] || settings.buyRates?.['IMPS'] || 0);
-  const bankSellRate = Number(settings.sellRates?.['Bank Transfer'] || settings.sellRates?.['IMPS'] || 0);
+  const bankBuyRate = Number(settings.buyRates?.['Bank Transfer'] || 0);
+  const bankSellRate = Number(settings.sellRates?.['Bank Transfer'] || 0);
 
   // LOGGED IN VIEW (DASHBOARD)
   if (user) {
@@ -132,46 +137,48 @@ export default function Home() {
 
     return (
         <div className="container mx-auto max-w-6xl px-4 py-8 md:py-16 animate-in fade-in duration-1000">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-primary/10 rounded-xl border border-primary/20">
                             <AppLogo />
                         </div>
-                        <h2 className="text-xl font-black tracking-tight text-primary">TetherSwap Zone</h2>
+                        <h2 className="text-xl font-black tracking-tight text-primary uppercase">TetherSwap Zone</h2>
                     </div>
                     <div className="space-y-1">
-                        <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
-                            Trading Hub
+                        <h1 className="text-4xl md:text-6xl font-black tracking-tight">
+                            Institutional <span className="text-primary">Hub</span>
                         </h1>
-                        <p className="text-muted-foreground md:text-xl">
-                            Welcome back, <span className="text-foreground font-semibold">{profile?.name || user.email?.split('@')[0]}</span>.
+                        <p className="text-muted-foreground md:text-xl font-medium">
+                            Operational Terminal for <span className="text-foreground font-bold">{profile?.name || user.email?.split('@')[0]}</span>
                         </p>
                     </div>
                 </div>
-                <Card className="bg-primary/5 border-primary/20 w-full md:w-auto overflow-hidden relative group border-2">
+                <Card className="bg-primary/5 border-primary/20 w-full md:w-auto overflow-hidden relative group border-2 shadow-sm">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <CardContent className="p-6 flex items-center gap-6 relative">
                         <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20 shadow-inner">
                             <Wallet className="h-8 w-8 text-primary" />
                         </div>
                         <div>
-                            <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest mb-1">Total Assets</p>
-                            <p className="text-3xl font-black text-primary">{(profile?.balance || 0).toLocaleString()} <span className="text-sm font-medium">USDT</span></p>
+                            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mb-1">Clearing Balance</p>
+                            <p className="text-4xl font-black text-primary tracking-tight">{(profile?.balance || 0).toLocaleString()} <span className="text-sm font-bold opacity-60">USDT</span></p>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
             {isOnHold && (
-                <Alert variant="destructive" className="mb-8 border-2 animate-pulse">
+                <Alert variant="destructive" className="mb-8 border-2 animate-pulse bg-destructive/5">
                     <AlertCircle className="h-5 w-5" />
-                    <AlertTitle className="font-bold">Trading Privileges Suspended</AlertTitle>
-                    <AlertDescription>Your account is currently "On Hold". You can view your history, but new transactions are disabled. Please contact support.</AlertDescription>
+                    <AlertTitle className="font-black uppercase tracking-wider">Trading Privileges Suspended</AlertTitle>
+                    <AlertDescription className="font-medium">Your account is currently "On Hold" by internal security. You can view your audit history, but new clearing operations are restricted. Please contact our institutional support desk.</AlertDescription>
                 </Alert>
             )}
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-12">
+            {/* Quick Actions Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-16">
                 {[
                     { label: 'Deposit', icon: CircleDollarSign, href: '/wallet/deposit', color: 'text-primary', bg: 'bg-primary/5' },
                     { label: 'Withdraw', icon: Wallet, href: '/wallet/withdrawal', color: 'text-accent', bg: 'bg-accent/5' },
@@ -182,81 +189,170 @@ export default function Home() {
                     <Button 
                         key={action.label} 
                         variant="outline" 
-                        className={`h-28 flex flex-col items-center justify-center gap-3 transition-all hover:scale-105 hover:shadow-lg border-2 animate-in slide-in-from-bottom-4 duration-500 fill-mode-both ${isOnHold && action.label !== 'History' ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
+                        className={`h-32 flex flex-col items-center justify-center gap-3 transition-all hover:scale-[1.02] hover:shadow-xl border-2 animate-in slide-in-from-bottom-4 duration-500 fill-mode-both ${isOnHold && action.label !== 'History' ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                         style={{ animationDelay: `${i * 100}ms` }}
                         asChild={!isOnHold || action.label === 'History'}
                     >
                         {isOnHold && action.label !== 'History' ? (
-                            <div className="flex flex-col items-center justify-center gap-3" onClick={() => toast({ variant: 'destructive', title: 'Hold Active', description: 'You are placed in hold, contact support.' })}>
-                                <div className={`p-3 rounded-full ${action.bg}`}>
-                                    <action.icon className={`h-6 w-6 ${action.color}`} />
+                            <div className="flex flex-col items-center justify-center gap-3" onClick={() => toast({ variant: 'destructive', title: 'Hold Active', description: 'Institutional action restricted.' })}>
+                                <div className={`p-4 rounded-2xl ${action.bg}`}>
+                                    <action.icon className={`h-7 w-7 ${action.color}`} />
                                 </div>
-                                <span className="font-bold tracking-tight">{action.label}</span>
+                                <span className="font-black text-xs uppercase tracking-widest">{action.label}</span>
                             </div>
                         ) : (
                             <Link href={action.href}>
-                                <div className={`p-3 rounded-full ${action.bg}`}>
-                                    <action.icon className={`h-6 w-6 ${action.color}`} />
+                                <div className={`p-4 rounded-2xl ${action.bg}`}>
+                                    <action.icon className={`h-7 w-7 ${action.color}`} />
                                 </div>
-                                <span className="font-bold tracking-tight">{action.label}</span>
+                                <span className="font-black text-xs uppercase tracking-widest">{action.label}</span>
                             </Link>
                         )}
                     </Button>
                 ))}
             </div>
 
+            {/* Trading Instruments */}
             <div className="grid md:grid-cols-2 gap-8 mb-16">
-                <Card className={`relative overflow-hidden group hover:border-primary transition-all duration-300 border-2 shadow-sm hover:shadow-xl ${isOnHold ? 'opacity-50 grayscale' : ''}`}>
+                <Card className={`relative overflow-hidden group hover:border-primary transition-all duration-500 border-2 shadow-sm hover:shadow-2xl bg-card ${isOnHold ? 'opacity-50 grayscale' : ''}`}>
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <TrendingUp className="h-32 w-32 -rotate-12" />
+                    </div>
                     <CardHeader className="p-8">
                         <div className="flex items-center gap-3 mb-2">
-                             <div className="p-2 bg-primary/10 rounded-lg">
+                             <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20">
                                 <CircleDollarSign className="h-6 w-6 text-primary" />
                              </div>
-                             <CardTitle className="text-2xl font-bold">Buy USDT</CardTitle>
+                             <CardTitle className="text-3xl font-black">Buy USDT</CardTitle>
                         </div>
-                        <CardDescription>Fast purchase with professional rates.</CardDescription>
+                        <CardDescription className="text-base font-medium">Acquire digital assets with institutional-grade clearing rates.</CardDescription>
                     </CardHeader>
                     <CardContent className="p-8 pt-0 space-y-6">
-                        <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
+                        <div className="bg-secondary/50 border-2 border-dashed p-6 rounded-2xl flex justify-between items-center group-hover:bg-primary/5 transition-colors">
                             <div>
-                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Bank Transfer Rate</p>
-                                <p className="text-3xl font-black">₹{bankBuyRate.toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
+                                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mb-1">Current Bank Rate</p>
+                                <p className="text-4xl font-black tracking-tighter">₹{bankBuyRate.toFixed(2)} <span className="text-sm font-bold text-muted-foreground">/ UNIT</span></p>
                             </div>
-                            <BarChart3 className="h-10 w-10 text-primary opacity-20" />
+                            <div className="bg-primary/10 p-3 rounded-full">
+                                <Activity className="h-6 w-6 text-primary animate-pulse" />
+                            </div>
                         </div>
-                        <Button className="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-primary/20" asChild={!isOnHold} disabled={isOnHold} onClick={() => isOnHold && toast({ variant: 'destructive', title: 'Hold Active', description: 'You are placed in hold, contact support.' })}>
+                        <Button className="w-full h-16 text-lg font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20 group-hover:scale-[1.01] transition-transform" asChild={!isOnHold} disabled={isOnHold}>
                             <Link href="/buy">
-                                Buy Now <ArrowRight className="ml-2 h-5 w-5" />
+                                Open Clearing Portal <ArrowRight className="ml-2 h-5 w-5" />
                             </Link>
                         </Button>
                     </CardContent>
                 </Card>
 
-                <Card className={`relative overflow-hidden group hover:border-destructive transition-all duration-300 border-2 shadow-sm hover:shadow-xl ${isOnHold ? 'opacity-50 grayscale' : ''}`}>
+                <Card className={`relative overflow-hidden group hover:border-destructive transition-all duration-500 border-2 shadow-sm hover:shadow-2xl bg-card ${isOnHold ? 'opacity-50 grayscale' : ''}`}>
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <TrendingDown className="h-32 w-32 rotate-12" />
+                    </div>
                     <CardHeader className="p-8">
                         <div className="flex items-center gap-3 mb-2">
-                             <div className="p-2 bg-destructive/10 rounded-lg">
+                             <div className="p-2.5 bg-destructive/10 rounded-xl border border-destructive/20">
                                 <TetherIcon className="h-6 w-6" />
                              </div>
-                             <CardTitle className="text-2xl font-bold">Sell USDT</CardTitle>
+                             <CardTitle className="text-3xl font-black">Sell USDT</CardTitle>
                         </div>
-                        <CardDescription>Instant conversion to local currency.</CardDescription>
+                        <CardDescription className="text-base font-medium">Liquidate assets into local currency with zero slippage.</CardDescription>
                     </CardHeader>
                     <CardContent className="p-8 pt-0 space-y-6">
-                        <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
+                        <div className="bg-secondary/50 border-2 border-dashed p-6 rounded-2xl flex justify-between items-center group-hover:bg-destructive/5 transition-colors">
                             <div>
-                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Bank Transfer Rate</p>
-                                <p className="text-3xl font-black">₹{bankSellRate.toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
+                                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mb-1">Current Bank Rate</p>
+                                <p className="text-4xl font-black tracking-tighter">₹{bankSellRate.toFixed(2)} <span className="text-sm font-bold text-muted-foreground">/ UNIT</span></p>
                             </div>
-                            <BarChart3 className="h-10 w-10 text-destructive opacity-20 rotate-180" />
+                            <div className="bg-destructive/10 p-3 rounded-full">
+                                <Activity className="h-6 w-6 text-destructive animate-pulse" />
+                            </div>
                         </div>
-                        <Button variant="destructive" className="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-destructive/20" asChild={!isOnHold} disabled={isOnHold} onClick={() => isOnHold && toast({ variant: 'destructive', title: 'Hold Active', description: 'You are placed in hold, contact support.' })}>
+                        <Button variant="destructive" className="w-full h-16 text-lg font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-destructive/20 group-hover:scale-[1.01] transition-transform" asChild={!isOnHold} disabled={isOnHold}>
                             <Link href="/sell">
-                                Sell Now <ArrowRight className="ml-2 h-5 w-5" />
+                                Execute Settlement <ArrowRight className="ml-2 h-5 w-5" />
                             </Link>
                         </Button>
                     </CardContent>
                 </Card>
+            </div>
+
+            {/* Platform Intelligence & Trust Bottom Sections */}
+            <div className="grid lg:grid-cols-3 gap-8 mb-16">
+                {/* Live Rates Terminal */}
+                <Card className="lg:col-span-2 border-2">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <BarChart3 className="h-5 w-5 text-primary" />
+                                <CardTitle className="text-xl font-black uppercase tracking-tight">Market Intelligence</CardTitle>
+                            </div>
+                            <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest animate-pulse border-primary/30 text-primary">LIVE Clearing</Badge>
+                        </div>
+                        <CardDescription className="font-medium">Real-time rates across all supported settlement channels.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-border">
+                            {Object.entries(settings.buyRates || {}).map(([method, rate]) => (
+                                <div key={method} className="bg-card p-6 flex flex-col gap-1 hover:bg-muted/30 transition-colors">
+                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{method}</p>
+                                    <p className="text-2xl font-black">₹{Number(rate).toFixed(2)}</p>
+                                    <div className="flex items-center gap-1 text-[9px] font-bold text-green-600">
+                                        <TrendingUp className="h-2 w-2" /> +0.02%
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Security Protocol Card */}
+                <Card className="border-2 bg-muted/5">
+                    <CardHeader>
+                        <div className="flex items-center gap-2">
+                            <ShieldCheck className="h-5 w-5 text-primary" />
+                            <CardTitle className="text-xl font-black uppercase tracking-tight">Safety Protocol</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-6 pt-2">
+                        <div className="flex items-start gap-4">
+                            <div className="p-2 bg-primary/10 rounded-lg shrink-0"><Cpu className="h-4 w-4 text-primary" /></div>
+                            <div>
+                                <p className="text-xs font-black uppercase mb-1">Encrypted Transit</p>
+                                <p className="text-xs text-muted-foreground font-medium">All financial data is processed via 256-bit AES encrypted protocols.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-4">
+                            <div className="p-2 bg-primary/10 rounded-lg shrink-0"><Lock className="h-4 w-4 text-primary" /></div>
+                            <div>
+                                <p className="text-xs font-black uppercase mb-1">Wallet Isolation</p>
+                                <p className="text-xs text-muted-foreground font-medium">Clearing balances are stored in multi-sig cold-isolated vaults.</p>
+                            </div>
+                        </div>
+                        <Separator />
+                        <Button variant="outline" className="w-full h-12 font-black text-[10px] uppercase tracking-widest" asChild>
+                            <Link href="/contact">
+                                <Headphones className="mr-2 h-4 w-4" /> 24/7 Priority Support
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Quick Support Terminal */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8 p-8 rounded-3xl border-2 border-dashed bg-muted/10">
+                <div className="flex items-center gap-6">
+                    <div className="p-4 bg-background rounded-2xl shadow-sm border">
+                        <MessageSquare className="h-8 w-8 text-primary" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-black uppercase tracking-tight">Direct Support Desk</h3>
+                        <p className="text-muted-foreground font-medium">Experience an issue? Our human desk is ready to assist your clearing operation.</p>
+                    </div>
+                </div>
+                <Button className="h-14 px-8 font-black uppercase tracking-widest rounded-xl whitespace-nowrap" variant="outline" asChild>
+                    <Link href="/contact">Open Support Ticket</Link>
+                </Button>
             </div>
         </div>
     );
