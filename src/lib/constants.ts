@@ -3,8 +3,8 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export const NETWORKS = ['BEP20', 'TRC20', 'ERC20'];
 
-export const PAYMENT_METHODS_BUY = ['Cash Deposit', 'UPI', 'IMPS', 'NEFT', 'RTGS'];
-export const PAYMENT_METHODS_SELL = ['Cash Deposit', 'UPI', 'IMPS', 'RTGS', 'NEFT'];
+export const PAYMENT_METHODS_BUY = ['Bank Transfer', 'UPI', 'IMPS', 'NEFT', 'RTGS', 'Cash Deposit'];
+export const PAYMENT_METHODS_SELL = ['Bank Transfer', 'UPI', 'IMPS', 'RTGS', 'NEFT', 'Cash Deposit'];
 
 export const CASH_DEPOSIT_BANKS = [
   'State Bank of India',
@@ -54,6 +54,7 @@ export const MOCK_DEPOSIT_DETAILS = {
 export const MOCK_SETTINGS = {
   appLogoUrl: MOCK_APP_LOGO_URL,
   buyRates: {
+    'Bank Transfer': 95.80,
     'UPI': 95.15,
     'IMPS': 95.50,
     'NEFT': 95.30,
@@ -61,6 +62,7 @@ export const MOCK_SETTINGS = {
     'Cash Deposit': 96.50
   },
   sellRates: {
+    'Bank Transfer': 97.80,
     'UPI': 97.25,
     'IMPS': 97.50,
     'NEFT': 97.35,

@@ -62,8 +62,8 @@ export default function Home() {
     )
   }
 
-  const defaultBuyRate = settings.buyRates?.['UPI'] || 0;
-  const defaultSellRate = settings.sellRates?.['UPI'] || 0;
+  const bankBuyRate = settings.buyRates?.['Bank Transfer'] || settings.buyRates?.['IMPS'] || 0;
+  const bankSellRate = settings.sellRates?.['Bank Transfer'] || settings.sellRates?.['IMPS'] || 0;
 
   // LOGGED IN VIEW (DASHBOARD)
   if (user) {
@@ -139,8 +139,8 @@ export default function Home() {
                     <CardContent className="p-8 pt-0 space-y-6">
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
                             <div>
-                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">UPI Rate</p>
-                                <p className="text-3xl font-black">₹{defaultBuyRate.toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Bank Transfer Rate</p>
+                                <p className="text-3xl font-black">₹{bankBuyRate.toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
                             </div>
                             <BarChart3 className="h-10 w-10 text-primary opacity-20" />
                         </div>
@@ -165,8 +165,8 @@ export default function Home() {
                     <CardContent className="p-8 pt-0 space-y-6">
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
                             <div>
-                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">UPI Rate</p>
-                                <p className="text-3xl font-black">₹{defaultSellRate.toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Bank Transfer Rate</p>
+                                <p className="text-3xl font-black">₹{bankSellRate.toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
                             </div>
                             <BarChart3 className="h-10 w-10 text-destructive opacity-20 rotate-180" />
                         </div>
@@ -255,8 +255,8 @@ export default function Home() {
                     <CardContent className="p-8 pt-0 space-y-6">
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
                             <div>
-                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">UPI Rate</p>
-                                <p className="text-3xl font-black">₹{defaultBuyRate.toFixed(2)}</p>
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Bank Transfer Rate</p>
+                                <p className="text-3xl font-black">₹{bankBuyRate.toFixed(2)}</p>
                             </div>
                             <Button size="sm" className="rounded-full font-bold px-6" asChild>
                                 <Link href="/signup">Buy Now</Link>
@@ -278,8 +278,8 @@ export default function Home() {
                     <CardContent className="p-8 pt-0 space-y-6">
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
                             <div>
-                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">UPI Rate</p>
-                                <p className="text-3xl font-black">₹{defaultSellRate.toFixed(2)}</p>
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Bank Transfer Rate</p>
+                                <p className="text-3xl font-black">₹{bankSellRate.toFixed(2)}</p>
                             </div>
                             <Button variant="destructive" size="sm" className="rounded-full font-bold px-6" asChild>
                                 <Link href="/signup">Sell Now</Link>
@@ -299,21 +299,21 @@ export default function Home() {
         <div className="relative flex overflow-x-hidden group">
             <div className="animate-marquee flex whitespace-nowrap py-4">
                 {[
+                    { name: 'Bank Transfer', icon: Building2 },
                     { name: 'UPI', icon: CreditCard },
                     { name: 'IMPS', icon: Building2 },
                     { name: 'NEFT', icon: CreditCard },
                     { name: 'RTGS', icon: Building2 },
-                    { name: 'Bank Transfer', icon: CreditCard },
                     { name: 'Cash Deposit', icon: Banknote },
                     { name: 'Tether BEP20', icon: CircleDollarSign },
                     { name: 'Tether TRC20', icon: CircleDollarSign },
                     { name: 'Tether ERC20', icon: CircleDollarSign },
                 ].concat([
+                    { name: 'Bank Transfer', icon: Building2 },
                     { name: 'UPI', icon: CreditCard },
                     { name: 'IMPS', icon: Building2 },
                     { name: 'NEFT', icon: CreditCard },
                     { name: 'RTGS', icon: Building2 },
-                    { name: 'Bank Transfer', icon: CreditCard },
                     { name: 'Cash Deposit', icon: Banknote },
                     { name: 'Tether BEP20', icon: CircleDollarSign },
                     { name: 'Tether TRC20', icon: CircleDollarSign },

@@ -51,6 +51,13 @@ export function SellForm() {
         upiId: z.string().min(3, 'Please enter a valid UPI ID.'),
     }),
     z.object({
+        paymentMode: z.literal('Bank Transfer'),
+        bankHolderName: z.string().min(2, 'Please enter account holder name.'),
+        bankName: z.string().min(2, 'Please enter bank name.'),
+        accountNumber: z.string().min(8, 'Please enter a valid account number.'),
+        ifsc: z.string().min(8, 'Please enter a valid IFSC code.'),
+    }),
+    z.object({
         paymentMode: z.literal('IMPS'),
         bankHolderName: z.string().min(2, 'Please enter account holder name.'),
         bankName: z.string().min(2, 'Please enter bank name.'),
@@ -87,7 +94,7 @@ export function SellForm() {
     defaultValues: {
       network: 'BEP20',
       usdtAmount: 0,
-      paymentMode: 'UPI',
+      paymentMode: 'Bank Transfer',
       inrAmount: 0,
       upiHolderName: '',
       upiId: '',
@@ -283,7 +290,7 @@ export function SellForm() {
           </div>
         )}
 
-        {(paymentMode === 'IMPS' || paymentMode === 'RTGS' || paymentMode === 'NEFT' || paymentMode === 'Cash Deposit') && (
+        {(paymentMode === 'IMPS' || paymentMode === 'RTGS' || paymentMode === 'NEFT' || paymentMode === 'Cash Deposit' || paymentMode === 'Bank Transfer') && (
           <div className="space-y-4 p-4 border rounded-md bg-secondary">
             <FormField control={control} name="bankHolderName" render={({ field }) => (
               <FormItem><FormLabel>Account Holder Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>

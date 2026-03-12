@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -159,7 +160,7 @@ export default function BuyPaymentPage() {
         </div>
       );
     }
-    if (['IMPS', 'NEFT', 'RTGS', 'Cash Deposit'].includes(transaction.paymentMode)) {
+    if (['Bank Transfer', 'IMPS', 'NEFT', 'RTGS', 'Cash Deposit'].includes(transaction.paymentMode)) {
       return (
         <div className="space-y-4 text-sm">
           {Object.entries({
