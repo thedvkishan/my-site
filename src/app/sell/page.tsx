@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc } from '@/firebase';
 import { SellForm } from '@/components/trade/SellForm';
@@ -9,16 +8,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { TetherIcon } from '@/components/icons/TetherIcon';
-import { Loader2, History, Lock, TrendingDown } from 'lucide-react';
+import { Loader2, History, Lock, TrendingDown, Hash, Calendar, Wallet, CreditCard, ExternalLink } from 'lucide-react';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 export default function SellPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -53,9 +55,15 @@ export default function SellPage() {
   const sortedOrders = sellOrders?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
 
   const handleRowClick = (order: any) => {
-    if (order.status === 'payment_processing') {
-        router.push(`/sell/confirmation/${order.id}`);
+    setSelectedOrder(order);
+  };
+
+  const navigateToOrderAction = () => {
+    if (!selectedOrder) return;
+    if (selectedOrder.status === 'payment_processing') {
+        router.push(`/sell/confirmation/${selectedOrder.id}`);
     }
+    setSelectedOrder(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -68,6 +76,16 @@ export default function SellPage() {
         default: return <Badge variant="outline">{status}</Badge>;
     }
   };
+
+  const DetailRow = ({ label, value, icon: Icon }: { label: string; value: React.ReactNode; icon: any }) => (
+    <div className="flex items-center justify-between py-3 border-b last:border-0 border-dashed">
+        <div className="flex items-center gap-2 text-muted-foreground">
+            <Icon className="h-3.5 w-3.5" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
+        </div>
+        <div className="text-sm font-black">{value}</div>
+    </div>
+  );
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 md:py-12 space-y-8">
@@ -140,6 +158,53 @@ export default function SellPage() {
           </ScrollArea>
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+        <DialogContent className="max-w-md">
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl font-black uppercase text-destructive">
+                    <TrendingDown className="h-5 w-5" /> Liquidation Audit
+                </DialogTitle>
+                <DialogDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Record Details for Order #{selectedOrder?.id?.slice(-6)}</DialogDescription>
+            </DialogHeader>
+            
+            {selectedOrder && (
+                <div className="space-y-6 py-4">
+                    <div className="bg-destructive/5 p-4 rounded-xl space-y-1 border border-destructive/10">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black text-muted-foreground uppercase">Status</span>
+                            {getStatusBadge(selectedOrder.status)}
+                        </div>
+                    </div>
+
+                    <div className="space-y-0.5">
+                        <DetailRow icon={Hash} label="Protocol ID" value={<span className="font-mono text-[10px]">{selectedOrder.id}</span>} />
+                        <DetailRow icon={Calendar} label="Date" value={format(new Date(selectedOrder.createdAt), 'PPpp')} />
+                        <DetailRow icon={Wallet} label="Liquidated Volume" value={<span className="text-destructive font-black">-{selectedOrder.usdtAmount} USDT</span>} />
+                        <DetailRow icon={CreditCard} label="Net Settlement" value={<span className="text-primary font-black text-lg">₹{selectedOrder.inrAmount?.toLocaleString()}</span>} />
+                        <DetailRow icon={ExternalLink} label="Receiving Mode" value={selectedOrder.paymentMode} />
+                        
+                        {selectedOrder.paymentMode === 'UPI' ? (
+                            <DetailRow icon={CreditCard} label="UPI Reference" value={selectedOrder.upiId} />
+                        ) : (
+                            <DetailRow icon={CreditCard} label="Account Audit" value={`${selectedOrder.bankName} (...${selectedOrder.accountNumber?.slice(-4)})`} />
+                        )}
+                    </div>
+
+                    <div className="flex flex-col gap-3 pt-4">
+                        {selectedOrder.status === 'payment_processing' && (
+                            <Button className="w-full font-black uppercase tracking-widest h-12 shadow-xl shadow-destructive/20" variant="destructive" onClick={navigateToOrderAction}>
+                                View Processing State
+                            </Button>
+                        )}
+                        <Button variant="outline" className="w-full font-bold uppercase tracking-widest h-12" onClick={() => setSelectedOrder(null)}>
+                            Close Record
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

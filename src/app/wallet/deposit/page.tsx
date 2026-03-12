@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -12,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@/firebase';
 import { collection, addDoc, doc, updateDoc, query, where } from 'firebase/firestore';
-import { Loader2, Copy, TimerIcon, AlertCircle, History, Lock, Clock } from 'lucide-react';
+import { Loader2, Copy, TimerIcon, AlertCircle, History, Lock, Clock, Hash, Calendar, Wallet, ExternalLink, ShieldCheck } from 'lucide-react';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { NETWORKS } from '@/lib/constants';
@@ -21,6 +20,8 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 type Settings = {
   minDepositAmount?: number;
@@ -52,6 +53,7 @@ export default function DepositPage() {
   const [network, setNetwork] = useState('BEP20');
   const [activeDepositId, setActiveDepositId] = useState<string | null>(null);
   const [txHash, setTxHash] = useState('');
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState<Deposit | null>(null);
 
   const firestore = useFirestore();
 
@@ -197,14 +199,30 @@ export default function DepositPage() {
   };
 
   const handleRowClick = (dep: Deposit) => {
-    if (dep.status === 'pending_hash') {
-        setActiveDepositId(dep.id);
+    setSelectedHistoryItem(dep);
+  };
+
+  const navigateToActiveDeposit = () => {
+    if (!selectedHistoryItem) return;
+    if (selectedHistoryItem.status === 'pending_hash') {
+        setActiveDepositId(selectedHistoryItem.id);
         setStep('pay');
-    } else if (dep.status === 'waiting_confirmation') {
-        setActiveDepositId(dep.id);
+    } else if (selectedHistoryItem.status === 'waiting_confirmation') {
+        setActiveDepositId(selectedHistoryItem.id);
         setStep('confirm');
     }
+    setSelectedHistoryItem(null);
   };
+
+  const DetailRow = ({ label, value, icon: Icon }: { label: string; value: React.ReactNode; icon: any }) => (
+    <div className="flex items-center justify-between py-3 border-b last:border-0 border-dashed">
+        <div className="flex items-center gap-2 text-muted-foreground">
+            <Icon className="h-3.5 w-3.5" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
+        </div>
+        <div className="text-sm font-black">{value}</div>
+    </div>
+  );
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 md:py-12 space-y-8">
@@ -377,7 +395,7 @@ export default function DepositPage() {
                   sortedHistory.map(dep => (
                     <TableRow key={dep.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleRowClick(dep)}>
                       <TableCell className="text-xs">
-                        {format(new Date(dep.createdAt), 'PPp')}
+                        {format(new Date(dep.createdAt), 'dd MMM HH:mm')}
                       </TableCell>
                       <TableCell className="font-semibold text-green-600">
                         +{dep.amount} USDT
@@ -392,6 +410,56 @@ export default function DepositPage() {
           </ScrollArea>
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedHistoryItem} onOpenChange={(open) => !open && setSelectedHistoryItem(null)}>
+        <DialogContent className="max-w-md">
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl font-black uppercase text-blue-600">
+                    <ArrowDownCircle className="h-5 w-5" /> Deposit Protocol
+                </DialogTitle>
+                <DialogDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Record Details for Deposit #{selectedHistoryItem?.id?.slice(-6)}</DialogDescription>
+            </DialogHeader>
+            
+            {selectedHistoryItem && (
+                <div className="space-y-6 py-4">
+                    <div className="bg-blue-500/5 p-4 rounded-xl space-y-1 border border-blue-500/10">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black text-muted-foreground uppercase">Status</span>
+                            {getStatusBadge(selectedHistoryItem.status)}
+                        </div>
+                    </div>
+
+                    <div className="space-y-0.5">
+                        <DetailRow icon={Hash} label="Protocol ID" value={<span className="font-mono text-[10px]">{selectedHistoryItem.id}</span>} />
+                        <DetailRow icon={Calendar} label="Created At" value={format(new Date(selectedHistoryItem.createdAt), 'PPpp')} />
+                        <DetailRow icon={Wallet} label="Credit Volume" value={<span className="text-green-600 font-black">+{selectedHistoryItem.amount} USDT</span>} />
+                        <DetailRow icon={ExternalLink} label="Settlement Network" value={selectedHistoryItem.network} />
+                        
+                        {selectedHistoryItem.txHash && (
+                            <div className="py-3 space-y-2 border-b border-dashed">
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">Transaction Hash (TXID)</span>
+                                </div>
+                                <p className="text-[10px] font-mono break-all bg-secondary p-2 rounded border">{selectedHistoryItem.txHash}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex flex-col gap-3 pt-4">
+                        {(selectedHistoryItem.status === 'pending_hash' || selectedHistoryItem.status === 'waiting_confirmation') && (
+                            <Button className="w-full font-black uppercase tracking-widest h-12 shadow-xl shadow-blue-500/20" onClick={navigateToActiveDeposit}>
+                                {selectedHistoryItem.status === 'pending_hash' ? 'Complete Deposit' : 'View Confirmation'}
+                            </Button>
+                        )}
+                        <Button variant="outline" className="w-full font-bold uppercase tracking-widest h-12" onClick={() => setSelectedHistoryItem(null)}>
+                            Close Audit
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,13 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@/firebase';
 import { collection, addDoc, doc, query, where, updateDoc, increment } from 'firebase/firestore';
-import { Loader2, Wallet, History, Lock } from 'lucide-react';
+import { Loader2, Wallet, History, Lock, Hash, Calendar, CreditCard, ExternalLink, ShieldCheck, ArrowUpCircle } from 'lucide-react';
 import { NETWORKS } from '@/lib/constants';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 type UserProfile = {
   balance?: number;
@@ -41,6 +42,7 @@ export default function WithdrawalPage() {
   const [amount, setAmount] = useState('');
   const [network, setNetwork] = useState('BEP20');
   const [address, setAddress] = useState('');
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState<Withdrawal | null>(null);
 
   const firestore = useFirestore();
 
@@ -153,10 +155,26 @@ export default function WithdrawalPage() {
   };
 
   const handleRowClick = (wd: Withdrawal) => {
-    if (wd.status === 'pending') {
-        router.push(`/wallet/withdrawal/confirmation/${wd.id}`);
-    }
+    setSelectedHistoryItem(wd);
   };
+
+  const navigateToConfirmation = () => {
+    if (!selectedHistoryItem) return;
+    if (selectedHistoryItem.status === 'pending') {
+        router.push(`/wallet/withdrawal/confirmation/${selectedHistoryItem.id}`);
+    }
+    setSelectedHistoryItem(null);
+  };
+
+  const DetailRow = ({ label, value, icon: Icon }: { label: string; value: React.ReactNode; icon: any }) => (
+    <div className="flex items-center justify-between py-3 border-b last:border-0 border-dashed">
+        <div className="flex items-center gap-2 text-muted-foreground">
+            <Icon className="h-3.5 w-3.5" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
+        </div>
+        <div className="text-sm font-black">{value}</div>
+    </div>
+  );
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 md:py-12 space-y-8">
@@ -261,7 +279,7 @@ export default function WithdrawalPage() {
                   sortedHistory.map(wd => (
                     <TableRow key={wd.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleRowClick(wd)}>
                       <TableCell className="text-xs">
-                        {format(new Date(wd.createdAt), 'PPp')}
+                        {format(new Date(wd.createdAt), 'dd MMM HH:mm')}
                       </TableCell>
                       <TableCell className="font-semibold text-red-600">
                         -{wd.amount} USDT
@@ -276,6 +294,54 @@ export default function WithdrawalPage() {
           </ScrollArea>
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedHistoryItem} onOpenChange={(open) => !open && setSelectedHistoryItem(null)}>
+        <DialogContent className="max-w-md">
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl font-black uppercase text-orange-600">
+                    <ArrowUpCircle className="h-5 w-5" /> Withdrawal Audit
+                </DialogTitle>
+                <DialogDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Record Details for Withdrawal #{selectedHistoryItem?.id?.slice(-6)}</DialogDescription>
+            </DialogHeader>
+            
+            {selectedHistoryItem && (
+                <div className="space-y-6 py-4">
+                    <div className="bg-orange-500/5 p-4 rounded-xl space-y-1 border border-orange-500/10">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black text-muted-foreground uppercase">Protocol Status</span>
+                            {getStatusBadge(selectedHistoryItem.status)}
+                        </div>
+                    </div>
+
+                    <div className="space-y-0.5">
+                        <DetailRow icon={Hash} label="Protocol ID" value={<span className="font-mono text-[10px]">{selectedHistoryItem.id}</span>} />
+                        <DetailRow icon={Calendar} label="Requested At" value={format(new Date(selectedHistoryItem.createdAt), 'PPpp')} />
+                        <DetailRow icon={Wallet} label="Debit Volume" value={<span className="text-destructive font-black">-{selectedHistoryItem.amount} USDT</span>} />
+                        <DetailRow icon={ExternalLink} label="Settlement Network" value={selectedHistoryItem.network} />
+                        
+                        <div className="py-3 space-y-2 border-b border-dashed">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <CreditCard className="h-3.5 w-3.5" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider">Recipient Address</span>
+                            </div>
+                            <p className="text-[10px] font-mono break-all bg-secondary p-2 rounded border">{selectedHistoryItem.address}</p>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3 pt-4">
+                        {selectedHistoryItem.status === 'pending' && (
+                            <Button className="w-full font-black uppercase tracking-widest h-12 shadow-xl shadow-orange-500/20" onClick={navigateToConfirmation}>
+                                View Confirmation State
+                            </Button>
+                        )}
+                        <Button variant="outline" className="w-full font-bold uppercase tracking-widest h-12" onClick={() => setSelectedHistoryItem(null)}>
+                            Close Record
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
