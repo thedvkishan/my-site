@@ -66,13 +66,21 @@ export default function Home() {
     return (
         <div className="container mx-auto max-w-6xl px-4 py-8 md:py-16 animate-in fade-in duration-1000">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
-                <div className="space-y-2">
-                    <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
-                        Trading Hub
-                    </h1>
-                    <p className="text-muted-foreground md:text-xl">
-                        Welcome back, <span className="text-foreground font-semibold">{user.email?.split('@')[0]}</span>.
-                    </p>
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-xl border border-primary/20">
+                            <AppLogo />
+                        </div>
+                        <h2 className="text-xl font-black tracking-tight text-primary">TetherSwap Zone</h2>
+                    </div>
+                    <div className="space-y-1">
+                        <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
+                            Trading Hub
+                        </h1>
+                        <p className="text-muted-foreground md:text-xl">
+                            Welcome back, <span className="text-foreground font-semibold">{user.email?.split('@')[0]}</span>.
+                        </p>
+                    </div>
                 </div>
                 <Card className="bg-primary/5 border-primary/20 w-full md:w-auto overflow-hidden relative group border-2">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
