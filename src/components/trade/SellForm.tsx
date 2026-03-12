@@ -18,8 +18,7 @@ import { useAuth, useFirestore, useDoc, useMemoFirebase, useUser } from '@/fireb
 import { collection, addDoc, doc } from 'firebase/firestore';
 
 type Settings = {
-  sellRateBank?: number;
-  sellRateCDM?: number;
+  sellRates?: Record<string, number>;
   minSellAmount?: number;
 }
 
@@ -105,8 +104,8 @@ export function SellForm() {
   const paymentMode = watch('paymentMode');
 
   const currentRate = useMemo(() => {
-    if (!settings) return null;
-    return paymentMode === 'Cash Deposit' ? settings.sellRateCDM : settings.sellRateBank;
+    if (!settings || !settings.sellRates) return null;
+    return settings.sellRates[paymentMode] || 0;
   }, [settings, paymentMode]);
 
   useEffect(() => {
@@ -134,7 +133,6 @@ export function SellForm() {
     }
   }, [inrAmount, currentRate, setValue, usdtAmount]);
   
-  // Handle rate changes when switching payment mode
   useEffect(() => {
     if (currentRate && conversionInputSource.current === 'usdt') {
         setValue('inrAmount', parseFloat((usdtAmount * currentRate).toFixed(2)));

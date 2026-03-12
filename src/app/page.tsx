@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -32,8 +33,8 @@ type UserProfile = {
 }
 
 type Settings = {
-  buyRateBank?: number;
-  sellRateBank?: number;
+  buyRates?: Record<string, number>;
+  sellRates?: Record<string, number>;
 }
 
 export default function Home() {
@@ -60,6 +61,9 @@ export default function Home() {
         </div>
     )
   }
+
+  const defaultBuyRate = settings.buyRates?.['UPI'] || 0;
+  const defaultSellRate = settings.sellRates?.['UPI'] || 0;
 
   // LOGGED IN VIEW (DASHBOARD)
   if (user) {
@@ -135,8 +139,8 @@ export default function Home() {
                     <CardContent className="p-8 pt-0 space-y-6">
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
                             <div>
-                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Market Rate</p>
-                                <p className="text-3xl font-black">₹{(Number(settings.buyRateBank) || 0).toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">UPI Rate</p>
+                                <p className="text-3xl font-black">₹{defaultBuyRate.toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
                             </div>
                             <BarChart3 className="h-10 w-10 text-primary opacity-20" />
                         </div>
@@ -161,8 +165,8 @@ export default function Home() {
                     <CardContent className="p-8 pt-0 space-y-6">
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
                             <div>
-                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Market Rate</p>
-                                <p className="text-3xl font-black">₹{(Number(settings.sellRateBank) || 0).toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">UPI Rate</p>
+                                <p className="text-3xl font-black">₹{defaultSellRate.toFixed(2)} <span className="text-sm font-medium text-muted-foreground">/ USDT</span></p>
                             </div>
                             <BarChart3 className="h-10 w-10 text-destructive opacity-20 rotate-180" />
                         </div>
@@ -251,8 +255,8 @@ export default function Home() {
                     <CardContent className="p-8 pt-0 space-y-6">
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
                             <div>
-                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Buy Rate</p>
-                                <p className="text-3xl font-black">₹{(Number(settings.buyRateBank) || 0).toFixed(2)}</p>
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">UPI Rate</p>
+                                <p className="text-3xl font-black">₹{defaultBuyRate.toFixed(2)}</p>
                             </div>
                             <Button size="sm" className="rounded-full font-bold px-6" asChild>
                                 <Link href="/signup">Buy Now</Link>
@@ -274,8 +278,8 @@ export default function Home() {
                     <CardContent className="p-8 pt-0 space-y-6">
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
                             <div>
-                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Sell Rate</p>
-                                <p className="text-3xl font-black">₹{(Number(settings.sellRateBank) || 0).toFixed(2)}</p>
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">UPI Rate</p>
+                                <p className="text-3xl font-black">₹{defaultSellRate.toFixed(2)}</p>
                             </div>
                             <Button variant="destructive" size="sm" className="rounded-full font-bold px-6" asChild>
                                 <Link href="/signup">Sell Now</Link>

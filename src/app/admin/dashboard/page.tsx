@@ -22,14 +22,12 @@ import { AdminDataView } from '@/components/admin/AdminDataView';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { MOCK_SETTINGS } from '@/lib/constants';
+import { MOCK_SETTINGS, PAYMENT_METHODS_BUY, PAYMENT_METHODS_SELL } from '@/lib/constants';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
-// Define the shape of your settings data
 export type Settings = SettingsFormValues;
 
-// Function to get the initial/default settings
 const getInitialSettings = (): Settings => MOCK_SETTINGS;
 
 export default function AdminDashboardPage() {
@@ -38,7 +36,6 @@ export default function AdminDashboardPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
-    // --- Direct Firestore integration ---
     const firestore = useFirestore();
 
     const settingsRef = useMemoFirebase(() => {
@@ -66,8 +63,6 @@ export default function AdminDashboardPage() {
             throw serverError;
         }
     }, [settingsRef]);
-    // --- End of Direct Firestore integration ---
-
 
     const form = useForm<SettingsFormValues>({
         resolver: zodResolver(settingsSchema),
@@ -87,7 +82,6 @@ export default function AdminDashboardPage() {
         }
     }, [router]);
     
-    // This effect now correctly populates the form once data is loaded from Firestore
     useEffect(() => {
         if (isInitialized && storedSettings) {
             form.reset(storedSettings);
@@ -126,10 +120,8 @@ export default function AdminDashboardPage() {
                 break;
             case 'rates':
                 newSettings = { 
-                    buyRateBank: Number(values.buyRateBank), 
-                    buyRateCDM: Number(values.buyRateCDM),
-                    sellRateBank: Number(values.sellRateBank), 
-                    sellRateCDM: Number(values.sellRateCDM),
+                    buyRates: values.buyRates, 
+                    sellRates: values.sellRates,
                     minBuyAmount: Number(values.minBuyAmount), 
                     minSellAmount: Number(values.minSellAmount),
                     minDepositAmount: Number(values.minDepositAmount)
@@ -298,28 +290,54 @@ export default function AdminDashboardPage() {
                                                 </AccordionContent>
                                             </AccordionItem>
                                             <AccordionItem value="rates">
-                                                <AccordionTrigger className="text-lg">Rates & Limits</AccordionTrigger>
+                                                <AccordionTrigger className="text-lg">Granular Rates & Limits</AccordionTrigger>
                                                 <AccordionContent className="pt-4 space-y-6">
                                                     <div className="grid md:grid-cols-2 gap-6">
                                                          <div className="space-y-4 border p-4 rounded-lg bg-muted/20">
-                                                            <h4 className="font-bold flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" /> Buying Rates (INR)</h4>
-                                                            <FormField control={form.control} name="buyRateBank" render={({ field }) => (<FormItem><FormLabel>Bank Transfer Rate</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                            <FormField control={form.control} name="buyRateCDM" render={({ field }) => (<FormItem><FormLabel>CDM / Cash Deposit Rate</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                            <h4 className="font-bold flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" /> Buy Rates (INR / USDT)</h4>
+                                                            {PAYMENT_METHODS_BUY.map(method => (
+                                                                <FormField 
+                                                                    key={`buy-${method}`}
+                                                                    control={form.control} 
+                                                                    name={`buyRates.${method}`} 
+                                                                    render={({ field }) => (
+                                                                        <FormItem>
+                                                                            <FormLabel>{method} Rate</FormLabel>
+                                                                            <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                                                                            <FormMessage />
+                                                                        </FormItem>
+                                                                    )}
+                                                                />
+                                                            ))}
                                                          </div>
                                                          
                                                          <div className="space-y-4 border p-4 rounded-lg bg-muted/20">
-                                                            <h4 className="font-bold flex items-center gap-2"><TetherIcon className="h-4 w-4" /> Selling Rates (INR)</h4>
-                                                            <FormField control={form.control} name="sellRateBank" render={({ field }) => (<FormItem><FormLabel>Bank Transfer Rate</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                            <FormField control={form.control} name="sellRateCDM" render={({ field }) => (<FormItem><FormLabel>CDM / Cash Deposit Rate</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                            <h4 className="font-bold flex items-center gap-2"><TetherIcon className="h-4 w-4" /> Sell Rates (INR / USDT)</h4>
+                                                            {PAYMENT_METHODS_SELL.map(method => (
+                                                                <FormField 
+                                                                    key={`sell-${method}`}
+                                                                    control={form.control} 
+                                                                    name={`sellRates.${method}`} 
+                                                                    render={({ field }) => (
+                                                                        <FormItem>
+                                                                            <FormLabel>{method} Rate</FormLabel>
+                                                                            <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                                                                            <FormMessage />
+                                                                        </FormItem>
+                                                                    )}
+                                                                />
+                                                            ))}
                                                          </div>
                                                          
-                                                         <FormField control={form.control} name="minBuyAmount" render={({ field }) => (<FormItem><FormLabel>Min. Buy Amount (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                         <FormField control={form.control} name="minSellAmount" render={({ field }) => (<FormItem><FormLabel>Min. Sell Amount (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                         <FormField control={form.control} name="minDepositAmount" render={({ field }) => (<FormItem><FormLabel>Min. Deposit Amount (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                         <div className='md:col-span-2 grid md:grid-cols-3 gap-4 border p-4 rounded-lg bg-secondary/10'>
+                                                            <FormField control={form.control} name="minBuyAmount" render={({ field }) => (<FormItem><FormLabel>Min. Buy (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                            <FormField control={form.control} name="minSellAmount" render={({ field }) => (<FormItem><FormLabel>Min. Sell (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                            <FormField control={form.control} name="minDepositAmount" render={({ field }) => (<FormItem><FormLabel>Min. Deposit (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                         </div>
                                                     </div>
                                                     <Button className="w-full" onClick={() => handleSave('rates')} disabled={isSaving}>
                                                         {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                        Save Rates & Limits
+                                                        Save All Rates & Limits
                                                     </Button>
                                                 </AccordionContent>
                                             </AccordionItem>

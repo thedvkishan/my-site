@@ -53,10 +53,20 @@ export const MOCK_DEPOSIT_DETAILS = {
 
 export const MOCK_SETTINGS = {
   appLogoUrl: MOCK_APP_LOGO_URL,
-  buyRateBank: 95.15,
-  buyRateCDM: 96.50,
-  sellRateBank: 97.25,
-  sellRateCDM: 98.80,
+  buyRates: {
+    'UPI': 95.15,
+    'IMPS': 95.50,
+    'NEFT': 95.30,
+    'RTGS': 95.40,
+    'Cash Deposit': 96.50
+  },
+  sellRates: {
+    'UPI': 97.25,
+    'IMPS': 97.50,
+    'NEFT': 97.35,
+    'RTGS': 97.45,
+    'Cash Deposit': 98.80
+  },
   minBuyAmount: 100,
   minSellAmount: 100,
   minDepositAmount: 100,
