@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@/firebase';
 import { collection, addDoc, doc, updateDoc, query, where } from 'firebase/firestore';
-import { Loader2, Copy, TimerIcon, AlertCircle, History, Lock, Clock, Hash, Calendar, Wallet, ExternalLink, ShieldCheck } from 'lucide-react';
+import { Loader2, Copy, TimerIcon, AlertCircle, History, Lock, Clock, Hash, Calendar, Wallet, ExternalLink, ShieldCheck, ArrowDownCircle } from 'lucide-react';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { NETWORKS } from '@/lib/constants';
