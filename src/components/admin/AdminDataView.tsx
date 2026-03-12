@@ -119,24 +119,26 @@ export function AdminDataView() {
 
             await updateDoc(orderRef, updateData);
 
-            // Handle logic for Withdrawals (Deduction happened on request)
-            if (type === 'withdrawals' && userId && typeof amount === 'number' && typeof finalAmount === 'number') {
+            // Handle logic for Withdrawals and Sell Orders (Deduction happened on request)
+            if ((type === 'withdrawals' || type === 'sellOrders') && userId && typeof amount === 'number' && typeof finalAmount === 'number') {
                 const userRef = doc(firestore, 'users', userId);
+                const typeLabel = type === 'withdrawals' ? 'Withdrawal' : 'Sell Order';
+
                 if (status === 'failed') {
                     // Full refund if rejected
                     await updateDoc(userRef, { balance: increment(amount) });
-                    await createNotification(userId, 'Withdrawal Rejected', `${amount.toLocaleString()} USDT has been returned to your wallet.`, 'error');
+                    await createNotification(userId, `${typeLabel} Rejected`, `${amount.toLocaleString()} USDT has been returned to your wallet.`, 'error');
                 } else if (status === 'completed') {
                     // If admin approved a smaller amount than requested, refund the difference
                     if (finalAmount < amount) {
                         const refundDiff = amount - finalAmount;
                         await updateDoc(userRef, { balance: increment(refundDiff) });
-                        await createNotification(userId, 'Withdrawal Adjustment', `${refundDiff.toLocaleString()} USDT has been returned to your wallet (Amount adjusted by admin).`, 'info');
+                        await createNotification(userId, `${typeLabel} Adjustment`, `${refundDiff.toLocaleString()} USDT has been returned to your wallet (Amount adjusted by admin).`, 'info');
                     }
-                    await createNotification(userId, 'Withdrawal Approved', `Your withdrawal request has been finalized and processed.`, 'success');
+                    await createNotification(userId, `${typeLabel} Approved`, `Your ${typeLabel.toLowerCase()} request has been finalized and processed.`, 'success');
                 }
             } else if (userId) {
-                // General notification for other types
+                // General notification for other types (Buy/Deposit)
                 const typeLabel = type.replace('Orders', '').replace('s', '');
                 const displayType = typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1);
                 const colorType = status === 'completed' ? 'success' : status === 'failed' ? 'error' : 'info';
@@ -348,7 +350,7 @@ export function AdminDataView() {
                                                 <div className="text-[9px] text-muted-foreground font-bold">₹{order.inrAmount?.toLocaleString()}</div>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Dialog>
+                                                <Dialog onOpenChange={(open) => open && setApprovedAmount(String(order.usdtAmount))}>
                                                     <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button></DialogTrigger>
                                                     <DialogContent className="max-w-xl mx-4">
                                                         <DialogHeader><DialogTitle className="text-xl font-black text-destructive">Sell Order Process</DialogTitle><DialogDescription className="text-xs">Ref: {order.id}</DialogDescription></DialogHeader>
@@ -376,9 +378,23 @@ export function AdminDataView() {
                                                                 <DetailRow label="Settlement" value={<span className="text-destructive font-black text-lg">₹{order.inrAmount?.toLocaleString()}</span>} />
                                                             </div>
                                                         </ScrollArea>
-                                                        <DialogFooter className="flex-row gap-2 mt-2">
-                                                            <Button variant="outline" className="flex-1 font-bold text-xs h-10" onClick={() => handleStatusUpdate('sellOrders', order.id, 'failed', order.userId, order.usdtAmount)} disabled={actionLoading === order.id}>Reject</Button>
-                                                            <Button className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold text-xs h-10" onClick={() => handleStatusUpdate('sellOrders', order.id, 'completed', order.userId, order.usdtAmount)} disabled={actionLoading === order.id}>Finalize & Confirm</Button>
+                                                        <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-xl space-y-3 mt-4">
+                                                            <Label htmlFor="approved-amount-sell" className="text-xs font-bold uppercase tracking-wider">Final USDT Settled (Adjust if needed)</Label>
+                                                            <div className="relative">
+                                                                <Input 
+                                                                    id="approved-amount-sell"
+                                                                    type="number" 
+                                                                    value={approvedAmount} 
+                                                                    onChange={(e) => setApprovedAmount(e.target.value)}
+                                                                    className="font-black text-lg border-destructive/30"
+                                                                />
+                                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-destructive">USDT</span>
+                                                            </div>
+                                                            <p className="text-[10px] text-muted-foreground italic">Requested: {order.usdtAmount} USDT. Adjusting down credits back the difference to the user's wallet.</p>
+                                                        </div>
+                                                        <DialogFooter className="flex-row gap-2 mt-4">
+                                                            <Button variant="outline" className="flex-1 font-bold text-xs h-10" onClick={() => handleStatusUpdate('sellOrders', order.id, 'failed', order.userId, order.usdtAmount)} disabled={actionLoading === order.id}>Reject & Refund</Button>
+                                                            <Button className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold text-xs h-10" onClick={() => handleStatusUpdate('sellOrders', order.id, 'completed', order.userId, order.usdtAmount, parseFloat(approvedAmount))} disabled={actionLoading === order.id}>Finalize & Confirm</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
