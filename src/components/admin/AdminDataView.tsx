@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
@@ -19,8 +18,8 @@ import { useState } from "react";
 // Helper component to render details in a consistent way
 const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="grid grid-cols-[160px_1fr] items-start gap-4 py-1">
-        <span className="text-muted-foreground text-right">{label}</span>
-        <div className="font-semibold break-words">{value}</div>
+        <span className="text-muted-foreground text-right text-xs md:text-sm">{label}</span>
+        <div className="font-semibold break-words text-xs md:text-sm">{value}</div>
     </div>
 );
 
@@ -75,8 +74,8 @@ export function AdminDataView() {
             const orderRef = doc(firestore, type, id);
             await updateDoc(orderRef, { status });
 
-            // If it's a deposit being completed, increment user balance
-            if (type === 'deposits' && status === 'completed' && userId && amount) {
+            // If it's a deposit or a buy order being completed, increment user balance
+            if ((type === 'deposits' || type === 'buyOrders') && status === 'completed' && userId && amount) {
                 const userRef = doc(firestore, 'users', userId);
                 await updateDoc(userRef, { balance: increment(amount) });
             }
@@ -112,54 +111,56 @@ export function AdminDataView() {
     };
 
     return (
-        <Card>
-            <CardHeader>
+        <Card className="overflow-hidden">
+            <CardHeader className="p-4 md:p-6">
                 <CardTitle>User Submitted Data</CardTitle>
                 <CardDescription>Review and manage all site transactions.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <Tabs defaultValue="buyOrders">
-                    <TabsList className="grid w-full grid-cols-6 h-auto flex-wrap mb-4">
-                        <TabsTrigger value="buyOrders">Buy</TabsTrigger>
-                        <TabsTrigger value="sellOrders">Sell</TabsTrigger>
-                        <TabsTrigger value="deposits">Deposits</TabsTrigger>
-                        <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
-                        <TabsTrigger value="contact">Messages</TabsTrigger>
-                        <TabsTrigger value="users">Users</TabsTrigger>
-                    </TabsList>
+            <CardContent className="p-2 md:p-6">
+                <Tabs defaultValue="buyOrders" className="w-full">
+                    <ScrollArea className="w-full whitespace-nowrap mb-4">
+                        <TabsList className="inline-flex w-auto p-1">
+                            <TabsTrigger value="buyOrders">Buy</TabsTrigger>
+                            <TabsTrigger value="sellOrders">Sell</TabsTrigger>
+                            <TabsTrigger value="deposits">Deposits</TabsTrigger>
+                            <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+                            <TabsTrigger value="contact">Messages</TabsTrigger>
+                            <TabsTrigger value="users">Users</TabsTrigger>
+                        </TabsList>
+                    </ScrollArea>
                     
                     {isLoading && <div className="flex justify-center items-center py-20"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}
                     
                     <TabsContent value="buyOrders">
-                        <ScrollArea className="h-[60vh]">
+                        <ScrollArea className="h-[60vh] border rounded-md">
                             <Table>
-                                <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Status</TableHead><TableHead>USDT</TableHead><TableHead>INR</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
+                                <TableHeader><TableRow><TableHead className="min-w-[120px]">Date</TableHead><TableHead>Status</TableHead><TableHead>USDT</TableHead><TableHead className="hidden md:table-cell">INR</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {buyOrders?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(order => (
                                         <TableRow key={order.id}>
-                                            <TableCell className="text-xs">{format(new Date(order.createdAt), 'PPp')}</TableCell>
+                                            <TableCell className="text-[10px] md:text-xs">{format(new Date(order.createdAt), 'PPp')}</TableCell>
                                             <TableCell>{getStatusBadge(order.status)}</TableCell>
-                                            <TableCell>{order.usdtAmount}</TableCell>
-                                            <TableCell>₹{order.inrAmount}</TableCell>
+                                            <TableCell className="font-medium">{order.usdtAmount}</TableCell>
+                                            <TableCell className="hidden md:table-cell">₹{order.inrAmount}</TableCell>
                                             <TableCell>
                                                 <Dialog>
-                                                    <DialogTrigger asChild><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></DialogTrigger>
-                                                    <DialogContent className="max-w-2xl">
+                                                    <DialogTrigger asChild><Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button></DialogTrigger>
+                                                    <DialogContent className="max-w-2xl w-[95vw] rounded-lg">
                                                         <DialogHeader><DialogTitle>Buy Order Details</DialogTitle><DialogDescription>ID: {order.id}</DialogDescription></DialogHeader>
-                                                        <div className="space-y-2 py-4 text-sm">
+                                                        <div className="space-y-2 py-4">
                                                             <DetailRow label="User ID" value={order.userId} />
                                                             <DetailRow label="Status" value={getStatusBadge(order.status)} />
                                                             <DetailRow label="USDT Amount" value={`${order.usdtAmount} USDT`} />
                                                             <DetailRow label="INR Amount" value={`₹${order.inrAmount}`} />
                                                             <DetailRow label="Network" value={order.network} />
-                                                            <DetailRow label="Recipient Address" value={<span className="font-mono text-xs">{order.usdtAddress}</span>} />
+                                                            <DetailRow label="Recipient Address" value={<span className="font-mono text-[10px] break-all">{order.usdtAddress}</span>} />
                                                             <DetailRow label="Payment Mode" value={order.paymentMode} />
                                                             <DetailRow label="Email" value={order.email} />
-                                                            <DetailRow label="Receipt" value={order.paymentReceiptUrl ? <a href={order.paymentReceiptUrl} target="_blank" className="text-primary hover:underline">View Uploaded Receipt</a> : 'No Receipt'} />
+                                                            <DetailRow label="Receipt" value={order.paymentReceiptUrl ? <a href={order.paymentReceiptUrl} target="_blank" className="text-primary hover:underline text-xs">View Uploaded Receipt</a> : 'No Receipt'} />
                                                         </div>
-                                                        <DialogFooter className="gap-2">
-                                                            <Button variant="outline" onClick={() => handleStatusUpdate('buyOrders', order.id, 'failed')} disabled={actionLoading === order.id}>Reject</Button>
-                                                            <Button onClick={() => handleStatusUpdate('buyOrders', order.id, 'completed')} disabled={actionLoading === order.id}><CheckCircle2 className="mr-2 h-4 w-4" /> Mark Completed</Button>
+                                                        <DialogFooter className="flex flex-row gap-2 sm:justify-end">
+                                                            <Button variant="outline" size="sm" onClick={() => handleStatusUpdate('buyOrders', order.id, 'failed')} disabled={actionLoading === order.id}>Reject</Button>
+                                                            <Button size="sm" onClick={() => handleStatusUpdate('buyOrders', order.id, 'completed', order.userId, order.usdtAmount)} disabled={actionLoading === order.id}><CheckCircle2 className="mr-2 h-4 w-4" /> Complete</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
@@ -172,22 +173,22 @@ export function AdminDataView() {
                     </TabsContent>
                     
                     <TabsContent value="sellOrders">
-                        <ScrollArea className="h-[60vh]">
+                        <ScrollArea className="h-[60vh] border rounded-md">
                            <Table>
-                                <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Status</TableHead><TableHead>USDT</TableHead><TableHead>INR</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
+                                <TableHeader><TableRow><TableHead className="min-w-[120px]">Date</TableHead><TableHead>Status</TableHead><TableHead>USDT</TableHead><TableHead className="hidden md:table-cell">INR</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {sellOrders?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(order => (
                                         <TableRow key={order.id}>
-                                            <TableCell className="text-xs">{format(new Date(order.createdAt), 'PPp')}</TableCell>
+                                            <TableCell className="text-[10px] md:text-xs">{format(new Date(order.createdAt), 'PPp')}</TableCell>
                                             <TableCell>{getStatusBadge(order.status)}</TableCell>
-                                            <TableCell>{order.usdtAmount}</TableCell>
-                                            <TableCell>₹{order.inrAmount}</TableCell>
+                                            <TableCell className="font-medium">{order.usdtAmount}</TableCell>
+                                            <TableCell className="hidden md:table-cell">₹{order.inrAmount}</TableCell>
                                             <TableCell>
                                                 <Dialog>
-                                                    <DialogTrigger asChild><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></DialogTrigger>
-                                                    <DialogContent className="max-w-2xl">
+                                                    <DialogTrigger asChild><Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button></DialogTrigger>
+                                                    <DialogContent className="max-w-2xl w-[95vw] rounded-lg">
                                                         <DialogHeader><DialogTitle>Sell Order Details</DialogTitle><DialogDescription>ID: {order.id}</DialogDescription></DialogHeader>
-                                                        <div className="space-y-2 py-4 text-sm">
+                                                        <div className="space-y-2 py-4">
                                                             <DetailRow label="User ID" value={order.userId} />
                                                             <DetailRow label="Status" value={getStatusBadge(order.status)} />
                                                             <DetailRow label="USDT to Deduct" value={`${order.usdtAmount} USDT`} />
@@ -208,9 +209,9 @@ export function AdminDataView() {
                                                             )}
                                                             <DetailRow label="Email" value={order.email} />
                                                         </div>
-                                                        <DialogFooter className="gap-2">
-                                                            <Button variant="outline" onClick={() => handleStatusUpdate('sellOrders', order.id, 'failed')} disabled={actionLoading === order.id}>Reject</Button>
-                                                            <Button onClick={() => handleStatusUpdate('sellOrders', order.id, 'completed')} disabled={actionLoading === order.id}><CheckCircle2 className="mr-2 h-4 w-4" /> Mark Completed</Button>
+                                                        <DialogFooter className="flex flex-row gap-2 sm:justify-end">
+                                                            <Button variant="outline" size="sm" onClick={() => handleStatusUpdate('sellOrders', order.id, 'failed')} disabled={actionLoading === order.id}>Reject</Button>
+                                                            <Button size="sm" onClick={() => handleStatusUpdate('sellOrders', order.id, 'completed')} disabled={actionLoading === order.id}><CheckCircle2 className="mr-2 h-4 w-4" /> Complete</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
@@ -223,28 +224,28 @@ export function AdminDataView() {
                     </TabsContent>
 
                     <TabsContent value="deposits">
-                        <ScrollArea className="h-[60vh]">
+                        <ScrollArea className="h-[60vh] border rounded-md">
                             <Table>
-                                <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Status</TableHead><TableHead>Amount</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
+                                <TableHeader><TableRow><TableHead className="min-w-[120px]">Date</TableHead><TableHead>Status</TableHead><TableHead>Amount</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {deposits?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(dep => (
                                         <TableRow key={dep.id}>
-                                            <TableCell className="text-xs">{format(new Date(dep.createdAt), 'PPp')}</TableCell>
+                                            <TableCell className="text-[10px] md:text-xs">{format(new Date(dep.createdAt), 'PPp')}</TableCell>
                                             <TableCell>{getStatusBadge(dep.status)}</TableCell>
-                                            <TableCell>{dep.amount} USDT</TableCell>
+                                            <TableCell className="font-medium">{dep.amount} USDT</TableCell>
                                             <TableCell>
                                                 <Dialog>
-                                                    <DialogTrigger asChild><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></DialogTrigger>
-                                                    <DialogContent>
+                                                    <DialogTrigger asChild><Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button></DialogTrigger>
+                                                    <DialogContent className="w-[95vw] rounded-lg">
                                                         <DialogHeader><DialogTitle>Deposit Verification</DialogTitle></DialogHeader>
-                                                        <div className="space-y-4 py-4 text-sm">
-                                                            <DetailRow label="User ID" value={<span className="font-mono text-xs">{dep.userId}</span>} />
+                                                        <div className="space-y-4 py-4">
+                                                            <DetailRow label="User ID" value={<span className="font-mono text-[10px]">{dep.userId}</span>} />
                                                             <DetailRow label="Network" value={dep.network} />
-                                                            <DetailRow label="TX Hash" value={<span className="font-mono text-xs break-all">{dep.txHash || 'Pending Submission'}</span>} />
+                                                            <DetailRow label="TX Hash" value={<span className="font-mono text-[10px] break-all">{dep.txHash || 'Pending Submission'}</span>} />
                                                         </div>
-                                                        <DialogFooter className="gap-2">
-                                                            <Button variant="outline" onClick={() => handleStatusUpdate('deposits', dep.id, 'failed')} disabled={actionLoading === dep.id}>Reject</Button>
-                                                            <Button onClick={() => handleStatusUpdate('deposits', dep.id, 'completed', dep.userId, dep.amount)} disabled={actionLoading === dep.id}>Confirm & Add Balance</Button>
+                                                        <DialogFooter className="flex flex-row gap-2 sm:justify-end">
+                                                            <Button variant="outline" size="sm" onClick={() => handleStatusUpdate('deposits', dep.id, 'failed')} disabled={actionLoading === dep.id}>Reject</Button>
+                                                            <Button size="sm" onClick={() => handleStatusUpdate('deposits', dep.id, 'completed', dep.userId, dep.amount)} disabled={actionLoading === dep.id}>Confirm</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
@@ -257,28 +258,28 @@ export function AdminDataView() {
                     </TabsContent>
 
                     <TabsContent value="withdrawals">
-                        <ScrollArea className="h-[60vh]">
+                        <ScrollArea className="h-[60vh] border rounded-md">
                             <Table>
-                                <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Status</TableHead><TableHead>Amount</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
+                                <TableHeader><TableRow><TableHead className="min-w-[120px]">Date</TableHead><TableHead>Status</TableHead><TableHead>Amount</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {withdrawals?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(wd => (
                                         <TableRow key={wd.id}>
-                                            <TableCell className="text-xs">{format(new Date(wd.createdAt), 'PPp')}</TableCell>
+                                            <TableCell className="text-[10px] md:text-xs">{format(new Date(wd.createdAt), 'PPp')}</TableCell>
                                             <TableCell>{getStatusBadge(wd.status)}</TableCell>
-                                            <TableCell>{wd.amount} USDT</TableCell>
+                                            <TableCell className="font-medium">{wd.amount} USDT</TableCell>
                                             <TableCell>
                                                 <Dialog>
-                                                    <DialogTrigger asChild><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></DialogTrigger>
-                                                    <DialogContent>
+                                                    <DialogTrigger asChild><Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button></DialogTrigger>
+                                                    <DialogContent className="w-[95vw] rounded-lg">
                                                         <DialogHeader><DialogTitle>Withdrawal Request</DialogTitle></DialogHeader>
-                                                        <div className="space-y-4 py-4 text-sm">
-                                                            <DetailRow label="User ID" value={<span className="font-mono text-xs">{wd.userId}</span>} />
-                                                            <DetailRow label="Recipient" value={<span className="font-mono text-xs break-all">{wd.address}</span>} />
+                                                        <div className="space-y-4 py-4">
+                                                            <DetailRow label="User ID" value={<span className="font-mono text-[10px]">{wd.userId}</span>} />
+                                                            <DetailRow label="Recipient" value={<span className="font-mono text-[10px] break-all">{wd.address}</span>} />
                                                             <DetailRow label="Network" value={wd.network} />
                                                         </div>
-                                                        <DialogFooter className="gap-2">
-                                                            <Button variant="outline" onClick={() => handleStatusUpdate('withdrawals', wd.id, 'failed', wd.userId, wd.amount)} disabled={actionLoading === wd.id}>Reject & Refund</Button>
-                                                            <Button onClick={() => handleStatusUpdate('withdrawals', wd.id, 'completed')} disabled={actionLoading === wd.id}>Mark as Sent</Button>
+                                                        <DialogFooter className="flex flex-row gap-2 sm:justify-end">
+                                                            <Button variant="outline" size="sm" onClick={() => handleStatusUpdate('withdrawals', wd.id, 'failed', wd.userId, wd.amount)} disabled={actionLoading === wd.id}>Reject & Refund</Button>
+                                                            <Button size="sm" onClick={() => handleStatusUpdate('withdrawals', wd.id, 'completed')} disabled={actionLoading === wd.id}>Mark Sent</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
@@ -291,21 +292,21 @@ export function AdminDataView() {
                     </TabsContent>
                     
                     <TabsContent value="contact">
-                         <ScrollArea className="h-[60vh]">
+                         <ScrollArea className="h-[60vh] border rounded-md">
                            <Table>
-                                <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
+                                <TableHeader><TableRow><TableHead className="min-w-[120px]">Date</TableHead><TableHead>Name</TableHead><TableHead className="hidden md:table-cell">Email</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {contactMessages?.slice().sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()).map(msg => (
                                         <TableRow key={msg.id}>
-                                            <TableCell className="text-xs">{format(new Date(msg.submittedAt), 'PPp')}</TableCell>
-                                            <TableCell>{msg.name}</TableCell>
-                                            <TableCell>{msg.email}</TableCell>
+                                            <TableCell className="text-[10px] md:text-xs">{format(new Date(msg.submittedAt), 'PPp')}</TableCell>
+                                            <TableCell className="text-xs md:text-sm">{msg.name}</TableCell>
+                                            <TableCell className="hidden md:table-cell text-xs">{msg.email}</TableCell>
                                             <TableCell>
                                                 <Dialog>
-                                                    <DialogTrigger asChild><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></DialogTrigger>
-                                                    <DialogContent className="max-w-2xl">
+                                                    <DialogTrigger asChild><Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button></DialogTrigger>
+                                                    <DialogContent className="max-w-2xl w-[95vw] rounded-lg">
                                                         <DialogHeader><DialogTitle>Message from {msg.name}</DialogTitle><DialogDescription>{msg.email}</DialogDescription></DialogHeader>
-                                                        <p className="whitespace-pre-wrap py-4 text-sm">{msg.description}</p>
+                                                        <p className="whitespace-pre-wrap py-4 text-xs md:text-sm">{msg.description}</p>
                                                     </DialogContent>
                                                 </Dialog>
                                             </TableCell>
@@ -317,16 +318,16 @@ export function AdminDataView() {
                     </TabsContent>
 
                     <TabsContent value="users">
-                        <ScrollArea className="h-[60vh]">
+                        <ScrollArea className="h-[60vh] border rounded-md">
                             <Table>
-                                <TableHeader><TableRow><TableHead>Joined</TableHead><TableHead>Name</TableHead><TableHead>Balance</TableHead><TableHead>Email</TableHead></TableRow></TableHeader>
+                                <TableHeader><TableRow><TableHead className="min-w-[120px]">Joined</TableHead><TableHead>Name</TableHead><TableHead>Balance</TableHead><TableHead className="hidden md:table-cell">Email</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {users?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(u => (
                                         <TableRow key={u.id}>
-                                            <TableCell className="text-xs">{format(new Date(u.createdAt), 'PPp')}</TableCell>
-                                            <TableCell className="font-semibold">{u.name}</TableCell>
-                                            <TableCell className="font-bold text-primary">{(u.balance || 0).toLocaleString()} USDT</TableCell>
-                                            <TableCell className="text-xs">{u.email}</TableCell>
+                                            <TableCell className="text-[10px] md:text-xs">{format(new Date(u.createdAt), 'PPp')}</TableCell>
+                                            <TableCell className="font-semibold text-xs md:text-sm">{u.name}</TableCell>
+                                            <TableCell className="font-bold text-primary text-xs md:text-sm">{(u.balance || 0).toLocaleString()} USDT</TableCell>
+                                            <TableCell className="hidden md:table-cell text-[10px]">{u.email}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
