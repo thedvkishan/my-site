@@ -20,16 +20,23 @@ import {
   Building2,
   CreditCard,
   Banknote,
-  TrendingDown
+  TrendingDown,
+  AlertCircle,
+  BellRing
 } from 'lucide-react';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { AppLogo } from '@/components/layout/AppLogo';
+import { useEffect, useRef } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type UserProfile = {
   balance?: number;
+  status?: string;
+  name?: string;
 }
 
 type Settings = {
@@ -39,7 +46,9 @@ type Settings = {
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
+  const { toast } = useToast();
   const firestore = useFirestore();
+  const prevProfile = useRef<UserProfile | null>(null);
   
   const settingsRef = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -54,6 +63,41 @@ export default function Home() {
   const { data: settings, isLoading: settingsLoading } = useDoc<Settings>(settingsRef);
   const { data: profile, isLoading: profileLoading } = useDoc<UserProfile>(userProfileRef);
 
+  // Real-time notifications for user activity
+  useEffect(() => {
+    if (!profile) return;
+
+    if (prevProfile.current) {
+        // Balance change notification
+        if (profile.balance !== undefined && prevProfile.current.balance !== undefined && profile.balance !== prevProfile.current.balance) {
+            const diff = profile.balance - prevProfile.current.balance;
+            toast({
+                title: diff > 0 ? 'Balance Credited' : 'Balance Debited',
+                description: `${Math.abs(diff).toLocaleString()} USDT has been ${diff > 0 ? 'added to' : 'removed from'} your wallet.`,
+                className: diff > 0 ? 'bg-green-500 text-white' : 'bg-destructive text-white',
+            });
+        }
+
+        // Status change notification
+        if (profile.status !== prevProfile.current.status) {
+            if (profile.status === 'on_hold') {
+                toast({
+                    variant: 'destructive',
+                    title: 'Account on Hold',
+                    description: 'Your account has been placed on hold. New transactions are restricted.',
+                });
+            } else if (profile.status === 'active' && prevProfile.current.status === 'on_hold') {
+                toast({
+                    title: 'Account Restored',
+                    description: 'Your account is now active. You can resume trading.',
+                });
+            }
+        }
+    }
+
+    prevProfile.current = profile;
+  }, [profile, toast]);
+
   if (isUserLoading || settingsLoading || profileLoading || !settings) {
     return (
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
@@ -67,9 +111,11 @@ export default function Home() {
 
   // LOGGED IN VIEW (DASHBOARD)
   if (user) {
+    const isOnHold = profile?.status === 'on_hold';
+
     return (
         <div className="container mx-auto max-w-6xl px-4 py-8 md:py-16 animate-in fade-in duration-1000">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-primary/10 rounded-xl border border-primary/20">
@@ -82,7 +128,7 @@ export default function Home() {
                             Trading Hub
                         </h1>
                         <p className="text-muted-foreground md:text-xl">
-                            Welcome back, <span className="text-foreground font-semibold">{user.email?.split('@')[0]}</span>.
+                            Welcome back, <span className="text-foreground font-semibold">{profile?.name || user.email?.split('@')[0]}</span>.
                         </p>
                     </div>
                 </div>
@@ -100,6 +146,14 @@ export default function Home() {
                 </Card>
             </div>
 
+            {isOnHold && (
+                <Alert variant="destructive" className="mb-8 border-2 animate-pulse">
+                    <AlertCircle className="h-5 w-5" />
+                    <AlertTitle className="font-bold">Trading Privileges Suspended</AlertTitle>
+                    <AlertDescription>Your account is currently "On Hold". You can view your history, but new transactions are disabled. Please contact support.</AlertDescription>
+                </Alert>
+            )}
+
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-12">
                 {[
                     { label: 'Deposit', icon: CircleDollarSign, href: '/wallet/deposit', color: 'text-primary', bg: 'bg-primary/5' },
@@ -111,9 +165,9 @@ export default function Home() {
                     <Button 
                         key={action.label} 
                         variant="outline" 
-                        className="h-28 flex flex-col items-center justify-center gap-3 transition-all hover:scale-105 hover:shadow-lg border-2 animate-in slide-in-from-bottom-4 duration-500 fill-mode-both"
+                        className={`h-28 flex flex-col items-center justify-center gap-3 transition-all hover:scale-105 hover:shadow-lg border-2 animate-in slide-in-from-bottom-4 duration-500 fill-mode-both ${isOnHold && action.label !== 'History' ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                         style={{ animationDelay: `${i * 100}ms` }}
-                        asChild
+                        asChild={!isOnHold || action.label === 'History'}
                     >
                         <Link href={action.href}>
                             <div className={`p-3 rounded-full ${action.bg}`}>
@@ -126,7 +180,7 @@ export default function Home() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 mb-16">
-                <Card className="relative overflow-hidden group hover:border-primary transition-all duration-300 border-2 shadow-sm hover:shadow-xl">
+                <Card className={`relative overflow-hidden group hover:border-primary transition-all duration-300 border-2 shadow-sm hover:shadow-xl ${isOnHold ? 'opacity-50' : ''}`}>
                     <CardHeader className="p-8">
                         <div className="flex items-center gap-3 mb-2">
                              <div className="p-2 bg-primary/10 rounded-lg">
@@ -144,7 +198,7 @@ export default function Home() {
                             </div>
                             <BarChart3 className="h-10 w-10 text-primary opacity-20" />
                         </div>
-                        <Button className="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-primary/20" asChild>
+                        <Button className="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-primary/20" asChild={!isOnHold} disabled={isOnHold}>
                             <Link href="/buy">
                                 Buy Now <ArrowRight className="ml-2 h-5 w-5" />
                             </Link>
@@ -152,7 +206,7 @@ export default function Home() {
                     </CardContent>
                 </Card>
 
-                <Card className="relative overflow-hidden group hover:border-destructive transition-all duration-300 border-2 shadow-sm hover:shadow-xl">
+                <Card className={`relative overflow-hidden group hover:border-destructive transition-all duration-300 border-2 shadow-sm hover:shadow-xl ${isOnHold ? 'opacity-50' : ''}`}>
                     <CardHeader className="p-8">
                         <div className="flex items-center gap-3 mb-2">
                              <div className="p-2 bg-destructive/10 rounded-lg">
@@ -170,7 +224,7 @@ export default function Home() {
                             </div>
                             <BarChart3 className="h-10 w-10 text-destructive opacity-20 rotate-180" />
                         </div>
-                        <Button variant="destructive" className="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-destructive/20" asChild>
+                        <Button variant="destructive" className="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-destructive/20" asChild={!isOnHold} disabled={isOnHold}>
                             <Link href="/sell">
                                 Sell Now <ArrowRight className="ml-2 h-5 w-5" />
                             </Link>

@@ -16,7 +16,7 @@ import { loginSchema, type LoginFormValues, forgotPasswordSchema, type ForgotPas
 import { useAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { Loader2, LogIn, KeyRound, AlertCircle } from 'lucide-react';
+import { Loader2, LogIn, KeyRound } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 export default function LoginPage() {
@@ -47,7 +47,7 @@ export default function LoginPage() {
             const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
             const user = userCredential.user;
             
-            // Check user status
+            // Check user status in Firestore
             const userDoc = await getDoc(doc(firestore, 'users', user.uid));
             const userData = userDoc.data();
             
