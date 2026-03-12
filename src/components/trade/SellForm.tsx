@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -305,7 +304,7 @@ export function SellForm() {
             )}
 
             <FormField control={control} name="accountNumber" render={({ field }) => (
-              <FormItem><FormLabel>Account Number</TableLabel><FormControl><Input placeholder="1234567890" {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem><FormLabel>Account Number</FormLabel><FormControl><Input placeholder="1234567890" {...field} /></FormControl><FormMessage /></FormItem>
             )}/>
             <FormField control={control} name="ifsc" render={({ field }) => (
               <FormItem><FormLabel>IFSC Code</FormLabel><FormControl><Input placeholder="BANK0001234" {...field} /></FormControl><FormMessage /></FormItem>
