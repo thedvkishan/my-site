@@ -11,12 +11,13 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { signupSchema, type SignupFormValues } from '@/lib/schemas';
+import { signupSchema, type SignupFormValues, SECURITY_QUESTIONS } from '@/lib/schemas';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { Loader2, UserPlus } from 'lucide-react';
+import { Loader2, UserPlus, ShieldQuestion } from 'lucide-react';
 
 export default function SignupPage() {
     const router = useRouter();
@@ -35,6 +36,8 @@ export default function SignupPage() {
             phone: '',
             password: '',
             confirmPassword: '',
+            securityQuestion: '',
+            securityAnswer: '',
             captcha: false,
         },
     });
@@ -45,12 +48,14 @@ export default function SignupPage() {
             const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
             const user = userCredential.user;
 
-            // Create user profile in Firestore
             await setDoc(doc(firestore, 'users', user.uid), {
                 userId: user.uid,
                 name: values.name,
                 email: values.email,
                 phone: values.phone,
+                balance: 0,
+                securityQuestion: values.securityQuestion,
+                securityAnswer: values.securityAnswer.toLowerCase().trim(),
                 createdAt: new Date().toISOString(),
             });
 
@@ -69,7 +74,7 @@ export default function SignupPage() {
     }
 
     return (
-        <div className="container mx-auto max-w-md py-12 px-4">
+        <div className="container mx-auto max-w-xl py-12 px-4">
             <Card className="shadow-xl">
                 <CardHeader className="text-center">
                     <div className='flex justify-center mb-4'>
@@ -83,93 +88,54 @@ export default function SignupPage() {
                 <CardContent>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="name"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Full Name</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="John Doe" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="email"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Email</FormLabel>
-                                        <FormControl>
-                                            <Input type="email" placeholder="you@example.com" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                             <FormField
-                                control={form.control}
-                                name="phone"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Phone Number (Optional)</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="+91 12345 67890" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormField
-                                    control={form.control}
-                                    name="password"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Password</FormLabel>
-                                            <FormControl>
-                                                <Input type="password" placeholder="••••••••" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="confirmPassword"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Confirm</FormLabel>
-                                            <FormControl>
-                                                <Input type="password" placeholder="••••••••" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="name" render={({ field }) => (
+                                    <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={form.control} name="email" render={({ field }) => (
+                                    <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="you@example.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
                             </div>
                             
-                            <FormField
-                                control={form.control}
-                                name="captcha"
-                                render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center space-x-3 space-y-0 p-4 border rounded-md bg-muted/50 mt-4">
-                                        <FormControl>
-                                            <Checkbox
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                            />
-                                        </FormControl>
-                                        <div className="space-y-1 leading-none">
-                                            <FormLabel className="cursor-pointer">
-                                                I am not a robot
-                                            </FormLabel>
-                                        </div>
+                            <FormField control={form.control} name="phone" render={({ field }) => (
+                                <FormItem><FormLabel>Phone Number (Optional)</FormLabel><FormControl><Input placeholder="+91 12345 67890" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormField control={form.control} name="password" render={({ field }) => (
+                                    <FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={form.control} name="confirmPassword" render={({ field }) => (
+                                    <FormItem><FormLabel>Confirm</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                            </div>
+
+                            <div className="p-4 bg-muted/50 rounded-lg border border-dashed border-primary/30 space-y-4">
+                                <div className="flex items-center gap-2 text-sm font-bold text-primary mb-2">
+                                    <ShieldQuestion className="h-4 w-4" /> Security Question (For Password Recovery)
+                                </div>
+                                <FormField control={form.control} name="securityQuestion" render={({ field }) => (
+                                    <FormItem>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue placeholder="Select a question" /></SelectTrigger></FormControl>
+                                            <SelectContent>
+                                                {SECURITY_QUESTIONS.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
                                     </FormItem>
-                                )}
-                            />
+                                )}/>
+                                <FormField control={form.control} name="securityAnswer" render={({ field }) => (
+                                    <FormItem><FormControl><Input placeholder="Your secret answer" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                            </div>
+                            
+                            <FormField control={form.control} name="captcha" render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-3 space-y-0 p-4 border rounded-md bg-muted/50 mt-4">
+                                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    <div className="space-y-1 leading-none"><FormLabel className="cursor-pointer">I am not a robot</FormLabel></div>
+                                </FormItem>
+                            )}/>
 
                             <Button type="submit" className="w-full mt-6" disabled={isLoading}>
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -181,9 +147,7 @@ export default function SignupPage() {
                 <CardFooter className="flex flex-col space-y-4 text-center text-sm">
                     <p className="text-muted-foreground">
                         Already have an account?{' '}
-                        <Link href={`/login?redirect=${redirectTo}`} className="text-primary font-semibold hover:underline">
-                            Login
-                        </Link>
+                        <Link href={`/login?redirect=${redirectTo}`} className="text-primary font-semibold hover:underline">Login</Link>
                     </p>
                 </CardFooter>
             </Card>

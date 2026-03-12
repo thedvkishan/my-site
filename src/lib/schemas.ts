@@ -1,6 +1,13 @@
 
 import { z } from 'zod';
-import { NETWORKS, PAYMENT_METHODS_BUY, PAYMENT_METHODS_SELL, COUNTRIES } from './constants';
+
+export const SECURITY_QUESTIONS = [
+    "What was the name of your first pet?",
+    "What is your mother's maiden name?",
+    "What city were you born in?",
+    "What was the make of your first car?",
+    "What was your childhood nickname?"
+];
 
 export const contactFormSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters."),
@@ -31,6 +38,8 @@ export const signupSchema = z.object({
     phone: z.string().optional(),
     password: z.string().min(6, "Password must be at least 6 characters."),
     confirmPassword: z.string(),
+    securityQuestion: z.string().min(1, "Please select a security question."),
+    securityAnswer: z.string().min(1, "Please provide an answer."),
     captcha: z.boolean().refine(val => val === true, "Please verify you are not a robot.")
 }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -39,6 +48,17 @@ export const signupSchema = z.object({
 
 export type SignupFormValues = z.infer<typeof signupSchema>;
 
+export const forgotPasswordSchema = z.object({
+    email: z.string().email("Invalid email address."),
+    securityAnswer: z.string().min(1, "Answer is required."),
+    newPassword: z.string().min(6, "Password must be at least 6 characters."),
+    confirmNewPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "Passwords don't match",
+    path: ["confirmNewPassword"],
+});
+
+export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
 
 const depositNetworkSchema = z.object({
   address: z.string().min(1, 'Address is required.'),

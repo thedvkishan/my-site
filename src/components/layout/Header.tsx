@@ -1,12 +1,14 @@
+
 'use client';
 
 import Link from 'next/link';
 import { AppLogo } from './AppLogo';
 import { useUser, useAuth, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
-import { LogOut, User as UserIcon, Wallet } from 'lucide-react';
+import { LogOut, User as UserIcon, Wallet, ChevronDown, Settings, UserCircle } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export function Header() {
   const { user, isUserLoading } = useUser();
@@ -18,7 +20,7 @@ export function Header() {
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
-  const { data: profile } = useDoc<{ balance?: number }>(profileRef);
+  const { data: profile } = useDoc<{ balance?: number, name?: string }>(profileRef);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -45,14 +47,37 @@ export function Header() {
                       {(profile?.balance || 0).toLocaleString()} USDT
                     </span>
                   </div>
-                  <div className="hidden lg:flex items-center text-sm font-medium text-muted-foreground truncate max-w-[150px]">
-                    <UserIcon className="h-4 w-4 mr-1.5" />
-                    {user.email}
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={handleLogout} className="h-8 px-2 md:h-10 md:px-3">
-                    <LogOut className="h-4 w-4 md:mr-2" />
-                    <span className="hidden md:inline">Logout</span>
-                  </Button>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-10 gap-2 px-2 hover:bg-muted/50">
+                        <UserCircle className="h-5 w-5 text-muted-foreground" />
+                        <span className="hidden lg:inline-block font-semibold">{profile?.name || user.email?.split('@')[0]}</span>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground hidden lg:inline-block" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/account" className="cursor-pointer">
+                          <UserIcon className="mr-2 h-4 w-4" />
+                          <span>Profile & Stats</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/wallet/history" className="cursor-pointer">
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Trading History</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Logout</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               ) : (
                 <div className="flex items-center gap-1 md:gap-2">

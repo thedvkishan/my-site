@@ -11,9 +11,11 @@
         "email": { "type": "string", "format": "email" },
         "phone": { "type": "string" },
         "balance": { "type": "number", "description": "The current USDT balance of the user." },
+        "securityQuestion": { "type": "string" },
+        "securityAnswer": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "name", "email", "createdAt"]
+      "required": ["userId", "name", "email", "securityQuestion", "securityAnswer", "createdAt"]
     },
     "BuyOrder": {
       "title": "BuyOrder",
@@ -25,17 +27,9 @@
         "network": { "type": "string" },
         "usdtAmount": { "type": "number" },
         "inrAmount": { "type": "number" },
-        "usdtAddress": { "type": "string" },
-        "paymentMode": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "contactNumber": { "type": "string" },
-        "country": { "type": "string" },
-        "paymentReceiptUrl": { "type": "string" },
         "status": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "expiresAt": { "type": "number" }
-      },
-      "required": ["userId", "network", "usdtAmount", "inrAmount", "usdtAddress", "paymentMode", "email", "country", "status", "createdAt"]
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
     },
     "SellOrder": {
       "title": "SellOrder",
@@ -47,72 +41,26 @@
         "network": { "type": "string" },
         "usdtAmount": { "type": "number" },
         "inrAmount": { "type": "number" },
-        "paymentReceivingMode": { "type": "string" },
-        "upiHolderName": { "type": "string" },
-        "upiId": { "type": "string" },
-        "bankName": { "type": "string" },
-        "accountNumber": { "type": "string" },
-        "ifscCode": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "contactNumber": { "type": "string" },
-        "country": { "type": "string" },
         "status": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "expiresAt": { "type": "number" }
-      },
-      "required": ["userId", "network", "usdtAmount", "inrAmount", "paymentReceivingMode", "email", "contactNumber", "country", "status", "createdAt"]
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
     },
     "Deposit": {
       "title": "USDT Deposit",
       "type": "object",
-      "description": "Represents a user's direct USDT deposit into their wallet.",
       "properties": {
-        "id": { "type": "string" },
         "userId": { "type": "string" },
         "amount": { "type": "number" },
-        "network": { "type": "string" },
-        "txHash": { "type": "string", "description": "The blockchain transaction hash submitted by the user." },
-        "status": { "type": "string", "enum": ["pending_hash", "waiting_confirmation", "completed", "expired", "failed"] },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "expiresAt": { "type": "number" }
-      },
-      "required": ["userId", "amount", "network", "status", "createdAt", "expiresAt"]
+        "status": { "type": "string" }
+      }
     },
     "Withdrawal": {
       "title": "USDT Withdrawal",
       "type": "object",
-      "description": "Represents a user's request to withdraw USDT from their wallet.",
       "properties": {
-        "id": { "type": "string" },
         "userId": { "type": "string" },
         "amount": { "type": "number" },
-        "network": { "type": "string" },
-        "address": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "processing", "completed", "failed"] },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["userId", "amount", "network", "address", "status", "createdAt"]
-    },
-    "ContactMessage": {
-      "title": "Contact Message",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "description": { "type": "string" },
-        "submittedAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "AppSettings": {
-      "title": "Application Settings",
-      "type": "object",
-      "properties": {
-        "appLogoUrl": { "type": "string" },
-        "buyRate": { "type": "number" },
-        "sellRate": { "type": "number" },
-        "minBuyAmount": { "type": "number" },
-        "minSellAmount": { "type": "number" }
+        "status": { "type": "string" }
       }
     }
   },
@@ -124,57 +72,7 @@
       {
         "path": "/users/{userId}",
         "definition": {
-          "entityName": "UserProfile",
-          "schema": { "$ref": "#/backend/entities/UserProfile" },
-          "description": "Stores user profile data and balance."
-        }
-      },
-      {
-        "path": "/buyOrders/{buyOrderId}",
-        "definition": {
-          "entityName": "BuyOrder",
-          "schema": { "$ref": "#/backend/entities/BuyOrder" },
-          "description": "Stores all buy orders."
-        }
-      },
-      {
-        "path": "/sellOrders/{sellOrderId}",
-        "definition": {
-          "entityName": "SellOrder",
-          "schema": { "$ref": "#/backend/entities/SellOrder" },
-          "description": "Stores all sell orders."
-        }
-      },
-      {
-        "path": "/deposits/{depositId}",
-        "definition": {
-          "entityName": "Deposit",
-          "schema": { "$ref": "#/backend/entities/Deposit" },
-          "description": "Stores user wallet deposits."
-        }
-      },
-      {
-        "path": "/withdrawals/{withdrawalId}",
-        "definition": {
-          "entityName": "Withdrawal",
-          "schema": { "$ref": "#/backend/entities/Withdrawal" },
-          "description": "Stores user wallet withdrawals."
-        }
-      },
-      {
-        "path": "/contactMessages/{contactMessageId}",
-        "definition": {
-          "entityName": "ContactMessage",
-          "schema": { "$ref": "#/backend/entities/ContactMessage" },
-          "description": "Stores contact messages."
-        }
-      },
-      {
-        "path": "/settings/{settingId}",
-        "definition": {
-          "entityName": "AppSettings",
-          "schema": { "$ref": "#/backend/entities/AppSettings" },
-          "description": "Stores global application settings."
+          "schema": { "$ref": "#/backend/entities/UserProfile" }
         }
       }
     ]
