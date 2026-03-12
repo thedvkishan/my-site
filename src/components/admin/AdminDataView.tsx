@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, Eye, Search, User as UserIcon, Mail, Phone, Calendar, Wallet, Hash, ArrowUpRight, ShieldAlert, ShieldCheck, Lock, Unlock, Plus, Minus } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Eye, Search, User as UserIcon, Mail, Phone, Calendar, Wallet, Hash, ArrowUpRight, ShieldAlert, ShieldCheck, Lock, Unlock, Plus, Minus, History, ArrowDownCircle, ArrowUpCircle, TrendingUp, TrendingDown } from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -118,17 +118,14 @@ export function AdminDataView() {
 
             await updateDoc(orderRef, updateData);
 
-            // Handle logic for Withdrawals and Sell Orders (Deduction happened on request)
             if ((type === 'withdrawals' || type === 'sellOrders') && userId && typeof amount === 'number' && typeof finalAmount === 'number') {
                 const userRef = doc(firestore, 'users', userId);
                 const typeLabel = type === 'withdrawals' ? 'Withdrawal' : 'Sell Order';
 
                 if (status === 'failed') {
-                    // Full refund if rejected
                     await updateDoc(userRef, { balance: increment(amount) });
                     await createNotification(userId, `${typeLabel} Returned`, `${amount.toLocaleString()} USDT has been returned to your clearing balance.`, 'error');
                 } else if (status === 'completed') {
-                    // If admin approved a smaller amount than requested, refund the difference
                     if (finalAmount < amount) {
                         const refundDiff = amount - finalAmount;
                         await updateDoc(userRef, { balance: increment(refundDiff) });
@@ -137,7 +134,6 @@ export function AdminDataView() {
                     await createNotification(userId, `${typeLabel} Finalized`, `Your ${typeLabel.toLowerCase()} request has been successfully processed.`, 'success');
                 }
             } else if (userId) {
-                // General notification for other types (Buy/Deposit)
                 const typeLabel = type.replace('Orders', '').replace('s', '');
                 const displayType = typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1);
                 const colorType = status === 'completed' ? 'success' : status === 'failed' ? 'error' : 'info';
@@ -150,7 +146,6 @@ export function AdminDataView() {
                 );
             }
 
-            // Credits for Buy/Deposit happen only on completion
             if ((type === 'deposits' || type === 'buyOrders') && status === 'completed' && userId && typeof finalAmount === 'number') {
                 const userRef = doc(firestore, 'users', userId);
                 await updateDoc(userRef, { balance: increment(finalAmount) });
@@ -568,7 +563,7 @@ export function AdminDataView() {
                                             <TableCell className="text-right">
                                                 <Dialog onOpenChange={(open) => !open && setBalanceAdjustment("")}>
                                                     <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 w-8 p-0"><UserIcon className="h-4 w-4" /></Button></DialogTrigger>
-                                                    <DialogContent className="max-w-md mx-4">
+                                                    <DialogContent className="max-w-2xl mx-4">
                                                         <DialogHeader>
                                                             <div className="flex items-center gap-4 mb-2">
                                                                 <div className="p-3 bg-primary/10 rounded-xl"><UserIcon className="h-6 w-6 text-primary" /></div>
@@ -580,8 +575,9 @@ export function AdminDataView() {
                                                         </DialogHeader>
                                                         
                                                         <Tabs defaultValue="profile">
-                                                            <TabsList className="grid w-full grid-cols-2 mb-4">
+                                                            <TabsList className="grid w-full grid-cols-3 mb-4">
                                                                 <TabsTrigger value="profile">Profile</TabsTrigger>
+                                                                <TabsTrigger value="activity">Activity Audit</TabsTrigger>
                                                                 <TabsTrigger value="controls">Management</TabsTrigger>
                                                             </TabsList>
                                                             
@@ -592,6 +588,57 @@ export function AdminDataView() {
                                                                 <DetailRow label="Balance" value={<div className="flex items-center gap-1 font-black text-primary text-lg"><Wallet className="h-4 w-4" /> {(u.balance || 0).toLocaleString()} USDT</div>} />
                                                                 <DetailRow label="Status" value={getStatusBadge(u.status || 'active')} />
                                                                 <DetailRow label="Joined" value={u.createdAt ? format(new Date(u.createdAt), 'PPp') : 'N/A'} />
+                                                            </TabsContent>
+
+                                                            <TabsContent value="activity">
+                                                                <ScrollArea className="h-[40vh] border-2 border-dashed rounded-xl p-2 bg-muted/5">
+                                                                    <div className="space-y-4">
+                                                                        <div className="space-y-2">
+                                                                            <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-primary"><TrendingUp className="h-3 w-3" /> Buy Protocol ({buyOrders?.filter(o => o.userId === u.userId).length || 0})</h4>
+                                                                            <div className="grid gap-1">
+                                                                                {buyOrders?.filter(o => o.userId === u.userId).map(o => (
+                                                                                    <div key={o.id} className="text-[10px] p-2 bg-background border rounded flex justify-between items-center">
+                                                                                        <span>{format(new Date(o.createdAt), 'dd/MM')} - {o.usdtAmount} USDT</span>
+                                                                                        {getStatusBadge(o.status)}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-destructive"><TrendingDown className="h-3 w-3" /> Liquidation Log ({sellOrders?.filter(o => o.userId === u.userId).length || 0})</h4>
+                                                                            <div className="grid gap-1">
+                                                                                {sellOrders?.filter(o => o.userId === u.userId).map(o => (
+                                                                                    <div key={o.id} className="text-[10px] p-2 bg-background border rounded flex justify-between items-center">
+                                                                                        <span>{format(new Date(o.createdAt), 'dd/MM')} - {o.usdtAmount} USDT</span>
+                                                                                        {getStatusBadge(o.status)}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-blue-500"><ArrowDownCircle className="h-3 w-3" /> Credits ({deposits?.filter(o => o.userId === u.userId).length || 0})</h4>
+                                                                            <div className="grid gap-1">
+                                                                                {deposits?.filter(o => o.userId === u.userId).map(o => (
+                                                                                    <div key={o.id} className="text-[10px] p-2 bg-background border rounded flex justify-between items-center">
+                                                                                        <span>{format(new Date(o.createdAt), 'dd/MM')} - {o.amount} USDT</span>
+                                                                                        {getStatusBadge(o.status)}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-orange-500"><ArrowUpCircle className="h-3 w-3" /> Debits ({withdrawals?.filter(o => o.userId === u.userId).length || 0})</h4>
+                                                                            <div className="grid gap-1">
+                                                                                {withdrawals?.filter(o => o.userId === u.userId).map(o => (
+                                                                                    <div key={o.id} className="text-[10px] p-2 bg-background border rounded flex justify-between items-center">
+                                                                                        <span>{format(new Date(o.createdAt), 'dd/MM')} - {o.amount} USDT</span>
+                                                                                        {getStatusBadge(o.status)}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </ScrollArea>
                                                             </TabsContent>
                                                             
                                                             <TabsContent value="controls" className="space-y-6 py-4">

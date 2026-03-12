@@ -4,11 +4,9 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { VERIFICATION_LIFETIME } from '@/lib/constants';
-import { CountdownTimer } from '@/components/CountdownTimer';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 
 type Transaction = {
   id: string;
@@ -23,8 +21,7 @@ export default function ConfirmationPage() {
   const params = useParams();
   const { id } = params;
   
-  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('processing');
-  const [verificationExpiry] = useState(Date.now() + VERIFICATION_LIFETIME);
+  const [verificationStatus] = useState<VerificationStatus>('processing');
 
   const firestore = useFirestore();
 
@@ -39,31 +36,20 @@ export default function ConfirmationPage() {
 
   useEffect(() => {
     if (transactionLoading) {
-      return; // Wait until loading is finished
+      return;
     }
 
     if (transaction) {
-      // We found the transaction, proceed as normal
       if (transaction.status !== 'payment_processing') {
         router.replace('/');
       }
     } else {
-      // Transaction not found
-      // Only redirect if it's been a few seconds since the page loaded.
       if (Date.now() - loadTime > 3000) {
         router.replace('/');
       }
     }
   }, [id, transaction, transactionLoading, router, loadTime]);
 
-
-  const handleExpire = async () => {
-    if (verificationStatus === 'processing' && transactionRef) {
-      setVerificationStatus('failed');
-      // Use 'expired' status for consistency with other pages
-      await updateDoc(transactionRef, { status: 'expired' });
-    }
-  };
 
   const renderStatus = () => {
     switch (verificationStatus) {
@@ -73,12 +59,8 @@ export default function ConfirmationPage() {
             <Loader2 className="h-16 w-16 text-primary animate-spin" />
             <CardTitle className="mt-6">Processing Payment</CardTitle>
             <CardDescription className="mt-2">
-              Your transaction is being verified. Please wait.
+              Your transaction is being verified by our settlement protocol. This usually takes 30-180 minutes.
             </CardDescription>
-            <div className='mt-4 text-center'>
-              <p className='text-sm text-muted-foreground'>Time remaining for verification</p>
-              <CountdownTimer expiryTimestamp={verificationExpiry} onExpire={handleExpire} className="font-bold text-lg text-foreground" />
-            </div>
           </>
         );
       case 'verified':
@@ -95,9 +77,9 @@ export default function ConfirmationPage() {
         return (
           <>
             <XCircle className="h-16 w-16 text-destructive" />
-            <CardTitle className="mt-6">Verification Expired</CardTitle>
+            <CardTitle className="mt-6">Verification Failed</CardTitle>
             <CardDescription className="mt-2">
-              The verification window has closed. The order has been cancelled.
+              The verification could not be completed. Please contact support.
             </CardDescription>
           </>
         );
