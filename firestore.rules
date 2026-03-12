@@ -32,6 +32,18 @@ service cloud.firestore {
         allow list: if isAdmin();
     }
 
+    match /deposits/{depositId} {
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        allow read, update: if isAdmin() || isOwner(resource.data.userId);
+        allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 100); 
+    }
+
+    match /withdrawals/{withdrawalId} {
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        allow read, update: if isAdmin() || isOwner(resource.data.userId);
+        allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 100);
+    }
+
     match /contactMessages/{messageId} {
       allow create: if true;
       allow list, get: if isAdmin();

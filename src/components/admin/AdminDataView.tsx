@@ -37,6 +37,16 @@ export function AdminDataView() {
         return query(collection(firestore, 'sellOrders'));
     }, [firestore]);
     
+    const depositsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'deposits'));
+    }, [firestore]);
+
+    const withdrawalsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'withdrawals'));
+    }, [firestore]);
+
     const contactMessagesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
         return query(collection(firestore, 'contactMessages'));
@@ -50,24 +60,28 @@ export function AdminDataView() {
 
     const { data: buyOrders, isLoading: buyOrdersLoading } = useCollection(buyOrdersQuery);
     const { data: sellOrders, isLoading: sellOrdersLoading } = useCollection(sellOrdersQuery);
+    const { data: deposits, isLoading: depositsLoading } = useCollection(depositsQuery);
+    const { data: withdrawals, isLoading: withdrawalsLoading } = useCollection(withdrawalsQuery);
     const { data: contactMessages, isLoading: messagesLoading } = useCollection(contactMessagesQuery);
     const { data: users, isLoading: usersLoading } = useCollection(usersQuery);
     
-    const isLoading = buyOrdersLoading || sellOrdersLoading || messagesLoading || usersLoading;
+    const isLoading = buyOrdersLoading || sellOrdersLoading || depositsLoading || withdrawalsLoading || messagesLoading || usersLoading;
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>User Submitted Data</CardTitle>
-                <CardDescription>View all orders, messages, and registered users.</CardDescription>
+                <CardDescription>View all orders, wallet activity, messages, and registered users.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="buyOrders">
-                    <TabsList className="grid w-full grid-cols-4">
-                        <TabsTrigger value="buyOrders">Buy Orders</TabsTrigger>
-                        <TabsTrigger value="sellOrders">Sell Orders</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-6 h-auto flex-wrap">
+                        <TabsTrigger value="buyOrders">Buy</TabsTrigger>
+                        <TabsTrigger value="sellOrders">Sell</TabsTrigger>
+                        <TabsTrigger value="deposits">Deposits</TabsTrigger>
+                        <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
                         <TabsTrigger value="contact">Messages</TabsTrigger>
-                        <TabsTrigger value="users">Registered Users</TabsTrigger>
+                        <TabsTrigger value="users">Users</TabsTrigger>
                     </TabsList>
                     
                     {isLoading && <div className="flex justify-center items-center py-20"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}
@@ -78,11 +92,9 @@ export function AdminDataView() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Date</TableHead>
-                                        <TableHead>ID</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>USDT</TableHead>
                                         <TableHead>INR</TableHead>
-                                        <TableHead>Network</TableHead>
                                         <TableHead>Email</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -91,13 +103,11 @@ export function AdminDataView() {
                                         <Dialog key={order.id}>
                                             <DialogTrigger asChild>
                                                 <TableRow className="cursor-pointer">
-                                                    <TableCell>{format(new Date(order.createdAt), 'PPpp')}</TableCell>
-                                                    <TableCell className="font-mono text-xs">{order.id}</TableCell>
+                                                    <TableCell className="text-xs">{format(new Date(order.createdAt), 'PPpp')}</TableCell>
                                                     <TableCell><Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>{order.status}</Badge></TableCell>
                                                     <TableCell>{order.usdtAmount}</TableCell>
                                                     <TableCell>{order.inrAmount}</TableCell>
-                                                    <TableCell>{order.network}</TableCell>
-                                                    <TableCell>{order.email}</TableCell>
+                                                    <TableCell className="text-xs truncate max-w-[100px]">{order.email}</TableCell>
                                                 </TableRow>
                                             </DialogTrigger>
                                             <DialogContent className="max-w-3xl">
@@ -107,17 +117,13 @@ export function AdminDataView() {
                                                 </DialogHeader>
                                                 <ScrollArea className="max-h-[70vh] pr-6">
                                                     <div className="space-y-4 py-4 text-sm">
-                                                        <DetailRow label="Transaction ID" value={<span className="font-mono">{order.id}</span>} />
-                                                        <DetailRow label="User ID" value={<span className="font-mono">{order.userId}</span>} />
                                                         <DetailRow label="Status" value={<Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>{order.status}</Badge>} />
                                                         <DetailRow label="Created At" value={format(new Date(order.createdAt), 'PPpp')} />
                                                         <DetailRow label="USDT Amount" value={`${order.usdtAmount} USDT`} />
                                                         <DetailRow label="INR Amount" value={`₹${order.inrAmount.toLocaleString('en-IN')}`} />
                                                         <DetailRow label="Network" value={order.network} />
                                                         <DetailRow label="USDT Address" value={<span className="font-mono">{order.usdtAddress}</span>} />
-                                                        <Separator className="my-4" />
                                                         <DetailRow label="Contact Email" value={order.email} />
-                                                        <DetailRow label="Contact Number" value={order.contactNumber || 'N/A'} />
                                                         <DetailRow label="Payment Receipt" value={
                                                             order.paymentReceiptUrl ? (
                                                                 <Dialog>
@@ -149,11 +155,9 @@ export function AdminDataView() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Date</TableHead>
-                                        <TableHead>ID</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>USDT</TableHead>
                                         <TableHead>INR</TableHead>
-                                        <TableHead>Network</TableHead>
                                         <TableHead>Email</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -162,21 +166,17 @@ export function AdminDataView() {
                                         <Dialog key={order.id}>
                                             <DialogTrigger asChild>
                                                 <TableRow className="cursor-pointer">
-                                                    <TableCell>{format(new Date(order.createdAt), 'PPpp')}</TableCell>
-                                                    <TableCell className="font-mono text-xs">{order.id}</TableCell>
+                                                    <TableCell className="text-xs">{format(new Date(order.createdAt), 'PPpp')}</TableCell>
                                                     <TableCell><Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>{order.status}</Badge></TableCell>
                                                     <TableCell>{order.usdtAmount}</TableCell>
                                                     <TableCell>{order.inrAmount}</TableCell>
-                                                    <TableCell>{order.network}</TableCell>
-                                                    <TableCell>{order.email}</TableCell>
+                                                    <TableCell className="text-xs truncate max-w-[100px]">{order.email}</TableCell>
                                                 </TableRow>
                                             </DialogTrigger>
                                             <DialogContent className="max-w-3xl">
                                                 <DialogHeader><DialogTitle>Sell Order Details</DialogTitle><DialogDescription>Transaction ID: {order.id}</DialogDescription></DialogHeader>
                                                 <ScrollArea className="max-h-[70vh] pr-6">
                                                      <div className="space-y-4 py-4 text-sm">
-                                                        <DetailRow label="Transaction ID" value={<span className="font-mono">{order.id}</span>} />
-                                                        <DetailRow label="User ID" value={<span className="font-mono">{order.userId}</span>} />
                                                         <DetailRow label="USDT Amount" value={`${order.usdtAmount} USDT`} />
                                                         <DetailRow label="INR Amount" value={`₹${order.inrAmount.toLocaleString('en-IN')}`} />
                                                         <DetailRow label="Payment Mode" value={order.paymentMode} />
@@ -192,11 +192,87 @@ export function AdminDataView() {
                                                                 <DetailRow label="IFSC" value={order.ifsc} />
                                                             </>
                                                         )}
-                                                        <Separator className="my-4" />
                                                         <DetailRow label="Contact Email" value={order.email} />
-                                                        <DetailRow label="Phone" value={order.phone || 'N/A'} />
                                                     </div>
                                                 </ScrollArea>
+                                            </DialogContent>
+                                        </Dialog>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </ScrollArea>
+                    </TabsContent>
+
+                    <TabsContent value="deposits">
+                        <ScrollArea className="h-[60vh]">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Amount</TableHead>
+                                        <TableHead>Hash</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {deposits?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(dep => (
+                                        <Dialog key={dep.id}>
+                                            <DialogTrigger asChild>
+                                                <TableRow className="cursor-pointer">
+                                                    <TableCell className="text-xs">{format(new Date(dep.createdAt), 'PPpp')}</TableCell>
+                                                    <TableCell><Badge variant={dep.status === 'completed' ? 'default' : 'secondary'}>{dep.status}</Badge></TableCell>
+                                                    <TableCell>{dep.amount} USDT</TableCell>
+                                                    <TableCell className="text-xs font-mono truncate max-w-[100px]">{dep.txHash || 'None'}</TableCell>
+                                                </TableRow>
+                                            </DialogTrigger>
+                                            <DialogContent>
+                                                <DialogHeader><DialogTitle>Deposit Details</DialogTitle></DialogHeader>
+                                                <div className="space-y-4 py-4 text-sm">
+                                                    <DetailRow label="User ID" value={<span className="font-mono text-xs">{dep.userId}</span>} />
+                                                    <DetailRow label="Status" value={<Badge>{dep.status}</Badge>} />
+                                                    <DetailRow label="Amount" value={`${dep.amount} USDT`} />
+                                                    <DetailRow label="Network" value={dep.network} />
+                                                    <DetailRow label="TX Hash" value={<span className="font-mono text-xs break-all">{dep.txHash || 'N/A'}</span>} />
+                                                </div>
+                                            </DialogContent>
+                                        </Dialog>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </ScrollArea>
+                    </TabsContent>
+
+                    <TabsContent value="withdrawals">
+                        <ScrollArea className="h-[60vh]">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Amount</TableHead>
+                                        <TableHead>Address</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {withdrawals?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(wd => (
+                                        <Dialog key={wd.id}>
+                                            <DialogTrigger asChild>
+                                                <TableRow className="cursor-pointer">
+                                                    <TableCell className="text-xs">{format(new Date(wd.createdAt), 'PPpp')}</TableCell>
+                                                    <TableCell><Badge variant={wd.status === 'completed' ? 'default' : 'secondary'}>{wd.status}</Badge></TableCell>
+                                                    <TableCell>{wd.amount} USDT</TableCell>
+                                                    <TableCell className="text-xs font-mono truncate max-w-[100px]">{wd.address}</TableCell>
+                                                </TableRow>
+                                            </DialogTrigger>
+                                            <DialogContent>
+                                                <DialogHeader><DialogTitle>Withdrawal Details</DialogTitle></DialogHeader>
+                                                <div className="space-y-4 py-4 text-sm">
+                                                    <DetailRow label="User ID" value={<span className="font-mono text-xs">{wd.userId}</span>} />
+                                                    <DetailRow label="Status" value={<Badge>{wd.status}</Badge>} />
+                                                    <DetailRow label="Amount" value={`${wd.amount} USDT`} />
+                                                    <DetailRow label="Network" value={wd.network} />
+                                                    <DetailRow label="Recipient Address" value={<span className="font-mono text-xs break-all">{wd.address}</span>} />
+                                                </div>
                                             </DialogContent>
                                         </Dialog>
                                     ))}
@@ -214,7 +290,7 @@ export function AdminDataView() {
                                 <TableBody>
                                     {contactMessages?.slice().sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()).map(msg => (
                                          <Dialog key={msg.id}>
-                                            <DialogTrigger asChild><TableRow className="cursor-pointer"><TableCell>{format(new Date(msg.submittedAt), 'PPp')}</TableCell><TableCell>{msg.name}</TableCell><TableCell>{msg.email}</TableCell><TableCell className="truncate max-w-xs">{msg.description}</TableCell></TableRow></DialogTrigger>
+                                            <DialogTrigger asChild><TableRow className="cursor-pointer"><TableCell className="text-xs">{format(new Date(msg.submittedAt), 'PPp')}</TableCell><TableCell>{msg.name}</TableCell><TableCell>{msg.email}</TableCell><TableCell className="truncate max-w-xs">{msg.description}</TableCell></TableRow></DialogTrigger>
                                             <DialogContent className="max-w-2xl">
                                                 <DialogHeader><DialogTitle>Message from {msg.name}</DialogTitle><DialogDescription>{msg.email}</DialogDescription></DialogHeader>
                                                 <p className="whitespace-pre-wrap py-4">{msg.description}</p>
@@ -233,19 +309,17 @@ export function AdminDataView() {
                                     <TableRow>
                                         <TableHead>Joined Date</TableHead>
                                         <TableHead>Name</TableHead>
+                                        <TableHead>Balance</TableHead>
                                         <TableHead>Email</TableHead>
-                                        <TableHead>Phone</TableHead>
-                                        <TableHead>User ID</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {users?.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(u => (
                                         <TableRow key={u.id}>
-                                            <TableCell>{format(new Date(u.createdAt), 'PPpp')}</TableCell>
+                                            <TableCell className="text-xs">{format(new Date(u.createdAt), 'PPpp')}</TableCell>
                                             <TableCell className="font-semibold">{u.name}</TableCell>
-                                            <TableCell>{u.email}</TableCell>
-                                            <TableCell>{u.phone || 'N/A'}</TableCell>
-                                            <TableCell className="font-mono text-xs">{u.userId}</TableCell>
+                                            <TableCell className="font-bold text-primary">{(u.balance || 0).toLocaleString()} USDT</TableCell>
+                                            <TableCell className="text-xs">{u.email}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

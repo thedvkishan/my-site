@@ -10,266 +10,114 @@
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "phone": { "type": "string" },
+        "balance": { "type": "number", "description": "The current USDT balance of the user." },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "name", "email", "createdAt"]
     },
     "BuyOrder": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "BuyOrder",
       "type": "object",
       "description": "Represents a user's buy order for USDT.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the buy order."
-        },
-        "userId": {
-          "type": "string",
-          "description": "The ID of the user who created the order."
-        },
-        "network": {
-          "type": "string",
-          "description": "The selected network for the USDT transaction (BEP20, TRC20, ERC20)."
-        },
-        "usdtAmount": {
-          "type": "number",
-          "description": "The amount of USDT the user wants to buy."
-        },
-        "inrAmount": {
-          "type": "number",
-          "description": "The equivalent amount in INR for the USDT purchase."
-        },
-        "usdtAddress": {
-          "type": "string",
-          "description": "The user's USDT address to receive the purchased USDT."
-        },
-        "paymentMode": {
-          "type": "string",
-          "description": "The selected payment mode (Cash Deposit, UPI, IMPS, NEFT, RTGS)."
-        },
-        "email": {
-          "type": "string",
-          "description": "The user's contact email address.",
-          "format": "email"
-        },
-        "contactNumber": {
-          "type": "string",
-          "description": "The user's contact phone number (optional)."
-        },
-        "country": {
-          "type": "string",
-          "description": "The user's country."
-        },
-        "paymentReceiptUrl": {
-          "type": "string",
-          "description": "Data URL of the uploaded payment receipt (optional)."
-        },
-        "status": {
-          "type": "string",
-          "description": "The status of the order (e.g., pending_payment, payment_processing, completed, failed, expired)."
-        },
-        "createdAt": {
-            "type": "string",
-            "format": "date-time"
-        },
-        "expiresAt": {
-            "type": "number"
-        }
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "network": { "type": "string" },
+        "usdtAmount": { "type": "number" },
+        "inrAmount": { "type": "number" },
+        "usdtAddress": { "type": "string" },
+        "paymentMode": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "contactNumber": { "type": "string" },
+        "country": { "type": "string" },
+        "paymentReceiptUrl": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "number" }
       },
-      "required": [
-        "userId",
-        "network",
-        "usdtAmount",
-        "inrAmount",
-        "usdtAddress",
-        "paymentMode",
-        "email",
-        "country",
-        "status",
-        "createdAt"
-      ]
+      "required": ["userId", "network", "usdtAmount", "inrAmount", "usdtAddress", "paymentMode", "email", "country", "status", "createdAt"]
     },
     "SellOrder": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "SellOrder",
       "type": "object",
       "description": "Represents a user's sell order for USDT.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the sell order."
-        },
-        "userId": {
-          "type": "string",
-          "description": "The ID of the user who created the order."
-        },
-        "network": {
-          "type": "string",
-          "description": "The selected network for the USDT transaction (BEP20, TRC20, ERC20)."
-        },
-        "usdtAmount": {
-          "type": "number",
-          "description": "The amount of USDT the user wants to sell."
-        },
-        "inrAmount": {
-          "type": "number",
-          "description": "The equivalent amount in INR for the USDT sale."
-        },
-        "paymentReceivingMode": {
-          "type": "string",
-          "description": "The selected payment receiving mode (Cash Deposit, UPI, IMPS, RTGS, NEFT)."
-        },
-        "upiHolderName": {
-          "type": "string",
-          "description": "The name of the UPI account holder (if UPI is selected)."
-        },
-        "upiId": {
-          "type": "string",
-          "description": "The UPI ID (if UPI is selected)."
-        },
-        "bankName": {
-          "type": "string",
-          "description": "The name of the bank for receiving payment (if not UPI)."
-        },
-        "accountNumber": {
-          "type": "string",
-          "description": "The bank account number for receiving payment (if not UPI)."
-        },
-        "ifscCode": {
-          "type": "string",
-          "description": "The IFSC code of the bank for receiving payment (if not UPI)."
-        },
-        "email": {
-          "type": "string",
-          "description": "The user's contact email address.",
-          "format": "email"
-        },
-        "contactNumber": {
-          "type": "string",
-          "description": "The user's contact phone number."
-        },
-        "country": {
-          "type": "string",
-          "description": "The user's country."
-        },
-        "status": {
-          "type": "string",
-          "description": "The status of the order (e.g., pending_deposit, payment_processing, completed, failed, expired)."
-        },
-         "createdAt": {
-            "type": "string",
-            "format": "date-time"
-        },
-        "expiresAt": {
-            "type": "number"
-        }
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "network": { "type": "string" },
+        "usdtAmount": { "type": "number" },
+        "inrAmount": { "type": "number" },
+        "paymentReceivingMode": { "type": "string" },
+        "upiHolderName": { "type": "string" },
+        "upiId": { "type": "string" },
+        "bankName": { "type": "string" },
+        "accountNumber": { "type": "string" },
+        "ifscCode": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "contactNumber": { "type": "string" },
+        "country": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "number" }
       },
-      "required": [
-        "userId",
-        "network",
-        "usdtAmount",
-        "inrAmount",
-        "paymentReceivingMode",
-        "email",
-        "contactNumber",
-        "country",
-        "status",
-        "createdAt"
-      ]
+      "required": ["userId", "network", "usdtAmount", "inrAmount", "paymentReceivingMode", "email", "contactNumber", "country", "status", "createdAt"]
+    },
+    "Deposit": {
+      "title": "USDT Deposit",
+      "type": "object",
+      "description": "Represents a user's direct USDT deposit into their wallet.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "network": { "type": "string" },
+        "txHash": { "type": "string", "description": "The blockchain transaction hash submitted by the user." },
+        "status": { "type": "string", "enum": ["pending_hash", "waiting_confirmation", "completed", "expired", "failed"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "number" }
+      },
+      "required": ["userId", "amount", "network", "status", "createdAt", "expiresAt"]
+    },
+    "Withdrawal": {
+      "title": "USDT Withdrawal",
+      "type": "object",
+      "description": "Represents a user's request to withdraw USDT from their wallet.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "network": { "type": "string" },
+        "address": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "processing", "completed", "failed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "network", "address", "status", "createdAt"]
     },
     "ContactMessage": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ContactMessage",
+      "title": "Contact Message",
       "type": "object",
-      "description": "Represents a contact message submitted by a user.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the contact message."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the user submitting the message."
-        },
-        "email": {
-          "type": "string",
-          "description": "The email address of the user submitting the message.",
-          "format": "email"
-        },
-        "description": {
-          "type": "string",
-          "description": "A description of the user's problem or inquiry."
-        },
-        "submittedAt": {
-          "type": "string",
-          "description": "The date and time the message was submitted.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "name",
-        "email",
-        "description",
-        "submittedAt"
-      ]
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "description": { "type": "string" },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      }
     },
     "AppSettings": {
       "title": "Application Settings",
       "type": "object",
-      "description": "Stores global application settings managed by the admin.",
       "properties": {
         "appLogoUrl": { "type": "string" },
-        "buyRate": { "type": "number", "description": "The rate for buying USDT." },
-        "sellRate": { "type": "number", "description": "The rate for selling USDT." },
-        "minBuyAmount": { "type": "number", "description": "The minimum amount for buying USDT." },
-        "minSellAmount": { "type": "number", "description": "The minimum amount for selling USDT." },
-        "bankDetails": {
-          "type": "object",
-          "properties": {
-            "holderName": { "type": "string" },
-            "bankName": { "type": "string" },
-            "accountNumber": { "type": "string" },
-            "ifsc": { "type": "string" }
-          }
-        },
-        "upiId": { "type": "string" },
-        "qrCodeUrl": { "type": "string" },
-        "buyBannerUrl": { "type": "string" },
-        "sellBannerUrl": { "type": "string" },
-        "depositDetails": {
-          "type": "object",
-          "properties": {
-            "BEP20": {
-              "type": "object",
-              "properties": {
-                "address": { "type": "string" },
-                "qrCodeUrl": { "type": "string" }
-              }
-            },
-            "TRC20": {
-              "type": "object",
-              "properties": {
-                "address": { "type": "string" },
-                "qrCodeUrl": { "type": "string" }
-              }
-            },
-            "ERC20": {
-              "type": "object",
-              "properties": {
-                "address": { "type": "string" },
-                "qrCodeUrl": { "type": "string" }
-              }
-            }
-          }
-        }
+        "buyRate": { "type": "number" },
+        "sellRate": { "type": "number" },
+        "minBuyAmount": { "type": "number" },
+        "minSellAmount": { "type": "number" }
       }
     }
   },
   "auth": {
-    "providers": [
-      "password"
-    ]
+    "providers": ["password"]
   },
   "firestore": {
     "structure": [
@@ -277,50 +125,56 @@
         "path": "/users/{userId}",
         "definition": {
           "entityName": "UserProfile",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "Stores user profile data."
+          "schema": { "$ref": "#/backend/entities/UserProfile" },
+          "description": "Stores user profile data and balance."
         }
       },
       {
         "path": "/buyOrders/{buyOrderId}",
         "definition": {
           "entityName": "BuyOrder",
-          "schema": {
-            "$ref": "#/backend/entities/BuyOrder"
-          },
-          "description": "Stores all buy orders. Readable by admin, creatable by any signed-in user."
+          "schema": { "$ref": "#/backend/entities/BuyOrder" },
+          "description": "Stores all buy orders."
         }
       },
-       {
+      {
         "path": "/sellOrders/{sellOrderId}",
         "definition": {
           "entityName": "SellOrder",
-          "schema": {
-            "$ref": "#/backend/entities/SellOrder"
-          },
-          "description": "Stores all sell orders. Readable by admin, creatable by any signed-in user."
+          "schema": { "$ref": "#/backend/entities/SellOrder" },
+          "description": "Stores all sell orders."
+        }
+      },
+      {
+        "path": "/deposits/{depositId}",
+        "definition": {
+          "entityName": "Deposit",
+          "schema": { "$ref": "#/backend/entities/Deposit" },
+          "description": "Stores user wallet deposits."
+        }
+      },
+      {
+        "path": "/withdrawals/{withdrawalId}",
+        "definition": {
+          "entityName": "Withdrawal",
+          "schema": { "$ref": "#/backend/entities/Withdrawal" },
+          "description": "Stores user wallet withdrawals."
         }
       },
       {
         "path": "/contactMessages/{contactMessageId}",
         "definition": {
           "entityName": "ContactMessage",
-          "schema": {
-            "$ref": "#/backend/entities/ContactMessage"
-          },
-          "description": "Stores contact messages submitted by users. Readable by admin, creatable by anyone."
+          "schema": { "$ref": "#/backend/entities/ContactMessage" },
+          "description": "Stores contact messages."
         }
       },
       {
         "path": "/settings/{settingId}",
         "definition": {
           "entityName": "AppSettings",
-          "schema": {
-            "$ref": "#/backend/entities/AppSettings"
-          },
-          "description": "Stores global application settings. This should be a single document, e.g., /settings/appSettings. Publicly readable, admin writable."
+          "schema": { "$ref": "#/backend/entities/AppSettings" },
+          "description": "Stores global application settings."
         }
       }
     ]

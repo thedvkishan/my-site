@@ -5,11 +5,15 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ShieldCheck, Zap, MessageCircle, Loader2, Wallet, TrendingUp, CircleDollarSign } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Zap, MessageCircle, Loader2, Wallet, TrendingUp, CircleDollarSign, History } from 'lucide-react';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
+
+type UserProfile = {
+  balance?: number;
+}
 
 type Settings = {
   buyBannerUrl?: string;
@@ -27,9 +31,15 @@ export default function Home() {
     return doc(firestore, 'settings', 'appSettings');
   }, [firestore]);
 
-  const { data: settings, isLoading: settingsLoading } = useDoc<Settings>(settingsRef);
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
 
-  if (isUserLoading || settingsLoading || !settings) {
+  const { data: settings, isLoading: settingsLoading } = useDoc<Settings>(settingsRef);
+  const { data: profile, isLoading: profileLoading } = useDoc<UserProfile>(userProfileRef);
+
+  if (isUserLoading || settingsLoading || profileLoading || !settings) {
     return (
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
              <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -41,9 +51,49 @@ export default function Home() {
   if (user) {
     return (
         <div className="container mx-auto max-w-6xl px-4 py-12">
-            <div className="mb-12">
-                <h1 className="text-3xl font-bold tracking-tight">Welcome back!</h1>
-                <p className="text-muted-foreground mt-1 text-lg">Your secure portal for USDT trading is ready.</p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-12">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Welcome back!</h1>
+                    <p className="text-muted-foreground mt-1 text-lg">Your secure portal for USDT trading is ready.</p>
+                </div>
+                <Card className="bg-primary/5 border-primary/20 w-full md:w-auto">
+                    <CardContent className="p-4 flex items-center gap-4">
+                        <div className="p-2 bg-primary/10 rounded-full">
+                            <Wallet className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Wallet Balance</p>
+                            <p className="text-2xl font-bold">{(profile?.balance || 0).toLocaleString()} USDT</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+                <Button variant="outline" className="h-24 flex flex-col gap-2" asChild>
+                    <Link href="/wallet/deposit">
+                        <CircleDollarSign className="h-6 w-6 text-primary" />
+                        Deposit USDT
+                    </Link>
+                </Button>
+                <Button variant="outline" className="h-24 flex flex-col gap-2" asChild>
+                    <Link href="/wallet/withdrawal">
+                        <Wallet className="h-6 w-6 text-accent" />
+                        Withdraw USDT
+                    </Link>
+                </Button>
+                <Button variant="outline" className="h-24 flex flex-col gap-2" asChild>
+                    <Link href="/buy">
+                        <TrendingUp className="h-6 w-6 text-green-500" />
+                        Buy USDT (INR)
+                    </Link>
+                </Button>
+                <Button variant="outline" className="h-24 flex flex-col gap-2" asChild>
+                    <Link href="/wallet/history">
+                        <History className="h-6 w-6 text-muted-foreground" />
+                        History
+                    </Link>
+                </Button>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 mb-12">
@@ -114,7 +164,6 @@ export default function Home() {
   // Marketing Home for Guests
   return (
     <>
-      {/* Hero Section */}
       <div className="container mx-auto max-w-6xl px-4 py-12 md:py-20">
         <div className="flex flex-col items-center mb-12 text-center">
           <TetherIcon className="w-20 h-20 mb-6 text-primary" />
@@ -134,7 +183,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Buy/Sell Action Cards */}
         <div className="grid md:grid-cols-2 gap-8 mb-20">
           <Link href="/buy">
             <Card className="h-full flex flex-col group hover:border-primary hover:shadow-lg transition-all duration-300 border-2">
@@ -190,7 +238,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Why Trust Us Section */}
       <section className="bg-secondary py-20">
         <div className="container mx-auto max-w-6xl px-4">
           <div className="text-center mb-12">
@@ -231,7 +278,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FAQ Section */}
       <section className="py-20">
         <div className="container mx-auto max-w-4xl px-4">
           <div className="text-center mb-12">
