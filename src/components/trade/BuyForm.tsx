@@ -54,7 +54,7 @@ export function BuyForm() {
       network: 'BEP20',
       usdtAmount: 0,
       inrAmount: 0,
-      paymentMode: 'UPI',
+      paymentMode: 'Bank Transfer',
     },
   });
 
@@ -64,7 +64,7 @@ export function BuyForm() {
   const paymentMode = watch('paymentMode');
 
   const currentRate = useMemo(() => {
-    if (!settings || !settings.buyRates) return null;
+    if (!settings || !settings.buyRates) return 0;
     return settings.buyRates[paymentMode] || 0;
   }, [settings, paymentMode]);
 
@@ -209,10 +209,10 @@ export function BuyForm() {
         </div>
         <div className="text-sm font-medium text-primary bg-primary/5 p-3 rounded-md border border-primary/20">
           {settingsLoading && 'Fetching rates...'}
-          {currentRate && (
+          {!settingsLoading && (
             <div className="flex justify-between items-center">
                 <span>Selected Rate ({paymentMode}):</span>
-                <span className="font-bold">1 USDT ≈ ₹{currentRate.toFixed(2)}</span>
+                <span className="font-bold">1 USDT ≈ ₹{(currentRate || 0).toFixed(2)}</span>
             </div>
           )}
         </div>

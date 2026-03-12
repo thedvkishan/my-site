@@ -111,7 +111,7 @@ export function SellForm() {
   const paymentMode = watch('paymentMode');
 
   const currentRate = useMemo(() => {
-    if (!settings || !settings.sellRates) return null;
+    if (!settings || !settings.sellRates) return 0;
     return settings.sellRates[paymentMode] || 0;
   }, [settings, paymentMode]);
 
@@ -250,10 +250,10 @@ export function SellForm() {
         </div>
         <div className="text-sm font-medium text-destructive bg-destructive/5 p-3 rounded-md border border-destructive/20">
           {settingsLoading && 'Fetching rates...'}
-          {currentRate && (
+          {!settingsLoading && (
             <div className="flex justify-between items-center">
                 <span>Selected Rate ({paymentMode}):</span>
-                <span className="font-bold">1 USDT ≈ ₹{currentRate.toFixed(2)}</span>
+                <span className="font-bold">1 USDT ≈ ₹{(currentRate || 0).toFixed(2)}</span>
             </div>
           )}
         </div>
@@ -342,7 +342,7 @@ export function SellForm() {
 
         <Button type="submit" className="w-full" disabled={isLoading || settingsLoading || !settings || !user}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Deposit and Receive
+          Sell
         </Button>
       </form>
     </Form>
