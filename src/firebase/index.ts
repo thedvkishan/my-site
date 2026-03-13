@@ -1,6 +1,7 @@
 /**
  * Primary barrel file for Firebase services and hooks.
- * This file centralizes exports while internal modules use relative imports to avoid cycles.
+ * This file centralizes exports for components to consume.
+ * Internal modules use relative imports to avoid cycles.
  */
 
 export * from './init';

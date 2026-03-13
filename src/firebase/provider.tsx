@@ -1,9 +1,10 @@
 'use client';
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
-import { FirebaseApp } from 'firebase/app';
-import { Firestore } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged } from 'firebase/auth';
+import type { FirebaseApp } from 'firebase/app';
+import type { Firestore } from 'firebase/firestore';
+import type { Auth, User } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 interface FirebaseProviderProps {
@@ -54,12 +55,13 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   });
 
   useEffect(() => {
+    // If services aren't available (e.g. on server or missing config), stop loading.
     if (!auth) {
       setUserAuthState({ user: null, isUserLoading: false, userError: null });
       return;
     }
 
-    // Set initial state from current user
+    // Initialize state from current user instance
     setUserAuthState({ 
       user: auth.currentUser, 
       isUserLoading: !auth.currentUser, 
@@ -102,12 +104,11 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
 /**
  * Hook to access the full Firebase context.
- * Returns null properties during SSR without throwing.
+ * Returns null properties during SSR or when context is missing without throwing.
  */
 export const useFirebase = (): FirebaseContextState => {
   const context = useContext(FirebaseContext);
   if (context === undefined) {
-    // Return a default empty state for SSR or when outside provider
     return {
       areServicesAvailable: false,
       firebaseApp: null,
@@ -122,18 +123,15 @@ export const useFirebase = (): FirebaseContextState => {
 };
 
 export const useAuth = (): Auth | null => {
-  const { auth } = useFirebase();
-  return auth;
+  return useFirebase().auth;
 };
 
 export const useFirestore = (): Firestore | null => {
-  const { firestore } = useFirebase();
-  return firestore;
+  return useFirebase().firestore;
 };
 
 export const useFirebaseApp = (): FirebaseApp | null => {
-  const { firebaseApp } = useFirebase();
-  return firebaseApp;
+  return useFirebase().firebaseApp;
 };
 
 type MemoFirebase <T> = T & {__memo?: boolean};

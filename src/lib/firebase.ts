@@ -1,23 +1,6 @@
-'use client';
-
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { firebaseConfig } from '@/firebase/config';
-
 /**
- * Standardized Firebase Library Entry Point.
- * Optimized for production deployment on Vercel.
- * Includes defensive SSR guards.
+ * This file has been deprecated in favor of the modular src/firebase directory.
+ * It is kept empty to prevent import errors if any residual references exist,
+ * but should be removed in a future cleanup pass.
  */
-const getClientFirebase = () => {
-  if (typeof window === 'undefined' || !firebaseConfig.apiKey) {
-    return { app: null, auth: null, db: null };
-  }
-  const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  return { app, auth, db };
-};
-
-export const { app, auth, db } = getClientFirebase();
+export {};

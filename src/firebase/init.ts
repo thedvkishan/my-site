@@ -1,6 +1,9 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import type { FirebaseApp } from 'firebase/app';
+import type { Auth } from 'firebase/auth';
+import type { Firestore } from 'firebase/firestore';
 import { firebaseConfig } from './config';
 
 /**
@@ -8,7 +11,8 @@ import { firebaseConfig } from './config';
  * Handles SSR/Client boundaries and ensures singleton pattern.
  */
 function getFirebaseInstances() {
-  // Defensive check for server-side execution
+  // CRITICAL: Defensive check for server-side execution.
+  // Firebase client SDKs MUST NOT initialize during pre-rendering or build time.
   if (typeof window === 'undefined') {
     return {
       firebaseApp: null,
@@ -17,9 +21,9 @@ function getFirebaseInstances() {
     };
   }
 
-  // Check if we have a valid config to prevent initializeApp crashes
+  // Check if we have a valid config to prevent initializeApp crashes.
   if (!firebaseConfig.apiKey) {
-    console.warn("Firebase configuration is missing. Ensure NEXT_PUBLIC_FIREBASE_API_KEY is set.");
+    console.warn("Firebase configuration is missing. Ensure NEXT_PUBLIC_FIREBASE_API_KEY is set in your environment.");
     return {
       firebaseApp: null,
       auth: null,

@@ -14,6 +14,8 @@ import { Loader2, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useFirestore } from '@/firebase';
 import { addDoc, collection } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 
 export default function ContactPage() {
@@ -31,7 +33,7 @@ export default function ContactPage() {
         },
     });
 
-    async function onSubmit(values: ContactFormValues) {
+    function onSubmit(values: ContactFormValues) {
         setIsLoading(true);
         if (!firestore) {
             toast({ variant: 'destructive', title: 'Error', description: 'Database not available.' });
@@ -39,27 +41,28 @@ export default function ContactPage() {
             return;
         }
 
-        try {
-            await addDoc(collection(firestore, 'contactMessages'), {
-                ...values,
-                submittedAt: new Date().toISOString(),
-            });
+        const messageData = {
+            ...values,
+            submittedAt: new Date().toISOString(),
+        };
+
+        // Non-blocking add for instant response
+        addDoc(collection(firestore, 'contactMessages'), messageData).then(() => {
             toast({
                 title: 'Message Sent!',
                 description: "Thank you for your message! We'll get back to you shortly.",
             });
             form.reset();
             router.push('/');
-        } catch (error) {
-            console.error("Error submitting contact form: ", error);
-            toast({
-                variant: 'destructive',
-                title: 'Submission Failed',
-                description: 'Something went wrong. Please try again.',
+        }).catch(async (err) => {
+            const permissionError = new FirestorePermissionError({
+                path: 'contactMessages',
+                operation: 'create',
+                requestResourceData: messageData
             });
-        } finally {
+            errorEmitter.emit('permission-error', permissionError);
             setIsLoading(false);
-        }
+        });
     }
 
 

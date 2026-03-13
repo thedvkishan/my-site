@@ -19,6 +19,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 type UserProfile = {
   balance?: number;
@@ -65,22 +67,32 @@ export default function WithdrawalPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const createInternalNotification = async (userId: string, title: string, message: string, type: 'info' | 'success' | 'warning' | 'error') => {
+  const createInternalNotification = (userId: string, title: string, message: string, type: 'info' | 'success' | 'warning' | 'error') => {
     if (!firestore) return;
     const notifRef = collection(firestore, 'users', userId, 'notifications');
-    await addDoc(notifRef, {
+    const notifData = {
         userId,
         title,
         message,
         type,
         read: false,
         createdAt: new Date().toISOString()
+    };
+    addDoc(notifRef, notifData).catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+            path: `users/${userId}/notifications`,
+            operation: 'create',
+            requestResourceData: notifData
+        });
+        errorEmitter.emit('permission-error', permissionError);
     });
   };
 
-  const handleWithdraw = async () => {
+  const handleWithdraw = () => {
     const numAmount = parseFloat(amount);
     const balance = profile?.balance || 0;
+
+    if (!firestore || !user) return;
 
     if (profile?.status === 'on_hold') {
         toast({ variant: 'destructive', title: 'Action Disabled', description: 'Your account is on hold.' });
@@ -103,35 +115,47 @@ export default function WithdrawalPage() {
     }
 
     setIsLoading(true);
-    try {
-      const docRef = await addDoc(collection(firestore, 'withdrawals'), {
-        userId: user!.uid,
+    
+    const withdrawalData = {
+        userId: user.uid,
         amount: numAmount,
         network,
         address,
         status: 'pending',
         createdAt: new Date().toISOString(),
-      });
+    };
 
-      if (userProfileRef) {
-        await updateDoc(userProfileRef, { balance: increment(-numAmount) });
-      }
+    // Non-blocking creation for instant UX
+    addDoc(collection(firestore, 'withdrawals'), withdrawalData).then((docRef) => {
+        if (userProfileRef) {
+            updateDoc(userProfileRef, { balance: increment(-numAmount) }).catch(async (err) => {
+                const permissionError = new FirestorePermissionError({
+                    path: userProfileRef.path,
+                    operation: 'update',
+                    requestResourceData: { balance: increment(-numAmount) }
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            });
+        }
 
-      await createInternalNotification(
-        user!.uid, 
-        'Withdrawal Requested', 
-        `${numAmount} USDT has been deducted and is awaiting internal settlement.`, 
-        'info'
-      );
+        createInternalNotification(
+            user.uid, 
+            'Withdrawal Requested', 
+            `${numAmount} USDT has been deducted and is awaiting internal settlement.`, 
+            'info'
+        );
 
-      toast({ title: 'Success', description: 'Withdrawal requested. USDT deducted from balance.' });
-      router.push(`/wallet/withdrawal/confirmation/${docRef.id}`);
-    } catch (error) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to submit withdrawal request.' });
-    } finally {
-      setIsLoading(false);
-    }
+        toast({ title: 'Success', description: 'Withdrawal requested. USDT deducted from balance.' });
+        router.push(`/wallet/withdrawal/confirmation/${docRef.id}`);
+    }).catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+            path: 'withdrawals',
+            operation: 'create',
+            requestResourceData: withdrawalData
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        setIsLoading(false);
+    });
   };
 
   if (isUserLoading || profileLoading || !user) {

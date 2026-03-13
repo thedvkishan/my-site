@@ -14,6 +14,8 @@ import { Badge } from '@/components/ui/badge';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { MOCK_SETTINGS } from '@/lib/constants';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 type Transaction = {
   id: string;
@@ -69,17 +71,33 @@ export default function SellDepositPage() {
     toast({ title: 'Copied!', description: 'Deposit address copied to clipboard.' });
   };
   
-  const handleNext = async () => {
+  const handleNext = () => {
     if (transactionRef) {
-        await updateDoc(transactionRef, { status: 'payment_processing' });
+        const updateData = { status: 'payment_processing' };
+        // Non-blocking update for instant UX
+        updateDoc(transactionRef, updateData).catch(async (err) => {
+            const permissionError = new FirestorePermissionError({
+                path: transactionRef.path,
+                operation: 'update',
+                requestResourceData: updateData
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
         router.push(`/sell/confirmation/${id}`); 
     }
   };
 
-  const handleExpire = async () => {
+  const handleExpire = () => {
     if (transactionRef && !isExpired) {
         setIsExpired(true);
-        await updateDoc(transactionRef, { status: 'expired' });
+        updateDoc(transactionRef, { status: 'expired' }).catch(async (err) => {
+            const permissionError = new FirestorePermissionError({
+                path: transactionRef.path,
+                operation: 'update',
+                requestResourceData: { status: 'expired' }
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
      }
   };
 
