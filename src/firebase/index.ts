@@ -1,18 +1,37 @@
+
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getAuth, Auth } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
 import { firebaseConfig } from './config';
 
 /**
- * Robust Firebase initialization for Next.js and Vercel.
+ * Robust Firebase initialization for Next.js.
  * Ensures the app is only initialized once and handles SSR/Client boundaries safely.
- * This file does not include 'use client' to allow flexible imports,
- * but Firebase services should only be called within Client Components.
  */
 
-const firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(firebaseApp);
-const firestore = getFirestore(firebaseApp);
+function getFirebaseInstances() {
+  // Check if we have enough config to initialize. 
+  // If not, we return nulls to avoid throwing during SSR if env vars are missing.
+  if (!firebaseConfig.apiKey) {
+    return {
+      firebaseApp: null as unknown as FirebaseApp,
+      auth: null as unknown as Auth,
+      firestore: null as unknown as Firestore,
+    };
+  }
+
+  const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  const auth = getAuth(app);
+  const firestore = getFirestore(app);
+
+  return {
+    firebaseApp: app,
+    auth,
+    firestore,
+  };
+}
+
+const { firebaseApp, auth, firestore } = getFirebaseInstances();
 
 export { firebaseApp, auth, firestore };
 
@@ -20,11 +39,7 @@ export { firebaseApp, auth, firestore };
  * Helper function used by the Client Provider to get SDK instances.
  */
 export function initializeFirebase() {
-  return {
-    firebaseApp,
-    auth,
-    firestore
-  };
+  return getFirebaseInstances();
 }
 
 // Export providers and hooks
