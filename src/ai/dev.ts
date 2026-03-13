@@ -1,2 +1,1 @@
-import { config } from 'dotenv';
-config();
+// AI dev environment removed per user request.
