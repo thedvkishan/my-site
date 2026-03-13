@@ -1,35 +1,33 @@
-'use client';
-
-import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { firebaseConfig } from './config';
 
 /**
- * Robust Firebase initialization for Next.js.
- * Ensures the app is only initialized once and works across SSR/Client boundaries.
+ * Robust Firebase initialization for Next.js and Vercel.
+ * Ensures the app is only initialized once and handles SSR/Client boundaries safely.
+ * This file does not include 'use client' to allow flexible imports,
+ * but Firebase services should only be called within Client Components.
+ */
+
+const firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(firebaseApp);
+const firestore = getFirestore(firebaseApp);
+
+export { firebaseApp, auth, firestore };
+
+/**
+ * Helper function used by the Client Provider to get SDK instances.
  */
 export function initializeFirebase() {
-  let firebaseApp: FirebaseApp;
-
-  // Standard safe initialization for Next.js / Vercel
-  if (!getApps().length) {
-    firebaseApp = initializeApp(firebaseConfig);
-  } else {
-    firebaseApp = getApp();
-  }
-
-  return getSdks(firebaseApp);
-}
-
-export function getSdks(firebaseApp: FirebaseApp) {
   return {
     firebaseApp,
-    auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp)
+    auth,
+    firestore
   };
 }
 
+// Export providers and hooks
 export * from './provider';
 export * from './client-provider';
 export * from './firestore/use-collection';
