@@ -1,4 +1,3 @@
-
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
@@ -6,37 +5,40 @@ import { firebaseConfig } from './config';
 
 /**
  * Robust Firebase initialization for Next.js.
- * Ensures the app is only initialized once and handles SSR/Client boundaries safely.
+ * Handles SSR/Client boundaries safely and ensures singleton pattern.
  */
-
 function getFirebaseInstances() {
-  // Check if we have enough config to initialize. 
-  // If not, we return nulls to avoid throwing during SSR if env vars are missing.
-  if (!firebaseConfig.apiKey) {
+  // Check if we are on the client side and have a valid config
+  if (typeof window === 'undefined' || !firebaseConfig.apiKey) {
     return {
-      firebaseApp: null as unknown as FirebaseApp,
-      auth: null as unknown as Auth,
-      firestore: null as unknown as Firestore,
+      firebaseApp: null,
+      auth: null,
+      firestore: null,
     };
   }
 
-  const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  const auth = getAuth(app);
-  const firestore = getFirestore(app);
+  try {
+    const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    const auth = getAuth(app);
+    const firestore = getFirestore(app);
 
-  return {
-    firebaseApp: app,
-    auth,
-    firestore,
-  };
+    return {
+      firebaseApp: app,
+      auth,
+      firestore,
+    };
+  } catch (error) {
+    console.error("Firebase initialization failed:", error);
+    return {
+      firebaseApp: null,
+      auth: null,
+      firestore: null,
+    };
+  }
 }
 
-const { firebaseApp, auth, firestore } = getFirebaseInstances();
-
-export { firebaseApp, auth, firestore };
-
 /**
- * Helper function used by the Client Provider to get SDK instances.
+ * Initialization function used by providers to get SDK instances.
  */
 export function initializeFirebase() {
   return getFirebaseInstances();
