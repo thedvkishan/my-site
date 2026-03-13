@@ -771,8 +771,46 @@ export function AdminDataView() {
                                                             <TabsContent value="activity">
                                                                 <ScrollArea className="h-[45vh] border-2 border-dashed rounded-xl p-2 bg-muted/5">
                                                                     <div className="space-y-6">
+                                                                        {/* Transaction Activity */}
                                                                         <div className="space-y-3">
-                                                                            <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-primary border-b pb-1"><History className="h-3 w-3" /> Protocol Action History</h4>
+                                                                            <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-primary border-b pb-1"><History className="h-3 w-3" /> Clearing Activity</h4>
+                                                                            <div className="grid gap-2">
+                                                                                {[
+                                                                                    ...(buyOrders || []).filter(o => o.userId === u.userId).map(o => ({ ...o, type: 'Buy', icon: TrendingUp })),
+                                                                                    ...(sellOrders || []).filter(o => o.userId === u.userId).map(o => ({ ...o, type: 'Sell', icon: TrendingDown })),
+                                                                                    ...(deposits || []).filter(o => o.userId === u.userId).map(o => ({ ...o, type: 'Deposit', icon: ArrowDownCircle })),
+                                                                                    ...(withdrawals || []).filter(o => o.userId === u.userId).map(o => ({ ...o, type: 'Withdrawal', icon: ArrowUpCircle })),
+                                                                                ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((activity, idx) => (
+                                                                                    <div key={idx} className="flex items-center justify-between p-3 bg-background border rounded-xl shadow-sm">
+                                                                                        <div className="flex items-center gap-3">
+                                                                                            <div className={cn(
+                                                                                                "p-2 rounded-lg",
+                                                                                                (activity.type === 'Buy' || activity.type === 'Deposit') ? "bg-green-500/10 text-green-600" : "bg-destructive/10 text-destructive"
+                                                                                            )}>
+                                                                                                <activity.icon className="h-3.5 w-3.5" />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <p className="text-[9px] font-black uppercase tracking-tight">{activity.type} Protocol</p>
+                                                                                                <p className="text-[8px] font-mono text-muted-foreground">{activity.id.slice(-8)} • {format(new Date(activity.createdAt), 'dd/MM/yy HH:mm')}</p>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="text-right">
+                                                                                            <p className={cn(
+                                                                                                "text-xs font-black",
+                                                                                                (activity.type === 'Buy' || activity.type === 'Deposit') ? "text-green-600" : "text-destructive"
+                                                                                            )}>
+                                                                                                {(activity.type === 'Buy' || activity.type === 'Deposit') ? '+' : '-'}{(activity.usdtAmount || activity.amount).toLocaleString()} <span className="text-[8px]">USDT</span>
+                                                                                            </p>
+                                                                                            {getStatusBadge(activity.status)}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Protocol Remarks History */}
+                                                                        <div className="space-y-3">
+                                                                            <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-primary border-b pb-1"><ShieldQuestion className="h-3 w-3" /> Protocol Action History</h4>
                                                                             <div className="grid gap-2">
                                                                                 {(u.remarksHistory || []).slice().reverse().map((r: any, idx: number) => (
                                                                                     <div key={idx} className="p-3 bg-background border rounded-xl space-y-1.5 shadow-sm">
