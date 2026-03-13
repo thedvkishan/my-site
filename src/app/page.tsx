@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -420,14 +419,15 @@ export default function Home() {
             <Button size="lg" className="h-16 px-10 text-xl font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all" asChild>
                 <Link href="/login">Sign In Now</Link>
             </Button>
-            {settings?.allowPublicSignup && (
+            {settings?.allowPublicSignup ? (
               <Button size="lg" variant="secondary" className="h-16 px-10 text-xl font-bold rounded-2xl shadow-xl hover:scale-105 transition-all" asChild>
                   <Link href="/signup">Register Now</Link>
               </Button>
+            ) : (
+              <Button variant="outline" size="lg" className="h-16 px-10 text-xl font-bold rounded-2xl border-2 hover:bg-secondary transition-all" asChild>
+                  <Link href="/contact">Contact Support</Link>
+              </Button>
             )}
-            <Button variant="outline" size="lg" className="h-16 px-10 text-xl font-bold rounded-2xl border-2 hover:bg-secondary transition-all" asChild>
-                <Link href="/contact">Contact Support</Link>
-            </Button>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 pt-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
