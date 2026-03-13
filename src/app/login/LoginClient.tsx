@@ -42,6 +42,12 @@ export default function LoginPageClient() {
 
     async function onLogin(values: LoginFormValues) {
         setIsLoading(true);
+        if (!auth || !firestore) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Authentication service is currently unavailable. Please check your configuration.' });
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
             const user = userCredential.user;
@@ -93,6 +99,11 @@ export default function LoginPageClient() {
             return;
         }
 
+        if (!firestore) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Database service unavailable.' });
+            return;
+        }
+
         setIsForgotLoading(true);
         try {
             const q = query(collection(firestore, 'users'), where('email', '==', email));
@@ -124,7 +135,7 @@ export default function LoginPageClient() {
             return;
         }
 
-        if (answer.toLowerCase().trim() === userForReset.securityAnswer) {
+        if (answer.toLowerCase().trim() === userForReset?.securityAnswer) {
             setForgotStep('reset');
         } else {
             toast({ 

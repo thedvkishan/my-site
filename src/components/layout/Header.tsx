@@ -1,15 +1,15 @@
-
 'use client';
 
 import Link from 'next/link';
 import { AppLogo } from './AppLogo';
-import { useUser, useAuth, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useAuth, useFirestore, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { LogOut, User as UserIcon, Wallet, ChevronDown, Settings, UserCircle } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { useDoc } from '@/firebase/firestore/use-doc';
 
 export function Header() {
   const { user, isUserLoading } = useUser();
@@ -24,7 +24,9 @@ export function Header() {
   const { data: profile } = useDoc<{ balance?: number, name?: string }>(profileRef);
 
   const handleLogout = async () => {
-    await signOut(auth);
+    if (auth) {
+      await signOut(auth);
+    }
   };
 
   return (

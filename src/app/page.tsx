@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -75,7 +74,7 @@ export default function Home() {
 
   // Status and Balance Change Listener
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || !auth) return;
 
     // Handle Banned Status - Immediate Kick Out
     if (profile.status === 'banned') {
