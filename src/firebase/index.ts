@@ -1,60 +1,9 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
-import { firebaseConfig } from './config';
-
 /**
- * Defensive Firebase initialization for Next.js.
- * Handles SSR/Client boundaries and ensures singleton pattern.
+ * Primary barrel file for Firebase services and hooks.
+ * This file centralizes exports while internal modules use relative imports to avoid cycles.
  */
-function getFirebaseInstances() {
-  // Check if we are on the client side
-  if (typeof window === 'undefined') {
-    return {
-      firebaseApp: null,
-      auth: null,
-      firestore: null,
-    };
-  }
 
-  // Check if we have a valid config
-  if (!firebaseConfig.apiKey) {
-    console.warn("Firebase API key is missing. Check your environment variables.");
-    return {
-      firebaseApp: null,
-      auth: null,
-      firestore: null,
-    };
-  }
-
-  try {
-    const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-    const auth = getAuth(app);
-    const firestore = getFirestore(app);
-
-    return {
-      firebaseApp: app,
-      auth,
-      firestore,
-    };
-  } catch (error) {
-    console.error("Firebase initialization failed:", error);
-    return {
-      firebaseApp: null,
-      auth: null,
-      firestore: null,
-    };
-  }
-}
-
-/**
- * Initialization function used by providers to get SDK instances.
- */
-export function initializeFirebase() {
-  return getFirebaseInstances();
-}
-
-// Export providers and hooks
+export * from './init';
 export * from './provider';
 export * from './client-provider';
 export * from './firestore/use-collection';
@@ -63,3 +12,4 @@ export * from './non-blocking-updates';
 export * from './non-blocking-login';
 export * from './errors';
 export * from './error-emitter';
+export * from './config';

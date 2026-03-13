@@ -9,12 +9,11 @@ import {
   DocumentReference,
   SetOptions,
 } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
-import {FirestorePermissionError} from '@/firebase/errors';
+import { errorEmitter } from './error-emitter';
+import { FirestorePermissionError } from './errors';
 
 /**
  * Initiates a setDoc operation for a document reference.
- * Returns the promise from the underlying `setDoc` call.
  */
 export function setDocumentNonBlocking(docRef: DocumentReference, data: any, options: SetOptions) {
   return setDoc(docRef, data, options).catch(error => {
@@ -22,7 +21,7 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
       'permission-error',
       new FirestorePermissionError({
         path: docRef.path,
-        operation: 'write', // or 'create'/'update' based on options
+        operation: 'write',
         requestResourceData: data,
       })
     );
@@ -33,7 +32,6 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
 
 /**
  * Initiates an addDoc operation for a collection reference.
- * Returns the promise from the underlying `addDoc` call.
  */
 export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
   return addDoc(colRef, data).catch(error => {
@@ -52,7 +50,6 @@ export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
 
 /**
  * Initiates an updateDoc operation for a document reference.
- * Returns the promise from the underlying `updateDoc` call.
  */
 export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) {
   return updateDoc(docRef, data)
@@ -72,7 +69,6 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
 
 /**
  * Initiates a deleteDoc operation for a document reference.
- * Returns the promise from the underlying `deleteDoc` call.
  */
 export function deleteDocumentNonBlocking(docRef: DocumentReference) {
   return deleteDoc(docRef)

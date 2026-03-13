@@ -59,7 +59,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       return;
     }
 
-    setUserAuthState({ user: auth.currentUser, isUserLoading: !auth.currentUser, userError: null });
+    // Set initial state from current user
+    setUserAuthState({ 
+      user: auth.currentUser, 
+      isUserLoading: !auth.currentUser, 
+      userError: null 
+    });
 
     const unsubscribe = onAuthStateChanged(
       auth,
@@ -95,10 +100,23 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   );
 };
 
+/**
+ * Hook to access the full Firebase context.
+ * Returns null properties during SSR without throwing.
+ */
 export const useFirebase = (): FirebaseContextState => {
   const context = useContext(FirebaseContext);
   if (context === undefined) {
-    throw new Error('useFirebase must be used within a FirebaseProvider.');
+    // Return a default empty state for SSR or when outside provider
+    return {
+      areServicesAvailable: false,
+      firebaseApp: null,
+      firestore: null,
+      auth: null,
+      user: null,
+      isUserLoading: true,
+      userError: null,
+    };
   }
   return context;
 };
@@ -128,10 +146,7 @@ export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | 
 }
 
 export const useUser = (): UserHookResult => {
-  const context = useContext(FirebaseContext);
-  if (context === undefined) {
-    throw new Error('useUser must be used within a FirebaseProvider.');
-  }
+  const context = useFirebase();
   return { 
     user: context.user, 
     isUserLoading: context.isUserLoading, 
