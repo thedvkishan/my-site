@@ -54,6 +54,7 @@ export const MOCK_DEPOSIT_DETAILS = {
 export const MOCK_SETTINGS = {
   appLogoUrl: MOCK_APP_LOGO_URL,
   allowPublicSignup: false,
+  provisionFee: 150,
   buyRates: {
     'Bank Transfer': 95.80,
     'UPI': 95.15,

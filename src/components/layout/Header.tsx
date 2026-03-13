@@ -1,10 +1,11 @@
+
 'use client';
 
 import Link from 'next/link';
 import { AppLogo } from './AppLogo';
 import { useUser, useAuth, useFirestore, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
-import { LogOut, User as UserIcon, Wallet, ChevronDown, Settings, UserCircle, Headphones } from 'lucide-react';
+import { LogOut, User as UserIcon, Wallet, ChevronDown, Settings, UserCircle } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -101,15 +102,9 @@ export function Header() {
                   <Button size="sm" variant="ghost" asChild className="h-8 px-3 md:h-10">
                     <Link href="/login">Sign In</Link>
                   </Button>
-                  {settings?.allowPublicSignup ? (
+                  {settings?.allowPublicSignup && (
                     <Button size="sm" asChild className="h-8 px-4 md:h-10 font-bold uppercase tracking-tight">
                       <Link href="/signup">Sign Up</Link>
-                    </Button>
-                  ) : (
-                    <Button size="sm" variant="outline" asChild className="h-8 px-4 md:h-10 border-2 font-bold gap-2">
-                      <Link href="/contact">
-                        <Headphones className="h-3.5 w-3.5" /> Support
-                      </Link>
                     </Button>
                   )}
                 </div>

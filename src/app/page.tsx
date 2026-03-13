@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -73,11 +74,9 @@ export default function Home() {
   const { data: settings, isLoading: settingsLoading } = useDoc<Settings>(settingsRef);
   const { data: profile, isLoading: profileLoading } = useDoc<UserProfile>(userProfileRef);
 
-  // Status and Balance Change Listener
   useEffect(() => {
     if (!profile || !auth) return;
 
-    // Handle Banned Status - Immediate Kick Out
     if (profile.status === 'banned') {
         signOut(auth).then(() => {
             router.push('/login');
@@ -91,7 +90,6 @@ export default function Home() {
     }
 
     if (prevProfile.current) {
-        // Balance change notification
         if (profile.balance !== undefined && prevProfile.current.balance !== undefined && profile.balance !== prevProfile.current.balance) {
             const diff = profile.balance - prevProfile.current.balance;
             toast({
@@ -101,7 +99,6 @@ export default function Home() {
             });
         }
 
-        // Status change notification (Hold)
         if (profile.status !== prevProfile.current.status) {
             if (profile.status === 'on_hold') {
                 toast({
@@ -132,13 +129,11 @@ export default function Home() {
   const bankBuyRate = Number(settings.buyRates?.['Bank Transfer'] || 0);
   const bankSellRate = Number(settings.sellRates?.['Bank Transfer'] || 0);
 
-  // LOGGED IN VIEW (DASHBOARD)
   if (user) {
     const isOnHold = profile?.status === 'on_hold';
 
     return (
         <div className="container mx-auto max-w-6xl px-4 py-8 md:py-16 animate-in fade-in duration-1000">
-            {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">
@@ -178,7 +173,6 @@ export default function Home() {
                 </Alert>
             )}
 
-            {/* Quick Actions Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-16">
                 {[
                     { label: 'Deposit', icon: CircleDollarSign, href: '/wallet/deposit', color: 'text-primary', bg: 'bg-primary/5' },
@@ -216,7 +210,6 @@ export default function Home() {
                 ))}
             </div>
 
-            {/* Trading Instruments */}
             <div className="grid md:grid-cols-2 gap-8 mb-16">
                 <Card className={cn(
                     "relative overflow-hidden group hover:border-primary transition-all duration-500 border-2 shadow-sm hover:shadow-2xl bg-card",
@@ -287,9 +280,7 @@ export default function Home() {
                 </Card>
             </div>
 
-            {/* Platform Intelligence & Trust Bottom Sections */}
             <div className="grid lg:grid-cols-3 gap-8 mb-16">
-                {/* Live Rates Terminal */}
                 <Card className="lg:col-span-2 border-2">
                     <CardHeader>
                         <div className="flex items-center justify-between">
@@ -305,7 +296,6 @@ export default function Home() {
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-border">
                             {Object.entries(settings.sellRates || {}).map(([method, rate]) => {
                                 const numericRate = Number(rate);
-                                // Calculate percentage based on 95 INR as requested
                                 const diff = numericRate - 95;
                                 const percent = (diff / 95) * 100;
                                 const isPositive = percent >= 0;
@@ -328,7 +318,6 @@ export default function Home() {
                     </CardContent>
                 </Card>
 
-                {/* Security Protocol Card */}
                 <Card className="border-2 bg-muted/5">
                     <CardHeader>
                         <div className="flex items-center gap-2">
@@ -361,7 +350,6 @@ export default function Home() {
                 </Card>
             </div>
 
-            {/* Quick Support Terminal */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-8 p-8 rounded-3xl border-2 border-dashed bg-muted/10">
                 <div className="flex items-center gap-6">
                     <div className="p-4 bg-background rounded-2xl shadow-sm border">
@@ -380,10 +368,8 @@ export default function Home() {
     );
   }
 
-  // GUEST VIEW (MARKETING LANDING)
   return (
     <div className="flex flex-col w-full overflow-hidden">
-      {/* Branding Hero Section */}
       <section className="py-12 border-b bg-muted/5">
         <div className="container mx-auto px-4 text-center space-y-6">
           <div className="flex justify-center items-center gap-4">
@@ -401,7 +387,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Hero Section */}
       <section className="relative pt-20 pb-20 md:pt-32 md:pb-32 px-4">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-background -z-10" />
         <div className="container mx-auto max-w-6xl text-center space-y-8 animate-in fade-in slide-in-from-top-10 duration-1000">
@@ -438,7 +423,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Interactive Trade Section */}
       <section className="py-20 bg-muted/20">
         <div className="container mx-auto max-w-6xl px-4">
             <div className="text-center mb-12">
@@ -495,7 +479,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Animated Payment Methods Section */}
       <section className="py-16 bg-card border-y overflow-hidden">
         <div className="container mx-auto px-4 mb-10 text-center">
             <h3 className="text-2xl font-black uppercase tracking-widest text-muted-foreground/60">Supported Settlement Methods</h3>
@@ -541,7 +524,6 @@ export default function Home() {
         `}</style>
       </section>
 
-      {/* Feature Grid */}
       <section className="py-24 bg-card">
         <div className="container mx-auto max-w-6xl px-4">
           <div className="grid md:grid-cols-3 gap-8">
@@ -576,7 +558,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FAQ Section */}
       <section className="py-24 px-4">
         <div className="container mx-auto max-w-4xl">
           <div className="text-center mb-16">

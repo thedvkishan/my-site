@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { FileUp, Loader2 } from 'lucide-react';
+import { FileUp, Loader2, Coins } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { settingsSchema, type SettingsFormValues } from '@/lib/schemas';
 import { Label } from '@/components/ui/label';
@@ -115,9 +115,10 @@ export default function AdminDashboardPage() {
                     sellRates: values.sellRates,
                     minBuyAmount: Number(values.minBuyAmount), 
                     minSellAmount: Number(values.minSellAmount),
-                    minDepositAmount: Number(values.minDepositAmount)
+                    minDepositAmount: Number(values.minDepositAmount),
+                    provisionFee: Number(values.provisionFee)
                 };
-                description = 'Exchange rates updated.';
+                description = 'Exchange rates and fees updated.';
                 break;
             case 'bank':
                 newSettings = { bankDetails: values.bankDetails };
@@ -156,37 +157,39 @@ export default function AdminDashboardPage() {
     }
 
     return (
-        <div className="container mx-auto max-w-7xl py-12">
-            <div className="flex justify-between items-center mb-6">
+        <div className="container mx-auto max-w-7xl py-12 px-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold">Institutional Terminal</h1>
-                    <p className="text-muted-foreground">Main control center for platform operations.</p>
+                    <h1 className="text-3xl font-black uppercase tracking-tight">Institutional Terminal</h1>
+                    <p className="text-muted-foreground font-medium">Platform orchestration and clearance oversight.</p>
                 </div>
-                <Button variant="outline" onClick={handleLogout}>Logout</Button>
+                <Button variant="outline" className="font-bold h-12 px-8" onClick={handleLogout}>Terminate Session</Button>
             </div>
             
-            <Tabs defaultValue="settings">
-                <TabsList className='mb-4'>
-                    <TabsTrigger value="settings">Site Settings</TabsTrigger>
-                    <TabsTrigger value="data">User Management</TabsTrigger>
+            <Tabs defaultValue="settings" className="space-y-8">
+                <TabsList className='bg-muted/50 p-1 border rounded-xl h-auto'>
+                    <TabsTrigger value="settings" className="font-black text-[10px] uppercase tracking-widest px-6 py-3">Site Configuration</TabsTrigger>
+                    <TabsTrigger value="data" className="font-black text-[10px] uppercase tracking-widest px-6 py-3">Institutional Oversight</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="settings">
+                <TabsContent value="settings" className="animate-in fade-in slide-in-from-bottom-2">
                     <Form {...form}>
                         <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-3">
                             <div className="lg:col-span-2 space-y-8">
-                                <Card>
+                                <Card className="border-2">
                                     <CardHeader>
-                                        <CardTitle>Branding & Market Rates</CardTitle>
-                                        <CardDescription>Configure core visual assets and clearing rates.</CardDescription>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <TetherIcon className="h-5 w-5" /> Exchange Protocols
+                                        </CardTitle>
+                                        <CardDescription className="font-medium">Define clearing rates and institutional transaction fees.</CardDescription>
                                     </CardHeader>
                                     <CardContent>
-                                        <Accordion type="single" collapsible defaultValue='logo'>
-                                            <AccordionItem value="logo">
-                                                <AccordionTrigger className="text-lg font-bold">Platform Logo</AccordionTrigger>
+                                        <Accordion type="single" collapsible defaultValue='rates'>
+                                            <AccordionItem value="logo" className="border-b">
+                                                <AccordionTrigger className="text-lg font-bold uppercase">Brand Identity</AccordionTrigger>
                                                 <AccordionContent className="pt-4 space-y-6">
                                                     <div className="flex items-start gap-6">
-                                                        <div className="relative h-24 w-24 rounded-md overflow-hidden border bg-muted flex items-center justify-center">
+                                                        <div className="relative h-24 w-24 rounded-2xl overflow-hidden border-2 bg-muted flex items-center justify-center">
                                                             {watchedValues.appLogoUrl ? (
                                                                 <Image src={watchedValues.appLogoUrl} alt="App Logo" fill style={{objectFit: 'cover'}} />
                                                             ) : (
@@ -196,51 +199,68 @@ export default function AdminDashboardPage() {
                                                         <div className="space-y-4 flex-grow">
                                                             <Input id="logo-upload" type="file" className='hidden' accept="image/png, image/jpeg" onChange={(e) => handleFileChange(e, 'appLogoUrl')} />
                                                             <Label htmlFor='logo-upload'>
-                                                                <Button asChild variant="outline" className="w-full cursor-pointer"><div><FileUp className='mr-2' /> Upload Brand Asset</div></Button>
+                                                                <Button asChild variant="outline" className="w-full h-12 cursor-pointer font-bold"><div><FileUp className='mr-2 h-4 w-4' /> Upload Brand Asset</div></Button>
                                                             </Label>
-                                                            <Button className="w-full" onClick={() => handleSave('logo')}>Update Logo</Button>
+                                                            <Button className="w-full h-12 font-black uppercase tracking-widest" onClick={() => handleSave('logo')}>Save Assets</Button>
                                                         </div>
                                                     </div>
                                                 </AccordionContent>
                                             </AccordionItem>
                                             <AccordionItem value="rates">
-                                                <AccordionTrigger className="text-lg font-bold">Exchange Protocols</AccordionTrigger>
-                                                <AccordionContent className="pt-4 space-y-6">
+                                                <AccordionTrigger className="text-lg font-bold uppercase">Clearing & Fees</AccordionTrigger>
+                                                <AccordionContent className="pt-4 space-y-8">
+                                                    <div className="p-6 border-2 border-dashed rounded-2xl bg-primary/5 space-y-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-2 bg-primary/10 rounded-lg"><Coins className="h-5 w-5 text-primary" /></div>
+                                                            <h4 className="font-black text-xs uppercase tracking-wider">Internal Provisioning Fee</h4>
+                                                        </div>
+                                                        <FormField 
+                                                            control={form.control} 
+                                                            name="provisionFee" 
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormControl><Input type="number" step="1" className="font-black text-xl h-14" {...field} /></FormControl>
+                                                                    <FormDescription className="text-[10px] font-bold uppercase">USDT Charged to institutional users for account creation.</FormDescription>
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </div>
+
                                                     <div className="grid md:grid-cols-2 gap-6">
-                                                         <div className="space-y-4 border p-4 rounded-lg bg-muted/20">
-                                                            <h4 className="font-black text-[10px] uppercase tracking-widest text-primary mb-4">Acquisition Rates (INR)</h4>
+                                                         <div className="space-y-4 border p-6 rounded-2xl bg-muted/20">
+                                                            <h4 className="font-black text-[10px] uppercase tracking-widest text-primary mb-4 flex items-center gap-2"><TrendingUp className="h-3 w-3" /> Acquisition Rates</h4>
                                                             {PAYMENT_METHODS_BUY.map(method => (
-                                                                <FormField key={`buy-${method}`} control={form.control} name={`buyRates.${method}`} render={({ field }) => (<FormItem><FormLabel className="text-xs">{method}</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>)}/>
+                                                                <FormField key={`buy-${method}`} control={form.control} name={`buyRates.${method}`} render={({ field }) => (<FormItem><FormLabel className="text-[10px] font-bold uppercase text-muted-foreground">{method}</FormLabel><FormControl><Input type="number" step="0.01" className="font-bold" {...field} /></FormControl></FormItem>)}/>
                                                             ))}
                                                          </div>
-                                                         <div className="space-y-4 border p-4 rounded-lg bg-muted/20">
-                                                            <h4 className="font-black text-[10px] uppercase tracking-widest text-destructive mb-4">Liquidation Rates (INR)</h4>
+                                                         <div className="space-y-4 border p-6 rounded-2xl bg-muted/20">
+                                                            <h4 className="font-black text-[10px] uppercase tracking-widest text-destructive mb-4 flex items-center gap-2"><TrendingDown className="h-3 w-3" /> Liquidation Rates</h4>
                                                             {PAYMENT_METHODS_SELL.map(method => (
-                                                                <FormField key={`sell-${method}`} control={form.control} name={`sellRates.${method}`} render={({ field }) => (<FormItem><FormLabel className="text-xs">{method}</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>)}/>
+                                                                <FormField key={`sell-${method}`} control={form.control} name={`sellRates.${method}`} render={({ field }) => (<FormItem><FormLabel className="text-[10px] font-bold uppercase text-muted-foreground">{method}</FormLabel><FormControl><Input type="number" step="0.01" className="font-bold" {...field} /></FormControl></FormItem>)}/>
                                                             ))}
                                                          </div>
                                                     </div>
-                                                    <Button className="w-full" onClick={() => handleSave('rates')}>Deploy Rates</Button>
+                                                    <Button className="w-full h-14 font-black uppercase tracking-widest text-lg shadow-xl shadow-primary/20" onClick={() => handleSave('rates')}>Deploy Protocols</Button>
                                                 </AccordionContent>
                                             </AccordionItem>
                                         </Accordion>
                                     </CardContent>
                                 </Card>
 
-                                <Card className="border-2 border-primary/20">
+                                <Card className="border-2 border-primary/20 bg-muted/5">
                                     <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">Security Control</CardTitle>
-                                        <CardDescription>Institutional registration protocols.</CardDescription>
+                                        <CardTitle className="flex items-center gap-2 uppercase tracking-tight">Security Gateway</CardTitle>
+                                        <CardDescription className="font-medium">Manage institutional accessibility protocols.</CardDescription>
                                     </CardHeader>
                                     <CardContent>
                                         <FormField
                                             control={form.control}
                                             name="allowPublicSignup"
                                             render={({ field }) => (
-                                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm bg-muted/5">
-                                                    <div className="space-y-0.5">
-                                                        <FormLabel className="text-base font-black uppercase">Public Registration</FormLabel>
-                                                        <CardDescription>Enable guest users to create accounts without manual provisioning.</CardDescription>
+                                                <FormItem className="flex flex-row items-center justify-between rounded-2xl border-2 p-6 shadow-sm bg-background">
+                                                    <div className="space-y-1">
+                                                        <FormLabel className="text-lg font-black uppercase tracking-tight">Public Enrollment</FormLabel>
+                                                        <p className="text-xs text-muted-foreground font-medium">Allow non-provisioned guests to register autonomously.</p>
                                                     </div>
                                                     <FormControl>
                                                         <Switch
@@ -259,30 +279,30 @@ export default function AdminDashboardPage() {
                             </div>
 
                             <div className="space-y-8">
-                                <Card>
-                                    <CardHeader><CardTitle>Settlement Methods</CardTitle></CardHeader>
+                                <Card className="border-2">
+                                    <CardHeader><CardTitle className="text-xl font-black uppercase">Settlement Nodes</CardTitle></CardHeader>
                                     <CardContent>
                                         <Accordion type="multiple" className="w-full space-y-4">
-                                            <AccordionItem value="bank">
-                                                <AccordionTrigger>Institutional Bank</AccordionTrigger>
-                                                <AccordionContent className="space-y-4">
-                                                    <FormField control={form.control} name="bankDetails.holderName" render={({ field }) => (<FormItem><FormLabel>Account Holder</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)}/>
-                                                    <FormField control={form.control} name="bankDetails.bankName" render={({ field }) => (<FormItem><FormLabel>Bank Identity</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)}/>
-                                                    <FormField control={form.control} name="bankDetails.accountNumber" render={({ field }) => (<FormItem><FormLabel>Account Protocol</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)}/>
-                                                    <FormField control={form.control} name="bankDetails.ifsc" render={({ field }) => (<FormItem><FormLabel>IFSC Routing</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)}/>
-                                                    <Button className="w-full" onClick={() => handleSave('bank')}>Update Bank</Button>
+                                            <AccordionItem value="bank" className="border-2 rounded-xl px-4 overflow-hidden bg-muted/5">
+                                                <AccordionTrigger className="font-bold uppercase text-xs">Institutional Bank</AccordionTrigger>
+                                                <AccordionContent className="space-y-4 pb-4">
+                                                    <FormField control={form.control} name="bankDetails.holderName" render={({ field }) => (<FormItem><FormLabel className="text-[10px] font-bold">Account Holder</FormLabel><FormControl><Input className="h-10 text-xs" {...field} /></FormControl></FormItem>)}/>
+                                                    <FormField control={form.control} name="bankDetails.bankName" render={({ field }) => (<FormItem><FormLabel className="text-[10px] font-bold">Bank Identity</FormLabel><FormControl><Input className="h-10 text-xs" {...field} /></FormControl></FormItem>)}/>
+                                                    <FormField control={form.control} name="bankDetails.accountNumber" render={({ field }) => (<FormItem><FormLabel className="text-[10px] font-bold">Account Protocol</FormLabel><FormControl><Input className="h-10 text-xs" {...field} /></FormControl></FormItem>)}/>
+                                                    <FormField control={form.control} name="bankDetails.ifsc" render={({ field }) => (<FormItem><FormLabel className="text-[10px] font-bold">IFSC Routing</FormLabel><FormControl><Input className="h-10 text-xs" {...field} /></FormControl></FormItem>)}/>
+                                                    <Button className="w-full font-bold uppercase text-[10px] h-10" onClick={() => handleSave('bank')}>Update Node</Button>
                                                 </AccordionContent>
                                             </AccordionItem>
-                                            <AccordionItem value="upi">
-                                                <AccordionTrigger>UPI Gateway</AccordionTrigger>
-                                                <AccordionContent className="space-y-4">
-                                                    <FormField control={form.control} name="upiId" render={({ field }) => (<FormItem><FormLabel>Merchant UPI ID</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)}/>
-                                                    <div className="flex justify-center p-2 border rounded-md bg-white">
+                                            <AccordionItem value="upi" className="border-2 rounded-xl px-4 overflow-hidden bg-muted/5">
+                                                <AccordionTrigger className="font-bold uppercase text-xs">UPI Clearing Hub</AccordionTrigger>
+                                                <AccordionContent className="space-y-4 pb-4">
+                                                    <FormField control={form.control} name="upiId" render={({ field }) => (<FormItem><FormLabel className="text-[10px] font-bold">Terminal VPA</FormLabel><FormControl><Input className="h-10 text-xs" {...field} /></FormControl></FormItem>)}/>
+                                                    <div className="flex justify-center p-4 border-2 border-dashed rounded-xl bg-white">
                                                         {watchedValues.qrCodeUrl && <Image src={watchedValues.qrCodeUrl} alt="UPI QR" width={128} height={128} />}
                                                     </div>
                                                     <Input id="upi-qr-upload" type="file" className='hidden' accept="image/png, image/jpeg" onChange={(e) => handleFileChange(e, 'qrCodeUrl')} />
-                                                    <Label htmlFor='upi-qr-upload'><Button asChild variant="outline" className="w-full cursor-pointer"><div>Upload QR Path</div></Button></Label>
-                                                    <Button className="w-full" onClick={() => handleSave('upi')}>Update UPI</Button>
+                                                    <Label htmlFor='upi-qr-upload'><Button asChild variant="outline" className="w-full h-10 cursor-pointer font-bold text-[10px]"><div>Update Terminal QR</div></Button></Label>
+                                                    <Button className="w-full font-bold uppercase text-[10px] h-10" onClick={() => handleSave('upi')}>Update UPI</Button>
                                                 </AccordionContent>
                                             </AccordionItem>
                                         </Accordion>
