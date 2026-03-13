@@ -34,7 +34,8 @@ import {
     Filter,
     UserPlus,
     KeyRound,
-    ShieldQuestion
+    ShieldQuestion,
+    ClipboardPen
 } from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,7 @@ export function AdminDataView() {
     const [searchQuery, setSearchQuery] = useState("");
     const [approvedAmount, setApprovedAmount] = useState<string>("");
     const [balanceAdjustment, setBalanceAdjustment] = useState<string>("");
+    const [adminRemark, setAdminRemark] = useState("");
     
     // New User Form State
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -229,13 +231,15 @@ export function AdminDataView() {
     const handleUserAction = async (userId: string, action: 'status' | 'balance', value: any) => {
         if (!firestore) return;
         setActionLoading(userId);
+        const remarkSuffix = adminRemark.trim() ? ` Reason: ${adminRemark.trim()}` : "";
+        
         try {
             const userRef = doc(firestore, 'users', userId);
             if (action === 'status') {
                 await updateDoc(userRef, { status: value });
                 const statusLabel = value === 'on_hold' ? 'On Hold' : value === 'active' ? 'Active' : 'Banned';
                 const statusType = value === 'banned' ? 'error' : value === 'on_hold' ? 'warning' : 'success';
-                await createNotification(userId, 'Security Status Updated', `Your account status is now ${statusLabel}.`, statusType);
+                await createNotification(userId, 'Security Status Updated', `Your account status is now ${statusLabel}.${remarkSuffix}`, statusType);
                 toast({ title: 'Status Updated', description: `User is now ${value}.` });
             } else if (action === 'balance') {
                 const amount = parseFloat(balanceAdjustment);
@@ -245,12 +249,13 @@ export function AdminDataView() {
                 await createNotification(
                     userId, 
                     value === 'add' ? 'Balance Adjusted (Credit)' : 'Balance Adjusted (Debit)', 
-                    `${amount.toLocaleString()} USDT has been ${value === 'add' ? 'credited to' : 'debited from'} your clearing account.`,
+                    `${amount.toLocaleString()} USDT has been ${value === 'add' ? 'credited to' : 'debited from'} your clearing account.${remarkSuffix}`,
                     value === 'add' ? 'success' : 'info'
                 );
                 toast({ title: 'Balance Updated', description: `Balance ${value === 'add' ? 'increased' : 'decreased'} by ${amount} USDT.` });
                 setBalanceAdjustment("");
             }
+            setAdminRemark(""); // Clear remark after success
         } catch (error: any) {
             console.error(error);
             toast({ variant: 'destructive', title: 'Action Failed', description: error.message || 'Could not perform action.' });
@@ -660,7 +665,12 @@ export function AdminDataView() {
                                             </TableCell>
                                             <TableCell className="font-black text-primary text-xs">{(u.balance || 0).toLocaleString()} <span className="text-[8px]">USDT</span></TableCell>
                                             <TableCell className="text-right">
-                                                <Dialog onOpenChange={(open) => !open && setBalanceAdjustment("")}>
+                                                <Dialog onOpenChange={(open) => {
+                                                    if (!open) {
+                                                        setBalanceAdjustment("");
+                                                        setAdminRemark("");
+                                                    }
+                                                }}>
                                                     <DialogTrigger asChild><Button variant="outline" size="sm" className="h-8 w-8 p-0"><UserIcon className="h-4 w-4" /></Button></DialogTrigger>
                                                     <DialogContent className="max-w-2xl mx-4">
                                                         <DialogHeader>
@@ -741,8 +751,21 @@ export function AdminDataView() {
                                                             </TabsContent>
                                                             
                                                             <TabsContent value="controls" className="space-y-6 py-4">
+                                                                <div className="p-4 border-2 border-primary/20 rounded-xl bg-primary/5 space-y-3">
+                                                                    <Label className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                                                                        <ClipboardPen className="h-3 w-3" /> Institutional Protocol Remark
+                                                                    </Label>
+                                                                    <Input 
+                                                                        placeholder="Reason for change (Remark for user)" 
+                                                                        className="h-10 text-xs border-primary/30"
+                                                                        value={adminRemark}
+                                                                        onChange={(e) => setAdminRemark(e.target.value)}
+                                                                    />
+                                                                    <p className="text-[8px] text-muted-foreground italic">This remark will be visible to the user in their activity log.</p>
+                                                                </div>
+
                                                                 <div className="space-y-4 p-4 border-2 border-dashed rounded-xl bg-muted/10">
-                                                                    <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Balance Adjustment</Label>
+                                                                    <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Balance Adjustment Terminal</Label>
                                                                     <div className="flex gap-2">
                                                                         <div className="relative flex-grow">
                                                                             <Input 
@@ -754,14 +777,13 @@ export function AdminDataView() {
                                                                             />
                                                                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold opacity-40">USDT</span>
                                                                         </div>
-                                                                        <Button size="icon" variant="outline" onClick={() => handleUserAction(u.id, 'balance', 'add')} disabled={actionLoading === u.id || !balanceAdjustment}><Plus className="h-4 w-4 text-green-600" /></Button>
-                                                                        <Button size="icon" variant="outline" onClick={() => handleUserAction(u.id, 'balance', 'subtract')} disabled={actionLoading === u.id || !balanceAdjustment}><Minus className="h-4 w-4 text-destructive" /></Button>
+                                                                        <Button size="icon" variant="outline" onClick={() => handleUserAction(u.id, 'balance', 'add')} disabled={actionLoading === u.id || !balanceAdjustment} title="Credit Account"><Plus className="h-4 w-4 text-green-600" /></Button>
+                                                                        <Button size="icon" variant="outline" onClick={() => handleUserAction(u.id, 'balance', 'subtract')} disabled={actionLoading === u.id || !balanceAdjustment} title="Debit Account"><Minus className="h-4 w-4 text-destructive" /></Button>
                                                                     </div>
-                                                                    <p className="text-[8px] text-muted-foreground">Adjust user balance manually for corrections or offline operations.</p>
                                                                 </div>
                                                                 
                                                                 <div className="space-y-4 p-4 border-2 border-dashed rounded-xl bg-muted/10">
-                                                                    <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Account Status Terminal</Label>
+                                                                    <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Account Status Protocol</Label>
                                                                     <div className="grid grid-cols-3 gap-2">
                                                                         <Button 
                                                                             variant={u.status === 'active' || !u.status ? 'default' : 'outline'} 
@@ -788,16 +810,12 @@ export function AdminDataView() {
                                                                             <ShieldAlert className="h-3 w-3" /> BAN
                                                                         </Button>
                                                                     </div>
-                                                                    <ul className="text-[8px] space-y-1 text-muted-foreground">
-                                                                        <li className="flex items-center gap-1"><span className="h-1 w-1 rounded-full bg-primary" /> Banned users are disconnected immediately.</li>
-                                                                        <li className="flex items-center gap-1"><span className="h-1 w-1 rounded-full bg-primary" /> Hold users can login but cannot perform trades.</li>
-                                                                    </ul>
                                                                 </div>
                                                             </TabsContent>
                                                         </Tabs>
                                                         
                                                         <DialogFooter className="mt-2">
-                                                            <Button variant="outline" className="w-full h-10 font-bold text-xs" onClick={() => toast({ title: "Audit complete" })}>Close Profile</Button>
+                                                            <Button variant="outline" className="w-full h-10 font-bold text-xs" onClick={() => toast({ title: "Audit complete" })}>Close Terminal</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
