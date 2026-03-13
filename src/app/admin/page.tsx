@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -5,13 +6,13 @@ import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
 /**
- * Institutional redirect terminal for the /admin path.
+ * Standard Institutional Entry Point.
  */
 export default function AdminRootRedirect() {
     const router = useRouter();
 
     useEffect(() => {
-        router.replace('/adminpower/dashboard');
+        router.replace('/admin/dashboard');
     }, [router]);
 
     return (
