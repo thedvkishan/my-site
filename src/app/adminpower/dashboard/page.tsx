@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { FileUp, Loader2, Coins, TrendingUp, TrendingDown } from 'lucide-react';
+import { FileUp, Loader2, Coins, TrendingUp, TrendingDown, Send, ArrowDownCircle, Network } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { settingsSchema, type SettingsFormValues } from '@/lib/schemas';
 import { Label } from '@/components/ui/label';
@@ -19,10 +20,11 @@ import { AdminDataView } from '@/components/admin/AdminDataView';
 import { TetherIcon } from '@/components/icons/TetherIcon';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { MOCK_SETTINGS, PAYMENT_METHODS_BUY, PAYMENT_METHODS_SELL } from '@/lib/constants';
+import { MOCK_SETTINGS, PAYMENT_METHODS_BUY, PAYMENT_METHODS_SELL, NETWORKS } from '@/lib/constants';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 
 export type Settings = SettingsFormValues;
 
@@ -86,13 +88,13 @@ export default function AdminDashboardPage() {
         router.push('/adminpower/login');
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof SettingsFormValues | `depositDetails.${'BEP20'|'TRC20'|'ERC20'}.qrCodeUrl`) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: any) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (loadEvent) => {
                 const dataUrl = loadEvent.target?.result as string;
-                form.setValue(fieldName as any, dataUrl, { shouldDirty: true });
+                form.setValue(fieldName, dataUrl, { shouldDirty: true });
             };
             reader.readAsDataURL(file);
         }
@@ -133,7 +135,7 @@ export default function AdminDashboardPage() {
                 break;
             case 'deposit':
                 newSettings = { depositDetails: values.depositDetails };
-                description = 'Deposit details updated.';
+                description = 'Deposit network details updated.';
                 break;
             case 'security':
                 newSettings = { allowPublicSignup: values.allowPublicSignup };
@@ -302,6 +304,54 @@ export default function AdminDashboardPage() {
                                                     <Input id="upi-qr-upload" type="file" className='hidden' accept="image/png, image/jpeg" onChange={(e) => handleFileChange(e, 'qrCodeUrl')} />
                                                     <Label htmlFor='upi-qr-upload'><Button asChild variant="outline" className="w-full h-10 cursor-pointer font-bold text-[10px]"><div>Update Terminal QR</div></Button></Label>
                                                     <Button className="w-full font-bold uppercase text-[10px] h-10" onClick={() => handleSave('upi')}>Update UPI</Button>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                            <AccordionItem value="usdt" className="border-2 rounded-xl px-4 overflow-hidden bg-primary/5">
+                                                <AccordionTrigger className="font-bold uppercase text-xs flex items-center gap-2">
+                                                    <TetherIcon className="h-4 w-4" /> USDT Settlement Hub
+                                                </AccordionTrigger>
+                                                <AccordionContent className="space-y-8 pb-6">
+                                                    {NETWORKS.map((net) => (
+                                                        <div key={net} className="p-4 border rounded-xl bg-white space-y-4">
+                                                            <div className="flex items-center justify-between">
+                                                                <Badge className="font-black text-[10px] tracking-widest">{net} Protocol</Badge>
+                                                                <Network className="h-4 w-4 text-primary" />
+                                                            </div>
+                                                            <FormField 
+                                                                control={form.control} 
+                                                                name={`depositDetails.${net}.address` as any} 
+                                                                render={({ field }) => (
+                                                                    <FormItem>
+                                                                        <FormLabel className="text-[9px] font-bold uppercase text-muted-foreground">Settlement Address</FormLabel>
+                                                                        <FormControl><Input className="font-mono text-[10px] h-10" {...field} /></FormControl>
+                                                                    </FormItem>
+                                                                )}
+                                                            />
+                                                            <div className="space-y-2">
+                                                                <Label className="text-[9px] font-bold uppercase text-muted-foreground">Network QR Code</Label>
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className="relative h-20 w-20 border-2 border-dashed rounded-lg bg-muted/30 flex items-center justify-center overflow-hidden">
+                                                                        {(watchedValues.depositDetails as any)?.[net]?.qrCodeUrl ? (
+                                                                            <Image src={(watchedValues.depositDetails as any)[net].qrCodeUrl} alt={`${net} QR`} fill style={{objectFit: 'contain'}} />
+                                                                        ) : (
+                                                                            <ArrowDownCircle className="h-6 w-6 text-muted-foreground opacity-20" />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <Input id={`qr-${net}`} type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, `depositDetails.${net}.qrCodeUrl` as any)} />
+                                                                        <Label htmlFor={`qr-${net}`}>
+                                                                            <Button asChild variant="outline" size="sm" className="w-full text-[10px] h-10 cursor-pointer font-bold">
+                                                                                <div><FileUp className="h-3 w-3 mr-2" /> Upload QR</div>
+                                                                            </Button>
+                                                                        </Label>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    <Button className="w-full font-black uppercase tracking-widest h-12 shadow-lg shadow-primary/10" onClick={() => handleSave('deposit')}>
+                                                        <Send className="h-4 w-4 mr-2" /> Deploy Settlement Nodes
+                                                    </Button>
                                                 </AccordionContent>
                                             </AccordionItem>
                                         </Accordion>

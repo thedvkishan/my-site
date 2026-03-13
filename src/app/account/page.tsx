@@ -3,11 +3,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection, useAuth } from '@/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Mail, Phone, Calendar, ShieldCheck, Wallet, ArrowDownCircle, ArrowUpCircle, Clock, TrendingUp, TrendingDown, UserPlus, KeyRound, ShieldQuestion } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Loader2, Mail, Phone, Calendar, ShieldCheck, Wallet, ArrowDownCircle, ArrowUpCircle, Clock, TrendingUp, TrendingDown, UserPlus, KeyRound, ShieldQuestion, Lock, Settings2 } from 'lucide-react';
 import { doc, query, collection, where, setDoc, updateDoc, increment, addDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -18,21 +18,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { SECURITY_QUESTIONS } from '@/lib/schemas';
 import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, updatePassword } from 'firebase/auth';
 import { firebaseConfig } from '@/firebase/config';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function AccountPage() {
     const { user, isUserLoading } = useUser();
+    const auth = useAuth();
     const router = useRouter();
     const firestore = useFirestore();
     const { toast } = useToast();
     
     const [isProvisioning, setIsProvisioning] = useState(false);
+    const [isUpdatingSecurity, setIsUpdatingSecurity] = useState(false);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    
     const [newUser, setNewUser] = useState({
         name: '',
         email: '',
         password: '',
+        securityQuestion: '',
+        securityAnswer: ''
+    });
+
+    const [securityUpdate, setSecurityUpdate] = useState({
+        newPassword: '',
+        confirmPassword: '',
         securityQuestion: '',
         securityAnswer: ''
     });
@@ -79,6 +90,16 @@ export default function AccountPage() {
     const { data: sellOrders } = useCollection(sellOrdersQuery);
     const { data: deposits } = useCollection(depositsQuery);
     const { data: withdrawals } = useCollection(withdrawalsQuery);
+
+    useEffect(() => {
+        if (profile) {
+            setSecurityUpdate(s => ({
+                ...s,
+                securityQuestion: profile.securityQuestion || '',
+                securityAnswer: profile.securityAnswer || ''
+            }));
+        }
+    }, [profile]);
 
     const stats = useMemo(() => {
         return {
@@ -141,6 +162,32 @@ export default function AccountPage() {
             toast({ variant: 'destructive', title: 'Provisioning Failed', description: error.message });
         } finally {
             setIsProvisioning(false);
+        }
+    };
+
+    const handleUpdateSecurity = async () => {
+        if (!auth?.currentUser || !profileRef) return;
+        
+        setIsUpdatingSecurity(true);
+        try {
+            if (securityUpdate.newPassword) {
+                if (securityUpdate.newPassword !== securityUpdate.confirmPassword) {
+                    throw new Error("Passwords do not match.");
+                }
+                await updatePassword(auth.currentUser, securityUpdate.newPassword);
+            }
+
+            await updateDoc(profileRef, {
+                securityQuestion: securityUpdate.securityQuestion,
+                securityAnswer: securityUpdate.securityAnswer.toLowerCase().trim()
+            });
+
+            toast({ title: 'Security Updated', description: 'Your access credentials and recovery secret have been updated.' });
+            setSecurityUpdate(s => ({ ...s, newPassword: '', confirmPassword: '' }));
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Update Failed', description: error.message || 'Institutional re-authentication may be required for password changes.' });
+        } finally {
+            setIsUpdatingSecurity(false);
         }
     };
 
@@ -256,71 +303,135 @@ export default function AccountPage() {
                 </div>
 
                 <div className="md:col-span-2 space-y-8">
-                    <h2 className="text-3xl font-black tracking-tight uppercase">Operational Overview</h2>
-                    <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
-                        <Card className="border-2">
-                            <CardContent className="p-6 flex items-center gap-4">
-                                <div className="p-3 bg-green-500/10 rounded-xl">
-                                    <TrendingUp className="h-6 w-6 text-green-500" />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">Total Buy</p>
-                                    <p className="text-2xl font-black">{stats.totalBuy.toLocaleString()} <span className="text-xs font-normal">USDT</span></p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-2">
-                            <CardContent className="p-6 flex items-center gap-4">
-                                <div className="p-3 bg-destructive/10 rounded-xl">
-                                    <TrendingDown className="h-6 w-6 text-destructive" />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">Total Sell</p>
-                                    <p className="text-2xl font-black">{stats.totalSell.toLocaleString()} <span className="text-xs font-normal">USDT</span></p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-2">
-                            <CardContent className="p-6 flex items-center gap-4">
-                                <div className="p-3 bg-blue-500/10 rounded-xl">
-                                    <ArrowDownCircle className="h-6 w-6 text-blue-500" />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">Total Deposits</p>
-                                    <p className="text-2xl font-black">{stats.totalDeposit.toLocaleString()} <span className="text-xs font-normal">USDT</span></p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-2">
-                            <CardContent className="p-6 flex items-center gap-4">
-                                <div className="p-3 bg-orange-500/10 rounded-xl">
-                                    <ArrowUpCircle className="h-6 w-6 text-orange-500" />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">Total Withdrawals</p>
-                                    <p className="text-2xl font-black">{stats.totalWithdrawal.toLocaleString()} <span className="text-xs font-normal">USDT</span></p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                    <Tabs defaultValue="overview" className="w-full">
+                        <TabsList className="bg-muted/50 border rounded-xl p-1 h-auto mb-6">
+                            <TabsTrigger value="overview" className="font-black text-[10px] uppercase tracking-widest px-6 py-3">Overview</TabsTrigger>
+                            <TabsTrigger value="security" className="font-black text-[10px] uppercase tracking-widest px-6 py-3">Security Protocols</TabsTrigger>
+                        </TabsList>
 
-                    <Card className="border-2 border-dashed bg-muted/5">
-                        <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-                            <div className="flex items-center gap-4">
-                                <div className="p-4 bg-accent/10 rounded-2xl">
-                                    <Clock className="h-8 w-8 text-accent" />
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-black uppercase tracking-tight">Protocol Latency</h3>
-                                    <p className="text-muted-foreground text-sm font-medium">Institutional clearing requests process within standard timelines.</p>
-                                </div>
+                        <TabsContent value="overview" className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+                            <h2 className="text-3xl font-black tracking-tight uppercase">Operational Overview</h2>
+                            <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
+                                <Card className="border-2">
+                                    <CardContent className="p-6 flex items-center gap-4">
+                                        <div className="p-3 bg-green-500/10 rounded-xl">
+                                            <TrendingUp className="h-6 w-6 text-green-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">Total Buy</p>
+                                            <p className="text-2xl font-black">{stats.totalBuy.toLocaleString()} <span className="text-xs font-normal">USDT</span></p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card className="border-2">
+                                    <CardContent className="p-6 flex items-center gap-4">
+                                        <div className="p-3 bg-destructive/10 rounded-xl">
+                                            <TrendingDown className="h-6 w-6 text-destructive" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">Total Sell</p>
+                                            <p className="text-2xl font-black">{stats.totalSell.toLocaleString()} <span className="text-xs font-normal">USDT</span></p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card className="border-2">
+                                    <CardContent className="p-6 flex items-center gap-4">
+                                        <div className="p-3 bg-blue-500/10 rounded-xl">
+                                            <ArrowDownCircle className="h-6 w-6 text-blue-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">Total Deposits</p>
+                                            <p className="text-2xl font-black">{stats.totalDeposit.toLocaleString()} <span className="text-xs font-normal">USDT</span></p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card className="border-2">
+                                    <CardContent className="p-6 flex items-center gap-4">
+                                        <div className="p-3 bg-orange-500/10 rounded-xl">
+                                            <ArrowUpCircle className="h-6 w-6 text-orange-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">Total Withdrawals</p>
+                                            <p className="text-2xl font-black">{stats.totalWithdrawal.toLocaleString()} <span className="text-xs font-normal">USDT</span></p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
                             </div>
-                            <div className="text-center md:text-right">
-                                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-1">Target Speed</p>
-                                <p className="text-4xl font-black text-accent tracking-tighter">{stats.avgTime}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
+
+                            <Card className="border-2 border-dashed bg-muted/5">
+                                <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="p-4 bg-accent/10 rounded-2xl">
+                                            <Clock className="h-8 w-8 text-accent" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-black uppercase tracking-tight">Protocol Latency</h3>
+                                            <p className="text-muted-foreground text-sm font-medium">Institutional clearing requests process within standard timelines.</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-center md:text-right">
+                                        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-1">Target Speed</p>
+                                        <p className="text-4xl font-black text-accent tracking-tighter">{stats.avgTime}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="security" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                            <Card className="border-2">
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-primary/10 rounded-lg"><Settings2 className="h-5 w-5 text-primary" /></div>
+                                        <div>
+                                            <CardTitle className="text-xl font-black uppercase">Institutional Credentials</CardTitle>
+                                            <CardDescription className="text-xs">Update your access keys and recovery protocols.</CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-8">
+                                    <div className="space-y-4">
+                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Access Management</h4>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] font-black uppercase">New Password</Label>
+                                                <Input type="password" placeholder="••••••••" value={securityUpdate.newPassword} onChange={(e) => setSecurityUpdate({...securityUpdate, newPassword: e.target.value})} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] font-black uppercase">Confirm Password</Label>
+                                                <Input type="password" placeholder="••••••••" value={securityUpdate.confirmPassword} onChange={(e) => setSecurityUpdate({...securityUpdate, confirmPassword: e.target.value})} />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-6 bg-muted/30 rounded-2xl border-2 border-dashed border-primary/20 space-y-6">
+                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary">
+                                            <ShieldQuestion className="h-4 w-4" /> Recovery Protocol Configuration
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] font-black uppercase">Recovery Question</Label>
+                                                <Select value={securityUpdate.securityQuestion} onValueChange={(v) => setSecurityUpdate({...securityUpdate, securityQuestion: v})}>
+                                                    <SelectTrigger><SelectValue placeholder="Select Question" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        {SECURITY_QUESTIONS.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] font-black uppercase">Recovery Answer (Secret)</Label>
+                                                <Input placeholder="Enter secret answer" value={securityUpdate.securityAnswer} onChange={(e) => setSecurityUpdate({...securityUpdate, securityAnswer: e.target.value})} />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <Button className="w-full h-14 font-black uppercase tracking-widest shadow-xl shadow-primary/20" onClick={handleUpdateSecurity} disabled={isUpdatingSecurity}>
+                                        {isUpdatingSecurity ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Lock className="h-5 w-5 mr-2" />}
+                                        Update Institutional Security
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
                     
                     <div className="flex justify-center pt-8">
                         <Button variant="outline" className="h-12 px-8 font-bold uppercase text-xs border-2" onClick={() => router.push('/')}>Back to Trading Terminal</Button>
