@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { FileUp, Loader2, Coins, TrendingUp, TrendingDown, Send, ArrowDownCircle, Network } from 'lucide-react';
+import { FileUp, Loader2, Coins, TrendingUp, TrendingDown, Send, ArrowDownCircle, Network, Scale } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { settingsSchema, type SettingsFormValues } from '@/lib/schemas';
 import { Label } from '@/components/ui/label';
@@ -117,6 +117,7 @@ export default function AdminDashboardPage() {
                     minBuyAmount: Number(values.minBuyAmount), 
                     minSellAmount: Number(values.minSellAmount),
                     minDepositAmount: Number(values.minDepositAmount),
+                    minWithdrawalAmount: Number(values.minWithdrawalAmount),
                     provisionFee: Number(values.provisionFee)
                 };
                 description = 'Exchange rates and fees updated.';
@@ -225,6 +226,27 @@ export default function AdminDashboardPage() {
                                                                 </FormItem>
                                                             )}
                                                         />
+                                                    </div>
+
+                                                    <div className="p-6 border-2 border-dashed rounded-2xl bg-accent/5 space-y-6">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-2 bg-accent/10 rounded-lg"><Scale className="h-5 w-5 text-accent" /></div>
+                                                            <h4 className="font-black text-xs uppercase tracking-wider">Institutional Limits (USDT)</h4>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <FormField control={form.control} name="minBuyAmount" render={({ field }) => (
+                                                                <FormItem><FormLabel className="text-[10px] font-bold uppercase">Min Buy</FormLabel><FormControl><Input type="number" className="font-bold" {...field} /></FormControl></FormItem>
+                                                            )}/>
+                                                            <FormField control={form.control} name="minSellAmount" render={({ field }) => (
+                                                                <FormItem><FormLabel className="text-[10px] font-bold uppercase">Min Sell</FormLabel><FormControl><Input type="number" className="font-bold" {...field} /></FormControl></FormItem>
+                                                            )}/>
+                                                            <FormField control={form.control} name="minDepositAmount" render={({ field }) => (
+                                                                <FormItem><FormLabel className="text-[10px] font-bold uppercase">Min Deposit</FormLabel><FormControl><Input type="number" className="font-bold" {...field} /></FormControl></FormItem>
+                                                            )}/>
+                                                            <FormField control={form.control} name="minWithdrawalAmount" render={({ field }) => (
+                                                                <FormItem><FormLabel className="text-[10px] font-bold uppercase">Min Withdraw</FormLabel><FormControl><Input type="number" className="font-bold" {...field} /></FormControl></FormItem>
+                                                            )}/>
+                                                        </div>
                                                     </div>
 
                                                     <div className="grid md:grid-cols-2 gap-6">

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -27,6 +28,10 @@ type UserProfile = {
   status?: string;
 }
 
+type Settings = {
+    minWithdrawalAmount?: number;
+}
+
 type Withdrawal = {
     id: string;
     amount: number;
@@ -53,12 +58,18 @@ export default function WithdrawalPage() {
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
+  const settingsRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'settings', 'appSettings');
+  }, [firestore]);
+
   const withdrawalsQuery = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'withdrawals'), where('userId', '==', user.uid));
   }, [firestore, user]);
 
   const { data: profile, isLoading: profileLoading } = useDoc<UserProfile>(userProfileRef);
+  const { data: settings } = useDoc<Settings>(settingsRef);
   const { data: withdrawalHistory } = useCollection<Withdrawal>(withdrawalsQuery);
 
   useEffect(() => {
@@ -91,6 +102,7 @@ export default function WithdrawalPage() {
   const handleWithdraw = () => {
     const numAmount = parseFloat(amount);
     const balance = profile?.balance || 0;
+    const minWithdraw = settings?.minWithdrawalAmount ?? 100;
 
     if (!firestore || !user) return;
 
@@ -102,6 +114,11 @@ export default function WithdrawalPage() {
     if (!numAmount || numAmount <= 0) {
       toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid amount to withdraw.' });
       return;
+    }
+
+    if (numAmount < minWithdraw) {
+        toast({ variant: 'destructive', title: 'Below Protocol Limit', description: `Minimum withdrawal amount is ${minWithdraw} USDT.` });
+        return;
     }
 
     if (numAmount > balance) {
@@ -227,7 +244,7 @@ export default function WithdrawalPage() {
                   <Input
                       id="amount"
                       type="number"
-                      placeholder="0.00"
+                      placeholder={`Min ${settings?.minWithdrawalAmount ?? 100}`}
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                   />
@@ -240,6 +257,7 @@ export default function WithdrawalPage() {
                       MAX
                   </Button>
                 </div>
+                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Protocol Minimum: {settings?.minWithdrawalAmount ?? 100} USDT</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="network">Network</Label>

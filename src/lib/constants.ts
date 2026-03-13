@@ -74,6 +74,7 @@ export const MOCK_SETTINGS = {
   minBuyAmount: 100,
   minSellAmount: 100,
   minDepositAmount: 100,
+  minWithdrawalAmount: 100,
   bankDetails: MOCK_BANK_DETAILS,
   upiId: MOCK_UPI_ID,
   qrCodeUrl: MOCK_QR_CODE_URL,

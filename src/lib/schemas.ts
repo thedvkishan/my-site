@@ -74,6 +74,7 @@ export const settingsSchema = z.object({
   minBuyAmount: z.coerce.number().positive('Minimum buy amount must be a positive number.'),
   minSellAmount: z.coerce.number().positive('Minimum sell amount must be a positive number.'),
   minDepositAmount: z.coerce.number().positive('Minimum deposit amount must be a positive number.'),
+  minWithdrawalAmount: z.coerce.number().positive('Minimum withdrawal amount must be a positive number.'),
   bankDetails: z.object({
     holderName: z.string().min(1, 'Holder name is required.'),
     bankName: z.string().min(1, 'Bank name is required.'),
