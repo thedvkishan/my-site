@@ -2,12 +2,11 @@
 
 This document outlines the roles of the various technologies integrated into the platform.
 
-## 1. Firebase App Hosting
-**Role: Managed Runtime Environment**
-- **Next.js Support**: Provides the server context required for Next.js 15 App Router, including Server Components and Server Actions.
-- **SSR (Server-Side Rendering)**: Enables the server to pre-render pages, improving SEO and initial performance.
-- **Deployment Pipeline**: Automates the build and release process from source control.
-- **Security**: Handles SSL certificates and provides a secure environment for server-side logic (e.g., Genkit AI calls).
+## 1. Firebase Hosting (Standard/Free Tier)
+**Role: Static Content Delivery**
+- **Static Site Generation (SSG)**: The application is built as a static Single Page Application (SPA) using `output: 'export'`.
+- **Global CDN**: Content is cached at the edge for low-latency access globally.
+- **Zero Server Overhead**: By eliminating Server-Side Rendering (SSR), the app runs entirely in the client's browser, maximizing efficiency and eliminating the need for paid App Hosting runtimes.
 
 ## 2. Firebase Firestore
 **Role: Real-time Institutional Ledger**
@@ -18,14 +17,13 @@ This document outlines the roles of the various technologies integrated into the
 ## 3. Firebase Authentication
 **Role: Identity & Access Management**
 - **Secure Access**: Manages login protocols for both institutional clients and administrators.
-- **Peer Provisioning**: Enables the "Sub-Account" feature where existing users can provision new members using an isolated auth protocol.
+- **Peer Provisioning**: Enables the "Sub-Account" feature where existing users can provision new members using an isolated client-side auth protocol.
 
-## 4. Next.js 15 (App Router)
-**Role: Full-stack Application Framework**
-- **Client/Server Boundary**: Separates high-performance UI (React) from secure business logic (Server Actions).
-- **Optimization**: Handles image optimization, font loading, and routing.
+## 4. Next.js 15 (Client-Side)
+**Role: Frontend Framework**
+- **Dynamic Routing**: Uses client-side routing to navigate between trading terminals.
+- **Optimized UI**: Handles high-performance rendering using React components and ShadCN UI.
 
 ## 5. Genkit
-**Role: AI Orchestration**
-- **Institutional Auditing**: (Planned) Used to automate the auditing of transaction patterns and support inquiries.
-- **Support Flows**: Powers intelligent support assistance for clearing requests.
+**Role: AI Orchestration (Client-Side)**
+- **Institutional Auditing**: (Planned) Integrated using the Genkit Client SDK to perform auditing tasks directly in the browser environment.
