@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -11,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
-import { FileUp, Loader2, Download, Upload, DollarSign } from 'lucide-react';
+import { FileUp, Loader2, Download, Upload, DollarSign, ShieldCheck, UserPlus } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Textarea } from '@/components/ui/textarea';
 import { settingsSchema, type SettingsFormValues } from '@/lib/schemas';
@@ -24,6 +25,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { MOCK_SETTINGS, PAYMENT_METHODS_BUY, PAYMENT_METHODS_SELL } from '@/lib/constants';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { Switch } from '@/components/ui/switch';
 
 export type Settings = SettingsFormValues;
 
@@ -102,7 +104,7 @@ export default function AdminDashboardPage() {
         }
     };
 
-    const handleSave = (type: 'bank' | 'upi' | 'banners' | 'deposit' | 'logo' | 'rates') => {
+    const handleSave = (type: 'bank' | 'upi' | 'banners' | 'deposit' | 'logo' | 'rates' | 'security') => {
         const values = form.getValues();
         let newSettings: Partial<Settings> = {};
         let description = '';
@@ -138,45 +140,16 @@ export default function AdminDashboardPage() {
                 newSettings = { depositDetails: values.depositDetails };
                 description = 'Deposit details updated.';
                 break;
+            case 'security':
+                newSettings = { allowPublicSignup: values.allowPublicSignup };
+                description = `Public registration ${values.allowPublicSignup ? 'enabled' : 'disabled'}.`;
+                break;
         }
 
         saveSettings(newSettings);
-        toast({ title: 'Settings Logged', description: description });
+        toast({ title: 'Settings Saved', description: description });
     };
 
-    const handleDownload = () => {
-        const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-            JSON.stringify(form.getValues(), null, 2)
-        )}`;
-        const link = document.createElement("a");
-        link.href = jsonString;
-        link.download = "tetherswap-settings.json";
-        link.click();
-        toast({ title: 'Settings Exported', description: 'Your settings have been downloaded.' });
-    };
-
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const json = event.target?.result as string;
-                const newSettings = JSON.parse(json);
-                const validationResult = settingsSchema.safeParse(newSettings);
-                if (validationResult.success) {
-                    saveSettings(validationResult.data);
-                    form.reset(validationResult.data);
-                    toast({ title: 'Settings Imported', description: 'New configuration applied.' });
-                }
-            } catch (error) {
-                toast({ variant: "destructive", title: 'Upload Failed', description: 'Invalid file format.' });
-            }
-        };
-        reader.readAsText(file);
-    };
-    
     const watchedValues = form.watch();
 
     if (!isAuthenticated || !isInitialized) {
@@ -256,6 +229,36 @@ export default function AdminDashboardPage() {
                                                 </AccordionContent>
                                             </AccordionItem>
                                         </Accordion>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="border-2 border-primary/20">
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Security & Registration</CardTitle>
+                                        <CardDescription>Control institutional entry protocols.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-6">
+                                        <FormField
+                                            control={form.control}
+                                            name="allowPublicSignup"
+                                            render={({ field }) => (
+                                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm bg-muted/5">
+                                                    <div className="space-y-0.5">
+                                                        <FormLabel className="text-base font-black uppercase tracking-tight">Public Registration</FormLabel>
+                                                        <CardDescription>If enabled, guest users can create their own accounts. If disabled, only admins can provision accounts.</CardDescription>
+                                                    </div>
+                                                    <FormControl>
+                                                        <Switch
+                                                            checked={field.value}
+                                                            onCheckedChange={(checked) => {
+                                                                field.onChange(checked);
+                                                                handleSave('security');
+                                                            }}
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
                                     </CardContent>
                                 </Card>
                             </div>
