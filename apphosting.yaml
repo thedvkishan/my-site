@@ -1,1 +1,5 @@
-# Configuration removed to prioritize standard Firebase Hosting (Spark Tier).
+# Firebase App Hosting configuration
+runConfig:
+  minInstances: 0
+  maxInstances: 10
+  memory: 512Mi
