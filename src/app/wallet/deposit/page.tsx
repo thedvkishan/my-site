@@ -22,6 +22,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 type Settings = {
   minDepositAmount?: number;
@@ -124,53 +126,61 @@ export default function DepositPage() {
     }
 
     setIsLoading(true);
-    try {
-      const depositData = {
-        userId: user!.uid,
-        amount: numAmount,
-        network,
-        status: 'pending_hash',
-        createdAt: new Date().toISOString(),
-        expiresAt: Date.now() + 180 * 60 * 1000, // 3 hours
-      };
-      
-      const docRef = await addDoc(collection(firestore, 'deposits'), depositData);
-      setActiveDepositId(docRef.id);
-      setStep('pay');
-    } catch (error) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to initiate deposit.' });
-    } finally {
-      setIsLoading(false);
-    }
+    const depositData = {
+      userId: user!.uid,
+      amount: numAmount,
+      network,
+      status: 'pending_hash',
+      createdAt: new Date().toISOString(),
+      expiresAt: Date.now() + 180 * 60 * 1000, // 3 hours
+    };
+    
+    // Non-blocking add for instant response
+    addDoc(collection(firestore, 'deposits'), depositData).then((docRef) => {
+        setActiveDepositId(docRef.id);
+        setStep('pay');
+        setIsLoading(false);
+    }).catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+            path: 'deposits',
+            operation: 'create',
+            requestResourceData: depositData
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        setIsLoading(false);
+    });
   };
 
-  const submitHash = async () => {
+  const submitHash = () => {
     if (!txHash.trim()) {
       toast({ variant: 'destructive', title: 'Hash Required', description: 'Please enter your transaction hash.' });
       return;
     }
 
-    setIsLoading(true);
-    try {
-      if (activeDepositRef) {
-        await updateDoc(activeDepositRef, {
-          txHash,
-          status: 'waiting_confirmation'
-        });
-        setStep('confirm');
-      }
-    } catch (error) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to submit hash.' });
-    } finally {
-      setIsLoading(false);
+    if (activeDepositRef) {
+      const updateData = { txHash, status: 'waiting_confirmation' };
+      updateDoc(activeDepositRef, updateData).catch(async (err) => {
+          const permissionError = new FirestorePermissionError({
+              path: activeDepositRef.path,
+              operation: 'update',
+              requestResourceData: updateData
+          });
+          errorEmitter.emit('permission-error', permissionError);
+      });
+      setStep('confirm');
     }
   };
 
-  const handleExpire = async () => {
+  const handleExpire = () => {
     if (activeDepositRef && activeDeposit?.status === 'pending_hash') {
-        await updateDoc(activeDepositRef, { status: 'expired' });
+        updateDoc(activeDepositRef, { status: 'expired' }).catch(async (err) => {
+            const permissionError = new FirestorePermissionError({
+                path: activeDepositRef.path,
+                operation: 'update',
+                requestResourceData: { status: 'expired' }
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
         setActiveDepositId(null);
         setStep('input');
         toast({ variant: 'destructive', title: 'Expired', description: 'Deposit session has expired.' });
@@ -347,9 +357,6 @@ export default function DepositPage() {
                   </div>
                   <div className="space-y-2">
                       <CardTitle className="text-2xl font-black uppercase">Awaiting for deposit confirmation</CardTitle>
-                      <CardDescription className="font-medium">
-                          Our team is verifying your direct wallet credit request.
-                      </CardDescription>
                   </div>
                   <div className="p-4 bg-secondary rounded-lg text-left space-y-2">
                       <div className="flex justify-between text-sm">

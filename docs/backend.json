@@ -1,17 +1,16 @@
-
 {
   "entities": {
     "UserProfile": {
       "title": "User Profile",
       "type": "object",
-      "description": "Stores additional information about a registered user.",
+      "description": "Stores institutional client information and clearing balances.",
       "properties": {
         "userId": { "type": "string" },
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "phone": { "type": "string" },
-        "balance": { "type": "number", "description": "The current USDT balance of the user." },
-        "status": { "type": "string", "enum": ["active", "banned", "on_hold"], "default": "active" },
+        "balance": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "banned", "on_hold"] },
         "securityQuestion": { "type": "string" },
         "securityAnswer": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
@@ -19,93 +18,50 @@
       "required": ["userId", "name", "email", "securityQuestion", "securityAnswer", "createdAt"]
     },
     "BuyOrder": {
-      "title": "Buy Order",
+      "title": "Buy Protocol Order",
       "type": "object",
-      "description": "Represents a user's buy order for USDT.",
       "properties": {
-        "id": { "type": "string" },
         "userId": { "type": "string" },
-        "network": { "type": "string" },
         "usdtAmount": { "type": "number" },
         "inrAmount": { "type": "number" },
         "paymentMode": { "type": "string" },
         "status": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string" },
         "paymentReceiptUrl": { "type": "string" }
       }
     },
     "SellOrder": {
-      "title": "Sell Order",
+      "title": "Liquidation Order",
       "type": "object",
-      "description": "Represents a user's sell order for USDT.",
       "properties": {
-        "id": { "type": "string" },
         "userId": { "type": "string" },
-        "network": { "type": "string" },
         "usdtAmount": { "type": "number" },
         "inrAmount": { "type": "number" },
         "paymentMode": { "type": "string" },
         "status": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
         "bankName": { "type": "string" },
         "accountNumber": { "type": "string" }
       }
     },
     "Deposit": {
-      "title": "Wallet Credit (Deposit)",
+      "title": "Wallet Credit Protocol",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
         "amount": { "type": "number" },
         "network": { "type": "string" },
         "txHash": { "type": "string" },
-        "status": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "status": { "type": "string" }
       }
     },
     "Withdrawal": {
-      "title": "Wallet Debit (Withdrawal)",
+      "title": "Wallet Debit Protocol",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
         "amount": { "type": "number" },
-        "network": { "type": "string" },
         "address": { "type": "string" },
-        "status": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "Notification": {
-      "title": "System Notification",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "userId": { "type": "string" },
-        "title": { "type": "string" },
-        "message": { "type": "string" },
-        "type": { "type": "string", "enum": ["info", "success", "warning", "error"] },
-        "read": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "ContactMessage": {
-      "title": "Support Ticket",
-      "type": "object",
-      "properties": {
-        "name": { "type": "string" },
-        "email": { "type": "string" },
-        "description": { "type": "string" },
-        "submittedAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "AppSettings": {
-      "title": "Global Configuration",
-      "type": "object",
-      "properties": {
-        "buyRates": { "type": "object" },
-        "sellRates": { "type": "object" },
-        "minBuyAmount": { "type": "number" },
-        "bankDetails": { "type": "object" }
+        "status": { "type": "string" }
       }
     }
   },
@@ -113,39 +69,25 @@
     "providers": ["password"]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": { "schema": { "$ref": "#/backend/entities/UserProfile" } }
-      },
-      {
-        "path": "/users/{userId}/notifications/{notificationId}",
-        "definition": { "schema": { "$ref": "#/backend/entities/Notification" } }
-      },
-      {
-        "path": "/buyOrders/{orderId}",
-        "definition": { "schema": { "$ref": "#/backend/entities/BuyOrder" } }
-      },
-      {
-        "path": "/sellOrders/{orderId}",
-        "definition": { "schema": { "$ref": "#/backend/entities/SellOrder" } }
-      },
-      {
-        "path": "/deposits/{depositId}",
-        "definition": { "schema": { "$ref": "#/backend/entities/Deposit" } }
-      },
-      {
-        "path": "/withdrawals/{withdrawalId}",
-        "definition": { "schema": { "$ref": "#/backend/entities/Withdrawal" } }
-      },
-      {
-        "path": "/contactMessages/{messageId}",
-        "definition": { "schema": { "$ref": "#/backend/entities/ContactMessage" } }
-      },
-      {
-        "path": "/settings/appSettings",
-        "definition": { "schema": { "$ref": "#/backend/entities/AppSettings" } }
-      }
-    ]
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Institutional client profiles."
+    },
+    "/buyOrders/{id}": {
+      "schema": "BuyOrder",
+      "description": "History of digital asset acquisition."
+    },
+    "/sellOrders/{id}": {
+      "schema": "SellOrder",
+      "description": "History of digital asset liquidation."
+    },
+    "/deposits/{id}": {
+      "schema": "Deposit",
+      "description": "Direct wallet credit history."
+    },
+    "/withdrawals/{id}": {
+      "schema": "Withdrawal",
+      "description": "Direct wallet debit history."
+    }
   }
 }

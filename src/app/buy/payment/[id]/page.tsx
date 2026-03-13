@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -16,6 +15,8 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { MOCK_SETTINGS } from '@/lib/constants';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 type Transaction = {
   id: string;
@@ -85,21 +86,38 @@ export default function BuyPaymentPage() {
     }
   };
 
-  const handlePaid = async () => {
+  const handlePaid = () => {
     if (transactionRef) {
       const dataToUpdate: { status: string; paymentReceiptUrl?: string } = { status: 'payment_processing' };
       if (receipt) {
         dataToUpdate.paymentReceiptUrl = receipt;
       }
-      await updateDoc(transactionRef, dataToUpdate);
+      
+      // Non-blocking update for instant UX
+      updateDoc(transactionRef, dataToUpdate).catch(async (err) => {
+          const permissionError = new FirestorePermissionError({
+              path: transactionRef.path,
+              operation: 'update',
+              requestResourceData: dataToUpdate
+          });
+          errorEmitter.emit('permission-error', permissionError);
+      });
+      
       router.push(`/buy/confirmation/${id}`);
     }
   };
   
-  const handleExpire = async () => {
+  const handleExpire = () => {
      if (transactionRef && !isExpired) {
         setIsExpired(true);
-        await updateDoc(transactionRef, { status: 'expired' });
+        updateDoc(transactionRef, { status: 'expired' }).catch(async (err) => {
+            const permissionError = new FirestorePermissionError({
+                path: transactionRef.path,
+                operation: 'update',
+                requestResourceData: { status: 'expired' }
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
      }
   };
 
@@ -130,9 +148,6 @@ export default function BuyPaymentPage() {
   }
   
   if (!transaction) {
-    // This state can happen briefly while the new transaction is being created.
-    // Instead of showing "Not Found" immediately, we show a loader.
-    // If the transaction is still not found after a reasonable time, it might be a real issue.
     return (
       <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />

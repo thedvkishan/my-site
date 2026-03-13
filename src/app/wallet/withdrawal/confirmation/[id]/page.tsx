@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -19,7 +18,6 @@ export default function WithdrawalConfirmationPage() {
           </div>
           <div className="space-y-2">
             <h2 className="text-2xl font-black uppercase tracking-tight">Awaiting for settlement confirmation</h2>
-            <p className="text-muted-foreground text-sm font-medium">Your debit request is being verified by the clearing desk.</p>
           </div>
         </CardHeader>
         <CardContent className="bg-muted/30 p-6 text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-y">
