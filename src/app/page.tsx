@@ -417,10 +417,10 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto pt-8 justify-center">
             <Button size="lg" className="h-16 px-10 text-xl font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all" asChild>
-                <Link href="/signup">Get Started Now</Link>
+                <Link href="/login">Sign In Now</Link>
             </Button>
             <Button variant="outline" size="lg" className="h-16 px-10 text-xl font-bold rounded-2xl border-2 hover:bg-secondary transition-all" asChild>
-                <Link href="/login">Sign In</Link>
+                <Link href="/contact">Contact Support</Link>
             </Button>
           </div>
 
@@ -457,7 +457,7 @@ export default function Home() {
                                 <p className="text-3xl font-black">₹{bankBuyRate.toFixed(2)}</p>
                             </div>
                             <Button size="sm" className="rounded-full font-bold px-6" asChild>
-                                <Link href="/signup">Buy Now</Link>
+                                <Link href="/login">Sign In to Buy</Link>
                             </Button>
                         </div>
                     </CardContent>
@@ -480,7 +480,7 @@ export default function Home() {
                                 <p className="text-3xl font-black">₹{bankSellRate.toFixed(2)}</p>
                             </div>
                             <Button variant="destructive" size="sm" className="rounded-full font-bold px-6" asChild>
-                                <Link href="/signup">Sell Now</Link>
+                                <Link href="/login">Sign In to Sell</Link>
                             </Button>
                         </div>
                     </CardContent>

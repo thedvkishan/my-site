@@ -16,7 +16,7 @@ import { loginSchema, type LoginFormValues, forgotPasswordSchema, type ForgotPas
 import { useAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { Loader2, LogIn, KeyRound } from 'lucide-react';
+import { Loader2, LogIn, KeyRound, Headphones } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 export default function LoginPage() {
@@ -277,8 +277,13 @@ export default function LoginPage() {
                         </form>
                     </Form>
                 </CardContent>
-                <CardFooter className="flex flex-col space-y-4 text-center text-sm">
-                    <p className="text-muted-foreground">Don't have an account? <Link href={`/signup?redirect=${redirectTo}`} className="text-primary font-semibold hover:underline">Sign Up</Link></p>
+                <CardFooter className="flex flex-col space-y-4 text-center text-sm border-t pt-6">
+                    <div className="bg-muted/50 p-4 rounded-xl space-y-2">
+                        <p className="text-muted-foreground text-xs font-medium">New to TetherSwap Zone?</p>
+                        <Button variant="outline" className="w-full text-xs gap-2" onClick={() => router.push('/contact')}>
+                            <Headphones className="h-3 w-3" /> Contact Support to Register
+                        </Button>
+                    </div>
                 </CardFooter>
             </Card>
         </div>

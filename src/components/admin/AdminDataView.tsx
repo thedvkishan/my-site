@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, doc, updateDoc, increment, addDoc, orderBy } from "firebase/firestore";
+import { collection, query, doc, updateDoc, increment, addDoc, orderBy, setDoc } from "firebase/firestore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -30,16 +31,24 @@ import {
     History,
     MessageSquare,
     Users,
-    Filter
+    Filter,
+    UserPlus,
+    KeyRound,
+    ShieldQuestion
 } from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { firebaseConfig } from '@/firebase/config';
+import { SECURITY_QUESTIONS } from '@/lib/schemas';
 
 const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="grid grid-cols-[100px_1fr] md:grid-cols-[160px_1fr] items-start gap-4 py-2.5 border-b border-muted/50 last:border-0">
@@ -66,6 +75,18 @@ export function AdminDataView() {
     const [searchQuery, setSearchQuery] = useState("");
     const [approvedAmount, setApprovedAmount] = useState<string>("");
     const [balanceAdjustment, setBalanceAdjustment] = useState<string>("");
+    
+    // New User Form State
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [newUser, setNewUser] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        password: '',
+        initialBalance: '0',
+        securityQuestion: '',
+        securityAnswer: ''
+    });
 
     const buyOrdersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -233,6 +254,45 @@ export function AdminDataView() {
         } catch (error: any) {
             console.error(error);
             toast({ variant: 'destructive', title: 'Action Failed', description: error.message || 'Could not perform action.' });
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleCreateUser = async () => {
+        const { email, password, name, phone, initialBalance, securityQuestion, securityAnswer } = newUser;
+        if (!email || !password || !name || !securityQuestion || !securityAnswer) {
+            toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in all required user fields.' });
+            return;
+        }
+
+        setActionLoading('creating-user');
+        try {
+            // Institutional Protocol: Create Auth User without signing out current Admin
+            const secondaryApp = initializeApp(firebaseConfig, 'InstitutionalRegistration');
+            const secondaryAuth = getAuth(secondaryApp);
+            
+            const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+            const user = userCredential.user;
+
+            await setDoc(doc(firestore, 'users', user.uid), {
+                userId: user.uid,
+                name,
+                email,
+                phone,
+                balance: parseFloat(initialBalance) || 0,
+                securityQuestion,
+                securityAnswer: securityAnswer.toLowerCase().trim(),
+                createdAt: new Date().toISOString(),
+                status: 'active'
+            });
+
+            toast({ title: 'User Provisioned', description: `Account for ${name} has been successfully created.` });
+            setIsCreateDialogOpen(false);
+            setNewUser({ name: '', email: '', phone: '', password: '', initialBalance: '0', securityQuestion: '', securityAnswer: '' });
+        } catch (error: any) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Provisioning Failed', description: error.message || 'Could not create institutional account.' });
         } finally {
             setActionLoading(null);
         }
@@ -508,7 +568,84 @@ export function AdminDataView() {
                     </TabsContent>
 
                     <TabsContent value="users" className="m-0">
-                        <ScrollArea className="h-[65vh]">
+                        <div className="p-4 border-b bg-muted/5 flex justify-between items-center">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Provisioned Accounts</h3>
+                            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest gap-2">
+                                        <UserPlus className="h-3.5 w-3.5" /> Provision New User
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-lg mx-4">
+                                    <DialogHeader>
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="p-3 bg-primary/10 rounded-xl"><UserPlus className="h-6 w-6 text-primary" /></div>
+                                            <div>
+                                                <DialogTitle className="text-xl font-black uppercase">Provision Account</DialogTitle>
+                                                <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-primary">Institutional Registration Protocol</DialogDescription>
+                                            </div>
+                                        </div>
+                                    </DialogHeader>
+                                    
+                                    <ScrollArea className="max-h-[60vh] pr-4">
+                                        <div className="space-y-4 py-2">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label className="text-[10px] font-black uppercase">Full Name</Label>
+                                                    <Input placeholder="Institutional Identity" value={newUser.name} onChange={(e) => setNewUser({...newUser, name: e.target.value})} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-[10px] font-black uppercase">Email Address</Label>
+                                                    <Input type="email" placeholder="identity@domain.com" value={newUser.email} onChange={(e) => setNewUser({...newUser, email: e.target.value})} />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label className="text-[10px] font-black uppercase">Phone (Optional)</Label>
+                                                    <Input placeholder="+91..." value={newUser.phone} onChange={(e) => setNewUser({...newUser, phone: e.target.value})} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-[10px] font-black uppercase">Initial Balance (USDT)</Label>
+                                                    <Input type="number" placeholder="0.00" value={newUser.initialBalance} onChange={(e) => setNewUser({...newUser, initialBalance: e.target.value})} />
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="p-4 bg-muted/30 rounded-xl border border-dashed border-primary/20 space-y-4">
+                                                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary">
+                                                    <KeyRound className="h-3 w-3" /> Security Configuration
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-[10px] font-black uppercase">Access Password</Label>
+                                                    <Input type="password" placeholder="Minimum 6 characters" value={newUser.password} onChange={(e) => setNewUser({...newUser, password: e.target.value})} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-[10px] font-black uppercase">Recovery Question</Label>
+                                                    <Select onValueChange={(v) => setNewUser({...newUser, securityQuestion: v})}>
+                                                        <SelectTrigger><SelectValue placeholder="Select Protocol Question" /></SelectTrigger>
+                                                        <SelectContent>
+                                                            {SECURITY_QUESTIONS.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-[10px] font-black uppercase">Recovery Answer</Label>
+                                                    <Input placeholder="Secret protocol answer" value={newUser.securityAnswer} onChange={(e) => setNewUser({...newUser, securityAnswer: e.target.value})} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </ScrollArea>
+
+                                    <DialogFooter className="mt-4">
+                                        <Button variant="outline" className="flex-1 font-bold text-xs h-12" onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
+                                        <Button className="flex-1 font-bold text-xs h-12 gap-2" onClick={handleCreateUser} disabled={actionLoading === 'creating-user'}>
+                                            {actionLoading === 'creating-user' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldQuestion className="h-4 w-4" />}
+                                            Provision Account
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+                        <ScrollArea className="h-[60vh]">
                             <Table>
                                 <TableHeader className="bg-muted/50"><TableRow><TableHead className="text-[10px] font-bold uppercase">Name / Joined</TableHead><TableHead className="text-[10px] font-bold uppercase">Balance</TableHead><TableHead className="text-right text-[10px] font-bold uppercase">Actions</TableHead></TableRow></TableHeader>
                                 <TableBody>
