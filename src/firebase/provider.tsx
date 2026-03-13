@@ -39,6 +39,7 @@ export const FirebaseContext = createContext<FirebaseContextState | undefined>(u
 
 /**
  * FirebaseProvider manages the availability of Firebase services across the React tree.
+ * Designed to handle SSR safely by providing null services initially.
  */
 export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   children,

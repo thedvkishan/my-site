@@ -4,8 +4,8 @@ import { getFirestore, Firestore } from 'firebase/firestore';
 import { firebaseConfig } from './config';
 
 /**
- * Robust Firebase initialization for Next.js.
- * Handles SSR/Client boundaries safely and ensures singleton pattern.
+ * Defensive Firebase initialization for Next.js.
+ * Handles SSR/Client boundaries and ensures singleton pattern.
  */
 function getFirebaseInstances() {
   // Check if we are on the client side
@@ -19,7 +19,7 @@ function getFirebaseInstances() {
 
   // Check if we have a valid config
   if (!firebaseConfig.apiKey) {
-    console.warn("Firebase configuration is missing. Ensure environment variables are set.");
+    console.warn("Firebase API key is missing. Check your environment variables.");
     return {
       firebaseApp: null,
       auth: null,

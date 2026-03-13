@@ -4,6 +4,9 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
+/**
+ * Institutional redirect terminal for the /admin path.
+ */
 export default function AdminRootRedirect() {
     const router = useRouter();
 
