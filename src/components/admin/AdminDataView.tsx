@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
@@ -35,7 +34,8 @@ import {
     UserPlus,
     KeyRound,
     ShieldQuestion,
-    ClipboardPen
+    ClipboardPen,
+    MessageCircle
 } from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
@@ -231,30 +231,38 @@ export function AdminDataView() {
     const handleUserAction = async (userId: string, action: 'status' | 'balance', value: any) => {
         if (!firestore) return;
         setActionLoading(userId);
-        const remarkSuffix = adminRemark.trim() ? ` Reason: ${adminRemark.trim()}` : "";
+        const remarkText = adminRemark.trim() || "Institutional protocol adjustment.";
+        const remarkSuffix = ` Reason: ${remarkText}`;
         
         try {
             const userRef = doc(firestore, 'users', userId);
+            const updateData: any = {
+                lastRemark: remarkText,
+                lastRemarkDate: new Date().toISOString()
+            };
+
             if (action === 'status') {
-                await updateDoc(userRef, { status: value });
+                updateData.status = value;
                 const statusLabel = value === 'on_hold' ? 'On Hold' : value === 'active' ? 'Active' : 'Banned';
                 const statusType = value === 'banned' ? 'error' : value === 'on_hold' ? 'warning' : 'success';
                 await createNotification(userId, 'Security Status Updated', `Your account status is now ${statusLabel}.${remarkSuffix}`, statusType);
-                toast({ title: 'Status Updated', description: `User is now ${value}.` });
+                toast({ title: 'Status Updated', description: `User is now ${value}. Reason saved.` });
             } else if (action === 'balance') {
                 const amount = parseFloat(balanceAdjustment);
                 if (isNaN(amount)) throw new Error("Invalid amount");
                 
-                await updateDoc(userRef, { balance: increment(value === 'add' ? amount : -amount) });
+                updateData.balance = increment(value === 'add' ? amount : -amount);
                 await createNotification(
                     userId, 
                     value === 'add' ? 'Balance Adjusted (Credit)' : 'Balance Adjusted (Debit)', 
                     `${amount.toLocaleString()} USDT has been ${value === 'add' ? 'credited to' : 'debited from'} your clearing account.${remarkSuffix}`,
                     value === 'add' ? 'success' : 'info'
                 );
-                toast({ title: 'Balance Updated', description: `Balance ${value === 'add' ? 'increased' : 'decreased'} by ${amount} USDT.` });
+                toast({ title: 'Balance Updated', description: `Balance adjusted by ${amount} USDT. Reason saved.` });
                 setBalanceAdjustment("");
             }
+
+            await updateDoc(userRef, updateData);
             setAdminRemark(""); // Clear remark after success
         } catch (error: any) {
             console.error(error);
@@ -697,6 +705,19 @@ export function AdminDataView() {
                                                                 <DetailRow label="Balance" value={<div className="flex items-center gap-1 font-black text-primary text-lg"><Wallet className="h-4 w-4" /> {(u.balance || 0).toLocaleString()} USDT</div>} />
                                                                 <DetailRow label="Status" value={getStatusBadge(u.status || 'active')} />
                                                                 <DetailRow label="Joined" value={u.createdAt ? format(new Date(u.createdAt), 'PPp') : 'N/A'} />
+                                                                <div className="p-4 bg-primary/5 rounded-xl border border-primary/10 mt-4 space-y-2">
+                                                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary">
+                                                                        <MessageCircle className="h-3 w-3" /> Last Admin Remark
+                                                                    </div>
+                                                                    <p className="text-xs font-medium italic text-muted-foreground">
+                                                                        {u.lastRemark ? `"${u.lastRemark}"` : 'No protocol remarks found.'}
+                                                                    </p>
+                                                                    {u.lastRemarkDate && (
+                                                                        <p className="text-[8px] text-right font-mono opacity-50 uppercase">
+                                                                            Logged: {format(new Date(u.lastRemarkDate), 'dd MMM yyyy HH:mm')}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
                                                             </TabsContent>
 
                                                             <TabsContent value="activity">
@@ -761,7 +782,7 @@ export function AdminDataView() {
                                                                         value={adminRemark}
                                                                         onChange={(e) => setAdminRemark(e.target.value)}
                                                                     />
-                                                                    <p className="text-[8px] text-muted-foreground italic">This remark will be visible to the user in their activity log.</p>
+                                                                    <p className="text-[8px] text-muted-foreground italic">This remark will be stored in user metadata and visible in their logs.</p>
                                                                 </div>
 
                                                                 <div className="space-y-4 p-4 border-2 border-dashed rounded-xl bg-muted/10">
