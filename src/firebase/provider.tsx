@@ -48,9 +48,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   firestore,
   auth,
 }) => {
+  // CRITICAL: We start with isUserLoading: true even on server to prevent hydration mismatches
+  // where the server thinks loading is done (because auth is null) and renders a guest view,
+  // while the client shows a loader.
   const [userAuthState, setUserAuthState] = useState<UserAuthState>({
     user: auth?.currentUser || null,
-    isUserLoading: !!auth,
+    isUserLoading: true, 
     userError: null,
   });
 

@@ -10,11 +10,17 @@ import { doc } from 'firebase/firestore';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useDoc } from '@/firebase/firestore/use-doc';
+import { useEffect, useState } from 'react';
 
 export function Header() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const firestore = useFirestore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const profileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
@@ -40,7 +46,7 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-1.5 md:gap-4">
-          {!isUserLoading && (
+          {mounted && !isUserLoading && (
             <>
               {user ? (
                 <div className="flex items-center gap-1.5 md:gap-4">
