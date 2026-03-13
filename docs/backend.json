@@ -19,7 +19,7 @@
       "required": ["userId", "name", "email", "securityQuestion", "securityAnswer", "createdAt"]
     },
     "BuyOrder": {
-      "title": "BuyOrder",
+      "title": "Buy Order",
       "type": "object",
       "description": "Represents a user's buy order for USDT.",
       "properties": {
@@ -28,12 +28,14 @@
         "network": { "type": "string" },
         "usdtAmount": { "type": "number" },
         "inrAmount": { "type": "number" },
+        "paymentMode": { "type": "string" },
         "status": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "paymentReceiptUrl": { "type": "string" }
       }
     },
     "SellOrder": {
-      "title": "SellOrder",
+      "title": "Sell Order",
       "type": "object",
       "description": "Represents a user's sell order for USDT.",
       "properties": {
@@ -42,30 +44,39 @@
         "network": { "type": "string" },
         "usdtAmount": { "type": "number" },
         "inrAmount": { "type": "number" },
+        "paymentMode": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "bankName": { "type": "string" },
+        "accountNumber": { "type": "string" }
+      }
+    },
+    "Deposit": {
+      "title": "Wallet Credit (Deposit)",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "network": { "type": "string" },
+        "txHash": { "type": "string" },
         "status": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       }
     },
-    "Deposit": {
-      "title": "USDT Deposit",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "amount": { "type": "number" },
-        "status": { "type": "string" }
-      }
-    },
     "Withdrawal": {
-      "title": "USDT Withdrawal",
+      "title": "Wallet Debit (Withdrawal)",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
         "amount": { "type": "number" },
-        "status": { "type": "string" }
+        "network": { "type": "string" },
+        "address": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       }
     },
     "Notification": {
-      "title": "Notification",
+      "title": "System Notification",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -76,6 +87,26 @@
         "read": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       }
+    },
+    "ContactMessage": {
+      "title": "Support Ticket",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "description": { "type": "string" },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "AppSettings": {
+      "title": "Global Configuration",
+      "type": "object",
+      "properties": {
+        "buyRates": { "type": "object" },
+        "sellRates": { "type": "object" },
+        "minBuyAmount": { "type": "number" },
+        "bankDetails": { "type": "object" }
+      }
     }
   },
   "auth": {
@@ -85,15 +116,35 @@
     "structure": [
       {
         "path": "/users/{userId}",
-        "definition": {
-          "schema": { "$ref": "#/backend/entities/UserProfile" }
-        }
+        "definition": { "schema": { "$ref": "#/backend/entities/UserProfile" } }
       },
       {
         "path": "/users/{userId}/notifications/{notificationId}",
-        "definition": {
-          "schema": { "$ref": "#/backend/entities/Notification" }
-        }
+        "definition": { "schema": { "$ref": "#/backend/entities/Notification" } }
+      },
+      {
+        "path": "/buyOrders/{orderId}",
+        "definition": { "schema": { "$ref": "#/backend/entities/BuyOrder" } }
+      },
+      {
+        "path": "/sellOrders/{orderId}",
+        "definition": { "schema": { "$ref": "#/backend/entities/SellOrder" } }
+      },
+      {
+        "path": "/deposits/{depositId}",
+        "definition": { "schema": { "$ref": "#/backend/entities/Deposit" } }
+      },
+      {
+        "path": "/withdrawals/{withdrawalId}",
+        "definition": { "schema": { "$ref": "#/backend/entities/Withdrawal" } }
+      },
+      {
+        "path": "/contactMessages/{messageId}",
+        "definition": { "schema": { "$ref": "#/backend/entities/ContactMessage" } }
+      },
+      {
+        "path": "/settings/appSettings",
+        "definition": { "schema": { "$ref": "#/backend/entities/AppSettings" } }
       }
     ]
   }
