@@ -1,6 +1,7 @@
 /**
  * Firebase configuration using environment variables.
- * These are required for secure deployment on Vercel or App Hosting.
+ * These are required for secure deployment on Vercel.
+ * Ensure these variables are set in your Vercel Project Settings.
  */
 export const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
