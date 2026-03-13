@@ -22,8 +22,8 @@ function getFirebaseInstances() {
   }
 
   // Check if we have a valid config to prevent initializeApp crashes.
+  // Next.js may try to evaluate this module during the build process.
   if (!firebaseConfig.apiKey) {
-    console.warn("Firebase configuration is missing. Ensure NEXT_PUBLIC_FIREBASE_API_KEY is set in your environment.");
     return {
       firebaseApp: null,
       auth: null,
@@ -42,7 +42,7 @@ function getFirebaseInstances() {
       firestore,
     };
   } catch (error) {
-    console.error("Firebase initialization failed:", error);
+    // Gracefully handle initialization errors during evaluation
     return {
       firebaseApp: null,
       auth: null,
