@@ -1,7 +1,7 @@
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, doc, updateDoc, increment, addDoc, orderBy, setDoc } from "firebase/firestore";
+import { collection, query, doc, updateDoc, increment, addDoc, orderBy, setDoc, arrayUnion } from "firebase/firestore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -35,7 +35,8 @@ import {
     KeyRound,
     ShieldQuestion,
     ClipboardPen,
-    MessageCircle
+    MessageCircle,
+    NotebookText
 } from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,7 @@ export function AdminDataView() {
     const [approvedAmount, setApprovedAmount] = useState<string>("");
     const [balanceAdjustment, setBalanceAdjustment] = useState<string>("");
     const [adminRemark, setAdminRemark] = useState("");
+    const [transactionRemark, setTransactionRemark] = useState("");
     
     // New User Form State
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -174,10 +176,15 @@ export function AdminDataView() {
         
         const collName = type === 'buy' ? 'buyOrders' : type === 'sell' ? 'sellOrders' : type === 'deposit' ? 'deposits' : 'withdrawals';
         const finalAmount = overrideAmount !== undefined ? overrideAmount : amount;
+        const remarkText = transactionRemark.trim() || "Institutional settlement protocol complete.";
 
         try {
             const orderRef = doc(firestore, collName, id);
-            const updateData: any = { status };
+            const updateData: any = { 
+                status,
+                adminRemark: remarkText,
+                remarkDate: new Date().toISOString()
+            };
             
             if (status === 'completed' && typeof finalAmount === 'number' && !isNaN(finalAmount)) {
                 updateData.processedAmount = finalAmount;
@@ -191,14 +198,14 @@ export function AdminDataView() {
 
                 if (status === 'failed') {
                     await updateDoc(userRef, { balance: increment(amount) });
-                    await createNotification(userId, `${typeLabel} Returned`, `${amount.toLocaleString()} USDT has been returned to your clearing balance.`, 'error');
+                    await createNotification(userId, `${typeLabel} Returned`, `${amount.toLocaleString()} USDT has been returned to your clearing balance. Reason: ${remarkText}`, 'error');
                 } else if (status === 'completed') {
                     if (finalAmount < amount) {
                         const refundDiff = amount - finalAmount;
                         await updateDoc(userRef, { balance: increment(refundDiff) });
-                        await createNotification(userId, `${typeLabel} Adjustment`, `${refundDiff.toLocaleString()} USDT has been returned to your balance (Volume adjusted by protocol).`, 'info');
+                        await createNotification(userId, `${typeLabel} Adjustment`, `${refundDiff.toLocaleString()} USDT has been returned to your balance (Volume adjusted by protocol). Reason: ${remarkText}`, 'info');
                     }
-                    await createNotification(userId, `${typeLabel} Finalized`, `Your ${typeLabel.toLowerCase()} request has been successfully processed.`, 'success');
+                    await createNotification(userId, `${typeLabel} Finalized`, `Your ${typeLabel.toLowerCase()} request has been successfully processed. Note: ${remarkText}`, 'success');
                 }
             } else if (userId) {
                 const displayType = type.charAt(0).toUpperCase() + type.slice(1);
@@ -207,7 +214,7 @@ export function AdminDataView() {
                 await createNotification(
                     userId, 
                     `${displayType} Confirmed`,
-                    `Your ${displayType} order #${id.slice(-6)} has been ${status}.`,
+                    `Your ${displayType} order #${id.slice(-6)} has been ${status}. Note: ${remarkText}`,
                     colorType
                 );
             }
@@ -215,7 +222,7 @@ export function AdminDataView() {
             if ((type === 'deposit' || type === 'buy') && status === 'completed' && userId && typeof finalAmount === 'number') {
                 const userRef = doc(firestore, 'users', userId);
                 await updateDoc(userRef, { balance: increment(finalAmount) });
-                await createNotification(userId, 'Balance Credited', `${finalAmount.toLocaleString()} USDT has been added to your clearing balance.`, 'success');
+                await createNotification(userId, 'Balance Credited', `${finalAmount.toLocaleString()} USDT has been added to your clearing balance. Note: ${remarkText}`, 'success');
             }
 
             toast({ title: 'Status Updated', description: `Transaction marked as ${status}.` });
@@ -225,6 +232,7 @@ export function AdminDataView() {
         } finally {
             setActionLoading(null);
             setApprovedAmount(""); 
+            setTransactionRemark("");
         }
     };
 
@@ -232,21 +240,29 @@ export function AdminDataView() {
         if (!firestore) return;
         setActionLoading(userId);
         const remarkText = adminRemark.trim() || "Institutional protocol adjustment.";
-        const remarkSuffix = ` Reason: ${remarkText}`;
         
         try {
             const userRef = doc(firestore, 'users', userId);
+            const actionLabel = action === 'status' ? `Status: ${value}` : `Balance: ${value} ${balanceAdjustment} USDT`;
+            
+            const remarkEntry = {
+                remark: remarkText,
+                action: actionLabel,
+                date: new Date().toISOString()
+            };
+
             const updateData: any = {
                 lastRemark: remarkText,
-                lastRemarkDate: new Date().toISOString()
+                lastRemarkDate: new Date().toISOString(),
+                remarksHistory: arrayUnion(remarkEntry)
             };
 
             if (action === 'status') {
                 updateData.status = value;
-                const statusLabel = value === 'on_hold' ? 'On Hold' : value === 'active' ? 'Active' : 'Banned';
+                const statusDisplay = value === 'on_hold' ? 'On Hold' : value === 'active' ? 'Active' : 'Banned';
                 const statusType = value === 'banned' ? 'error' : value === 'on_hold' ? 'warning' : 'success';
-                await createNotification(userId, 'Security Status Updated', `Your account status is now ${statusLabel}.${remarkSuffix}`, statusType);
-                toast({ title: 'Status Updated', description: `User is now ${value}. Reason saved.` });
+                await createNotification(userId, 'Security Status Updated', `Your account status is now ${statusDisplay}. Reason: ${remarkText}`, statusType);
+                toast({ title: 'Status Updated', description: `User is now ${value}. Remark saved to history.` });
             } else if (action === 'balance') {
                 const amount = parseFloat(balanceAdjustment);
                 if (isNaN(amount)) throw new Error("Invalid amount");
@@ -255,10 +271,10 @@ export function AdminDataView() {
                 await createNotification(
                     userId, 
                     value === 'add' ? 'Balance Adjusted (Credit)' : 'Balance Adjusted (Debit)', 
-                    `${amount.toLocaleString()} USDT has been ${value === 'add' ? 'credited to' : 'debited from'} your clearing account.${remarkSuffix}`,
+                    `${amount.toLocaleString()} USDT has been ${value === 'add' ? 'credited to' : 'debited from'} your clearing account. Reason: ${remarkText}`,
                     value === 'add' ? 'success' : 'info'
                 );
-                toast({ title: 'Balance Updated', description: `Balance adjusted by ${amount} USDT. Reason saved.` });
+                toast({ title: 'Balance Updated', description: `Balance adjusted by ${amount} USDT. Remark saved to history.` });
                 setBalanceAdjustment("");
             }
 
@@ -297,7 +313,12 @@ export function AdminDataView() {
                 securityQuestion,
                 securityAnswer: securityAnswer.toLowerCase().trim(),
                 createdAt: new Date().toISOString(),
-                status: 'active'
+                status: 'active',
+                remarksHistory: [{
+                    remark: "Initial account provisioning.",
+                    action: "Account Created",
+                    date: new Date().toISOString()
+                }]
             });
 
             toast({ title: 'User Provisioned', description: `Account for ${name} has been successfully created.` });
@@ -347,7 +368,12 @@ export function AdminDataView() {
                 {order.inrAmount && <div className="text-[9px] text-muted-foreground font-bold">₹{order.inrAmount.toLocaleString()}</div>}
             </TableCell>
             <TableCell className="text-right">
-                <Dialog onOpenChange={(open) => open && setApprovedAmount(String(order.usdtAmount || order.amount))}>
+                <Dialog onOpenChange={(open) => {
+                    if (open) {
+                        setApprovedAmount(String(order.usdtAmount || order.amount));
+                        setTransactionRemark("");
+                    }
+                }}>
                     <DialogTrigger asChild>
                         <Button variant="outline" size="sm" className="h-8 w-8 p-0">
                             <Eye className="h-4 w-4" />
@@ -420,23 +446,45 @@ export function AdminDataView() {
                                         <DetailRow label="Network" value={order.network} />
                                     </>
                                 )}
+
+                                {order.adminRemark && (
+                                    <div className="p-4 bg-primary/5 rounded-xl border border-primary/10 mt-4 space-y-2">
+                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary">
+                                            <NotebookText className="h-3 w-3" /> Audit Remark
+                                        </div>
+                                        <p className="text-xs font-medium italic text-muted-foreground">"{order.adminRemark}"</p>
+                                        {order.remarkDate && (
+                                            <p className="text-[8px] text-right font-mono opacity-50">LOGGED: {format(new Date(order.remarkDate), 'dd MMM yyyy HH:mm')}</p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </ScrollArea>
 
                         {!SETTLED_STATUSES.includes(order.status) && (
                             <>
-                                <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-3 mt-4">
-                                    <Label className="text-xs font-bold uppercase tracking-wider">Final Approved Volume</Label>
-                                    <div className="relative">
-                                        <Input 
-                                            type="number" 
-                                            value={approvedAmount} 
-                                            onChange={(e) => setApprovedAmount(e.target.value)}
-                                            className="font-black text-lg border-primary/30"
-                                        />
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-primary">USDT</span>
+                                <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-4 mt-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-bold uppercase tracking-wider">Final Approved Volume</Label>
+                                        <div className="relative">
+                                            <Input 
+                                                type="number" 
+                                                value={approvedAmount} 
+                                                onChange={(e) => setApprovedAmount(e.target.value)}
+                                                className="font-black text-lg border-primary/30"
+                                            />
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-primary">USDT</span>
+                                        </div>
                                     </div>
-                                    <p className="text-[10px] text-muted-foreground italic">Original request: {order.usdtAmount || order.amount} USDT.</p>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-bold uppercase tracking-wider">Action Protocol Remark</Label>
+                                        <Input 
+                                            placeholder="Reason for approval/rejection (Saved to Audit)" 
+                                            className="h-10 text-xs border-primary/30"
+                                            value={transactionRemark}
+                                            onChange={(e) => setTransactionRemark(e.target.value)}
+                                        />
+                                    </div>
                                 </div>
                                 <DialogFooter className="flex-row gap-2 mt-4">
                                     <Button variant="outline" className="flex-1 font-bold text-xs h-10" onClick={() => handleStatusUpdate(category, order.id, 'failed', order.userId, order.usdtAmount || order.amount)} disabled={actionLoading === order.id}>Reject & Refund</Button>
@@ -694,7 +742,7 @@ export function AdminDataView() {
                                                         <Tabs defaultValue="profile">
                                                             <TabsList className="grid w-full grid-cols-3 mb-4">
                                                                 <TabsTrigger value="profile">Profile</TabsTrigger>
-                                                                <TabsTrigger value="activity">Activity Audit</TabsTrigger>
+                                                                <TabsTrigger value="activity">Audit Log</TabsTrigger>
                                                                 <TabsTrigger value="controls">Management</TabsTrigger>
                                                             </TabsList>
                                                             
@@ -707,7 +755,7 @@ export function AdminDataView() {
                                                                 <DetailRow label="Joined" value={u.createdAt ? format(new Date(u.createdAt), 'PPp') : 'N/A'} />
                                                                 <div className="p-4 bg-primary/5 rounded-xl border border-primary/10 mt-4 space-y-2">
                                                                     <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary">
-                                                                        <MessageCircle className="h-3 w-3" /> Last Admin Remark
+                                                                        <MessageCircle className="h-3 w-3" /> Latest guidance
                                                                     </div>
                                                                     <p className="text-xs font-medium italic text-muted-foreground">
                                                                         {u.lastRemark ? `"${u.lastRemark}"` : 'No protocol remarks found.'}
@@ -721,50 +769,23 @@ export function AdminDataView() {
                                                             </TabsContent>
 
                                                             <TabsContent value="activity">
-                                                                <ScrollArea className="h-[40vh] border-2 border-dashed rounded-xl p-2 bg-muted/5">
-                                                                    <div className="space-y-4">
-                                                                        <div className="space-y-2">
-                                                                            <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-primary"><TrendingUp className="h-3 w-3" /> Buy Protocol ({buyOrders?.filter(o => o.userId === u.userId).length || 0})</h4>
-                                                                            <div className="grid gap-1">
-                                                                                {buyOrders?.filter(o => o.userId === u.userId).map(o => (
-                                                                                    <div key={o.id} className="text-[10px] p-2 bg-background border rounded flex justify-between items-center">
-                                                                                        <span>{format(new Date(o.createdAt), 'dd/MM')} - {o.usdtAmount} USDT</span>
-                                                                                        {getStatusBadge(o.status)}
+                                                                <ScrollArea className="h-[45vh] border-2 border-dashed rounded-xl p-2 bg-muted/5">
+                                                                    <div className="space-y-6">
+                                                                        <div className="space-y-3">
+                                                                            <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-primary border-b pb-1"><History className="h-3 w-3" /> Protocol Action History</h4>
+                                                                            <div className="grid gap-2">
+                                                                                {(u.remarksHistory || []).slice().reverse().map((r: any, idx: number) => (
+                                                                                    <div key={idx} className="p-3 bg-background border rounded-xl space-y-1.5 shadow-sm">
+                                                                                        <div className="flex justify-between items-center">
+                                                                                            <span className="text-[9px] font-black uppercase tracking-tight text-primary">{r.action}</span>
+                                                                                            <span className="text-[8px] font-mono text-muted-foreground">{r.date ? format(new Date(r.date), 'dd/MM/yy HH:mm') : 'N/A'}</span>
+                                                                                        </div>
+                                                                                        <p className="text-xs font-medium italic text-muted-foreground">"{r.remark}"</p>
                                                                                     </div>
                                                                                 ))}
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="space-y-2">
-                                                                            <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-destructive"><TrendingDown className="h-3 w-3" /> Liquidation Log ({sellOrders?.filter(o => o.userId === u.userId).length || 0})</h4>
-                                                                            <div className="grid gap-1">
-                                                                                {sellOrders?.filter(o => o.userId === u.userId).map(o => (
-                                                                                    <div key={o.id} className="text-[10px] p-2 bg-background border rounded flex justify-between items-center">
-                                                                                        <span>{format(new Date(o.createdAt), 'dd/MM')} - {o.usdtAmount} USDT</span>
-                                                                                        {getStatusBadge(o.status)}
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="space-y-2">
-                                                                            <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-blue-500"><ArrowDownCircle className="h-3 w-3" /> Credits ({deposits?.filter(o => o.userId === u.userId).length || 0})</h4>
-                                                                            <div className="grid gap-1">
-                                                                                {deposits?.filter(o => o.userId === u.userId).map(o => (
-                                                                                    <div key={o.id} className="text-[10px] p-2 bg-background border rounded flex justify-between items-center">
-                                                                                        <span>{format(new Date(o.createdAt), 'dd/MM')} - {o.amount} USDT</span>
-                                                                                        {getStatusBadge(o.status)}
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="space-y-2">
-                                                                            <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-orange-500"><ArrowUpCircle className="h-3 w-3" /> Debits ({withdrawals?.filter(o => o.userId === u.userId).length || 0})</h4>
-                                                                            <div className="grid gap-1">
-                                                                                {withdrawals?.filter(o => o.userId === u.userId).map(o => (
-                                                                                    <div key={o.id} className="text-[10px] p-2 bg-background border rounded flex justify-between items-center">
-                                                                                        <span>{format(new Date(o.createdAt), 'dd/MM')} - {o.amount} USDT</span>
-                                                                                        {getStatusBadge(o.status)}
-                                                                                    </div>
-                                                                                ))}
+                                                                                {(!u.remarksHistory || u.remarksHistory.length === 0) && (
+                                                                                    <p className="text-center py-8 text-xs text-muted-foreground italic">No archival actions recorded.</p>
+                                                                                )}
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -777,12 +798,12 @@ export function AdminDataView() {
                                                                         <ClipboardPen className="h-3 w-3" /> Institutional Protocol Remark
                                                                     </Label>
                                                                     <Input 
-                                                                        placeholder="Reason for change (Remark for user)" 
+                                                                        placeholder="Reason for change (Mandatory for Audit)" 
                                                                         className="h-10 text-xs border-primary/30"
                                                                         value={adminRemark}
                                                                         onChange={(e) => setAdminRemark(e.target.value)}
                                                                     />
-                                                                    <p className="text-[8px] text-muted-foreground italic">This remark will be stored in user metadata and visible in their logs.</p>
+                                                                    <p className="text-[8px] text-muted-foreground italic">This remark is mandatory and will be saved to the permanent audit trail.</p>
                                                                 </div>
 
                                                                 <div className="space-y-4 p-4 border-2 border-dashed rounded-xl bg-muted/10">
@@ -798,8 +819,8 @@ export function AdminDataView() {
                                                                             />
                                                                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold opacity-40">USDT</span>
                                                                         </div>
-                                                                        <Button size="icon" variant="outline" onClick={() => handleUserAction(u.id, 'balance', 'add')} disabled={actionLoading === u.id || !balanceAdjustment} title="Credit Account"><Plus className="h-4 w-4 text-green-600" /></Button>
-                                                                        <Button size="icon" variant="outline" onClick={() => handleUserAction(u.id, 'balance', 'subtract')} disabled={actionLoading === u.id || !balanceAdjustment} title="Debit Account"><Minus className="h-4 w-4 text-destructive" /></Button>
+                                                                        <Button size="icon" variant="outline" onClick={() => handleUserAction(u.id, 'balance', 'add')} disabled={actionLoading === u.id || !balanceAdjustment || !adminRemark} title="Credit Account"><Plus className="h-4 w-4 text-green-600" /></Button>
+                                                                        <Button size="icon" variant="outline" onClick={() => handleUserAction(u.id, 'balance', 'subtract')} disabled={actionLoading === u.id || !balanceAdjustment || !adminRemark} title="Debit Account"><Minus className="h-4 w-4 text-destructive" /></Button>
                                                                     </div>
                                                                 </div>
                                                                 
@@ -810,7 +831,7 @@ export function AdminDataView() {
                                                                             variant={u.status === 'active' || !u.status ? 'default' : 'outline'} 
                                                                             className="text-[9px] font-black h-9 flex items-center gap-1"
                                                                             onClick={() => handleUserAction(u.id, 'status', 'active')}
-                                                                            disabled={actionLoading === u.id}
+                                                                            disabled={actionLoading === u.id || !adminRemark}
                                                                         >
                                                                             <Unlock className="h-3 w-3" /> ACTIVE
                                                                         </Button>
@@ -818,7 +839,7 @@ export function AdminDataView() {
                                                                             variant={u.status === 'on_hold' ? 'default' : 'outline'} 
                                                                             className="text-[9px] font-black h-9 bg-orange-500 hover:bg-orange-600 text-white flex items-center gap-1"
                                                                             onClick={() => handleUserAction(u.id, 'status', 'on_hold')}
-                                                                            disabled={actionLoading === u.id}
+                                                                            disabled={actionLoading === u.id || !adminRemark}
                                                                         >
                                                                             <Lock className="h-3 w-3" /> HOLD
                                                                         </Button>
@@ -826,7 +847,7 @@ export function AdminDataView() {
                                                                             variant={u.status === 'banned' ? 'destructive' : 'outline'} 
                                                                             className="text-[9px] font-black h-9 flex items-center gap-1"
                                                                             onClick={() => handleUserAction(u.id, 'status', 'banned')}
-                                                                            disabled={actionLoading === u.id}
+                                                                            disabled={actionLoading === u.id || !adminRemark}
                                                                         >
                                                                             <ShieldAlert className="h-3 w-3" /> BAN
                                                                         </Button>
