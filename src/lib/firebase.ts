@@ -8,9 +8,16 @@ import { firebaseConfig } from '@/firebase/config';
 /**
  * Standardized Firebase Library Entry Point.
  * Optimized for production deployment on Vercel.
+ * Includes defensive SSR guards.
  */
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
+const getClientFirebase = () => {
+  if (typeof window === 'undefined' || !firebaseConfig.apiKey) {
+    return { app: null, auth: null, db: null };
+  }
+  const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  return { app, auth, db };
+};
 
-export { app, auth, db };
+export const { app, auth, db } = getClientFirebase();

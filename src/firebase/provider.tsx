@@ -103,15 +103,18 @@ export const useFirebase = (): FirebaseContextState => {
 };
 
 export const useAuth = (): Auth | null => {
-  return useFirebase().auth;
+  const { auth } = useFirebase();
+  return auth;
 };
 
 export const useFirestore = (): Firestore | null => {
-  return useFirebase().firestore;
+  const { firestore } = useFirebase();
+  return firestore;
 };
 
 export const useFirebaseApp = (): FirebaseApp | null => {
-  return useFirebase().firebaseApp;
+  const { firebaseApp } = useFirebase();
+  return firebaseApp;
 };
 
 type MemoFirebase <T> = T & {__memo?: boolean};

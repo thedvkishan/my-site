@@ -47,20 +47,17 @@ export default function AdminDashboardPage() {
 
     const isInitialized = !settingsLoading && !isUserLoading;
 
-    const saveSettings = useCallback(async (newSettings: Partial<Settings>) => {
+    const saveSettings = useCallback((newSettings: Partial<Settings>) => {
         if (!settingsRef) return;
         
-        try {
-            await setDoc(settingsRef, newSettings, { merge: true });
-        } catch (serverError: any) {
+        setDoc(settingsRef, newSettings, { merge: true }).catch(async (serverError: any) => {
             const permissionError = new FirestorePermissionError({
                 path: settingsRef.path,
                 operation: 'update',
                 requestResourceData: newSettings,
             });
             errorEmitter.emit('permission-error', permissionError);
-            throw serverError;
-        }
+        });
     }, [settingsRef]);
 
     const form = useForm<SettingsFormValues>({
@@ -105,9 +102,7 @@ export default function AdminDashboardPage() {
         }
     };
 
-    const handleSave = async (type: 'bank' | 'upi' | 'banners' | 'deposit' | 'logo' | 'rates') => {
-        setIsSaving(true);
-        
+    const handleSave = (type: 'bank' | 'upi' | 'banners' | 'deposit' | 'logo' | 'rates') => {
         const values = form.getValues();
         let newSettings: Partial<Settings> = {};
         let description = '';
@@ -115,7 +110,7 @@ export default function AdminDashboardPage() {
         switch(type) {
             case 'logo':
                 newSettings = { appLogoUrl: values.appLogoUrl };
-                description = 'App logo has been updated.';
+                description = 'App logo updated.';
                 break;
             case 'rates':
                 newSettings = { 
@@ -125,42 +120,28 @@ export default function AdminDashboardPage() {
                     minSellAmount: Number(values.minSellAmount),
                     minDepositAmount: Number(values.minDepositAmount)
                 };
-                description = 'Exchange rates and limits have been updated.';
+                description = 'Exchange rates updated.';
                 break;
             case 'bank':
                 newSettings = { bankDetails: values.bankDetails };
-                description = 'Bank details have been updated.';
+                description = 'Bank details updated.';
                 break;
             case 'upi':
                 newSettings = { upiId: values.upiId, qrCodeUrl: values.qrCodeUrl };
-                description = 'UPI and QR code have been updated.';
+                description = 'UPI and QR code updated.';
                 break;
             case 'banners':
                 newSettings = { buyBannerUrl: values.buyBannerUrl, sellBannerUrl: values.sellBannerUrl };
-                description = 'Homepage banners have been updated.';
+                description = 'Banners updated.';
                 break;
             case 'deposit':
                 newSettings = { depositDetails: values.depositDetails };
-                description = 'USDT deposit details have been updated.';
+                description = 'Deposit details updated.';
                 break;
         }
 
-        try {
-            await saveSettings(newSettings);
-            toast({
-                title: 'Settings Saved',
-                description: description,
-            });
-        } catch (error) {
-            console.error("Failed to save settings:", error);
-            toast({
-                variant: "destructive",
-                title: 'Save Failed',
-                description: 'Could not save settings. Please try again.',
-            });
-        } finally {
-            setIsSaving(false);
-        }
+        saveSettings(newSettings);
+        toast({ title: 'Settings Logged', description: description });
     };
 
     const handleDownload = () => {
@@ -179,41 +160,18 @@ export default function AdminDashboardPage() {
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = async (event) => {
+        reader.onload = (event) => {
             try {
                 const json = event.target?.result as string;
                 const newSettings = JSON.parse(json);
-                
                 const validationResult = settingsSchema.safeParse(newSettings);
-                if (!validationResult.success) {
-                    console.error("Invalid settings file:", validationResult.error);
-                    toast({
-                        variant: "destructive",
-                        title: 'Upload Failed',
-                        description: 'The uploaded file has an invalid format.',
-                    });
-                    return;
+                if (validationResult.success) {
+                    saveSettings(validationResult.data);
+                    form.reset(validationResult.data);
+                    toast({ title: 'Settings Imported', description: 'New configuration applied.' });
                 }
-
-                setIsSaving(true);
-                await saveSettings(validationResult.data);
-                form.reset(validationResult.data);
-                toast({
-                    title: 'Settings Imported',
-                    description: 'Your settings have been successfully uploaded and saved.',
-                });
             } catch (error) {
-                console.error("Failed to parse or save settings:", error);
-                toast({
-                    variant: "destructive",
-                    title: 'Upload Failed',
-                    description: 'Could not read or save the settings file.',
-                });
-            } finally {
-                setIsSaving(false);
-                if (e.target) {
-                    e.target.value = '';
-                }
+                toast({ variant: "destructive", title: 'Upload Failed', description: 'Invalid file format.' });
             }
         };
         reader.readAsText(file);
@@ -234,7 +192,7 @@ export default function AdminDashboardPage() {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-                    <p className="text-muted-foreground">Manage settings and view user data for TetherSwap Zone.</p>
+                    <p className="text-muted-foreground">Manage site settings and users.</p>
                 </div>
                 <Button variant="outline" onClick={handleLogout}>Logout</Button>
             </div>
@@ -252,7 +210,7 @@ export default function AdminDashboardPage() {
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>Core Settings</CardTitle>
-                                        <CardDescription>Manage main application settings like logo and exchange rates.</CardDescription>
+                                        <CardDescription>Logo and exchange rates.</CardDescription>
                                     </CardHeader>
                                     <CardContent>
                                         <Accordion type="single" collapsible defaultValue='logo'>
@@ -262,127 +220,39 @@ export default function AdminDashboardPage() {
                                                     <div className="flex items-start gap-6">
                                                         <div className="relative h-24 w-24 rounded-md overflow-hidden border bg-muted flex items-center justify-center">
                                                             {watchedValues.appLogoUrl ? (
-                                                                <Image src={watchedValues.appLogoUrl} alt="App Logo Preview" fill style={{objectFit: 'cover'}} />
+                                                                <Image src={watchedValues.appLogoUrl} alt="App Logo" fill style={{objectFit: 'cover'}} />
                                                             ) : (
                                                                 <TetherIcon className="h-12 w-12 text-muted-foreground" />
                                                             )}
                                                         </div>
                                                         <div className="space-y-4 flex-grow">
-                                                            <FormItem>
-                                                                <FormLabel>Upload Logo</FormLabel>
-                                                                <FormControl>
-                                                                    <div className='flex items-center gap-2'>
-                                                                        <Input id="logo-upload" type="file" className='hidden' accept="image/png, image/jpeg" onChange={(e) => handleFileChange(e, 'appLogoUrl')} />
-                                                                        <Label htmlFor='logo-upload' className='flex-grow'>
-                                                                            <Button asChild variant="outline"><div><FileUp className='mr-2' /> Upload Image</div></Button>
-                                                                        </Label>
-                                                                    </div>
-                                                                </FormControl>
-                                                                <p className="text-xs text-muted-foreground">Recommended: Square image (e.g., 64x64px).</p>
-                                                            </FormItem>
-                                                            <Button className="w-full" onClick={() => handleSave('logo')} disabled={isSaving}>
-                                                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                                Save Logo
-                                                            </Button>
+                                                            <Input id="logo-upload" type="file" className='hidden' accept="image/png, image/jpeg" onChange={(e) => handleFileChange(e, 'appLogoUrl')} />
+                                                            <Label htmlFor='logo-upload'>
+                                                                <Button asChild variant="outline" className="w-full"><div><FileUp className='mr-2' /> Upload Image</div></Button>
+                                                            </Label>
+                                                            <Button className="w-full" onClick={() => handleSave('logo')}>Save Logo</Button>
                                                         </div>
                                                     </div>
                                                 </AccordionContent>
                                             </AccordionItem>
                                             <AccordionItem value="rates">
-                                                <AccordionTrigger className="text-lg">Granular Rates & Limits</AccordionTrigger>
+                                                <AccordionTrigger className="text-lg">Exchange Rates</AccordionTrigger>
                                                 <AccordionContent className="pt-4 space-y-6">
                                                     <div className="grid md:grid-cols-2 gap-6">
                                                          <div className="space-y-4 border p-4 rounded-lg bg-muted/20">
-                                                            <h4 className="font-bold flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" /> Buy Rates (INR / USDT)</h4>
+                                                            <h4 className="font-bold flex items-center gap-2">Buy Rates (INR)</h4>
                                                             {PAYMENT_METHODS_BUY.map(method => (
-                                                                <FormField 
-                                                                    key={`buy-${method}`}
-                                                                    control={form.control} 
-                                                                    name={`buyRates.${method}`} 
-                                                                    render={({ field }) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>{method} Rate</FormLabel>
-                                                                            <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                                                                            <FormMessage />
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
+                                                                <FormField key={`buy-${method}`} control={form.control} name={`buyRates.${method}`} render={({ field }) => (<FormItem><FormLabel>{method}</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>)}/>
                                                             ))}
                                                          </div>
-                                                         
                                                          <div className="space-y-4 border p-4 rounded-lg bg-muted/20">
-                                                            <h4 className="font-bold flex items-center gap-2"><TetherIcon className="h-4 w-4" /> Sell Rates (INR / USDT)</h4>
+                                                            <h4 className="font-bold flex items-center gap-2">Sell Rates (INR)</h4>
                                                             {PAYMENT_METHODS_SELL.map(method => (
-                                                                <FormField 
-                                                                    key={`sell-${method}`}
-                                                                    control={form.control} 
-                                                                    name={`sellRates.${method}`} 
-                                                                    render={({ field }) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>{method} Rate</FormLabel>
-                                                                            <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                                                                            <FormMessage />
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
+                                                                <FormField key={`sell-${method}`} control={form.control} name={`sellRates.${method}`} render={({ field }) => (<FormItem><FormLabel>{method}</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>)}/>
                                                             ))}
                                                          </div>
-                                                         
-                                                         <div className='md:col-span-2 grid md:grid-cols-3 gap-4 border p-4 rounded-lg bg-secondary/10'>
-                                                            <FormField control={form.control} name="minBuyAmount" render={({ field }) => (<FormItem><FormLabel>Min. Buy (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                            <FormField control={form.control} name="minSellAmount" render={({ field }) => (<FormItem><FormLabel>Min. Sell (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                            <FormField control={form.control} name="minDepositAmount" render={({ field }) => (<FormItem><FormLabel>Min. Deposit (USDT)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                         </div>
                                                     </div>
-                                                    <Button className="w-full" onClick={() => handleSave('rates')} disabled={isSaving}>
-                                                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                        Save All Rates & Limits
-                                                    </Button>
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                            <AccordionItem value="banners">
-                                                <AccordionTrigger className="text-lg">Homepage Banners</AccordionTrigger>
-                                                <AccordionContent className="pt-4 space-y-6">
-                                                    <div className="grid md:grid-cols-2 gap-6">
-                                                        <div className="space-y-4">
-                                                            <h4 className="font-semibold">Buy Banner</h4>
-                                                            <div className="relative aspect-video w-full rounded-md overflow-hidden border">
-                                                                {watchedValues.buyBannerUrl && <Image src={watchedValues.buyBannerUrl} alt="Buy Banner Preview" fill style={{objectFit: 'cover'}} data-ai-hint="crypto buy"/>}
-                                                            </div>
-                                                            <FormItem>
-                                                                <FormLabel>Upload Banner</FormLabel>
-                                                                <FormControl>
-                                                                    <div className='flex items-center gap-2'>
-                                                                        <Input id="buy-banner-upload" type="file" className='hidden' accept="image/png, image/jpeg" onChange={(e) => handleFileChange(e, 'buyBannerUrl')} />
-                                                                        <Label htmlFor='buy-banner-upload' className='flex-grow'>
-                                                                            <Button asChild variant="outline"><div><FileUp className='mr-2' /> Upload Image</div></Button>
-                                                                        </Label>
-                                                                    </div>
-                                                                </FormControl>
-                                                            </FormItem>
-                                                        </div>
-                                                        <div className="space-y-4">
-                                                            <h4 className="font-semibold">Sell Banner</h4>
-                                                            <div className="relative aspect-video w-full rounded-md overflow-hidden border">
-                                                                {watchedValues.sellBannerUrl && <Image src={watchedValues.sellBannerUrl} alt="Sell Banner Preview" fill style={{objectFit: 'cover'}} data-ai-hint="crypto sell"/>}
-                                                            </div>
-                                                            <FormItem>
-                                                                <FormLabel>Upload Banner</FormLabel>
-                                                                <FormControl>
-                                                                    <div className='flex items-center gap-2'>
-                                                                        <Input id="sell-banner-upload" type="file" className='hidden' accept="image/png, image/jpeg" onChange={(e) => handleFileChange(e, 'sellBannerUrl')} />
-                                                                        <Label htmlFor='sell-banner-upload' className='flex-grow'>
-                                                                            <Button asChild variant="outline"><div><FileUp className='mr-2' /> Upload Image</div></Button>
-                                                                        </Label>
-                                                                    </div>
-                                                                </FormControl>
-                                                            </FormItem>
-                                                        </div>
-                                                    </div>
-                                                    <Button className="w-full" onClick={() => handleSave('banners')} disabled={isSaving}>
-                                                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                        Save Banners
-                                                    </Button>
+                                                    <Button className="w-full" onClick={() => handleSave('rates')}>Save Rates</Button>
                                                 </AccordionContent>
                                             </AccordionItem>
                                         </Accordion>
@@ -392,135 +262,32 @@ export default function AdminDashboardPage() {
 
                             <div className="space-y-8">
                                 <Card>
-                                    <CardHeader>
-                                        <CardTitle>Payment Methods</CardTitle>
-                                        <CardDescription>Update details for receiving payments from users.</CardDescription>
-                                    </CardHeader>
+                                    <CardHeader><CardTitle>Payment Methods</CardTitle></CardHeader>
                                     <CardContent>
                                         <Accordion type="multiple" className="w-full space-y-4">
-                                            <Card>
-                                                <AccordionItem value="bank">
-                                                    <AccordionTrigger className='p-6'>Bank (IMPS/NEFT/RTGS)</AccordionTrigger>
-                                                    <AccordionContent className="p-6 pt-0 space-y-4">
-                                                        <FormField control={form.control} name="bankDetails.holderName" render={({ field }) => (<FormItem><FormLabel>Account Holder Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                        <FormField control={form.control} name="bankDetails.bankName" render={({ field }) => (<FormItem><FormLabel>Bank Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                        <FormField control={form.control} name="bankDetails.accountNumber" render={({ field }) => (<FormItem><FormLabel>Account Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                        <FormField control={form.control} name="bankDetails.ifsc" render={({ field }) => (<FormItem><FormLabel>IFSC Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                        <Button className="w-full" onClick={() => handleSave('bank')} disabled={isSaving}>
-                                                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                            Save Bank Details
-                                                        </Button>
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            </Card>
-
-                                            <Card>
-                                                <AccordionItem value="upi">
-                                                    <AccordionTrigger className='p-6'>UPI & QR Code</AccordionTrigger>
-                                                    <AccordionContent className="p-6 pt-0 space-y-4">
-                                                        <FormField control={form.control} name="upiId" render={({ field }) => (<FormItem><FormLabel>UPI ID</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                        <Separator className="my-4" />
-                                                        <div className="space-y-4">
-                                                            <Label>Current QR Code Preview</Label>
-                                                            <div className="flex justify-center p-2 border rounded-md bg-muted">
-                                                                {watchedValues.qrCodeUrl && <Image src={watchedValues.qrCodeUrl} alt="UPI QR Code" width={128} height={128} data-ai-hint="qr code" />}
-                                                            </div>
-                                                            <FormItem>
-                                                                <FormLabel>Upload QR Code</FormLabel>
-                                                                <FormControl>
-                                                                    <div className='flex items-center gap-2'>
-                                                                        <Input id="upi-qr-upload" type="file" className='hidden' accept="image/png, image/jpeg" onChange={(e) => handleFileChange(e, 'qrCodeUrl')} />
-                                                                        <Label htmlFor='upi-qr-upload' className='flex-grow'>
-                                                                            <Button asChild variant="outline"><div><FileUp className='mr-2' /> Upload Image</div></Button>
-                                                                        </Label>
-                                                                    </div>
-                                                                </FormControl>
-                                                            </FormItem>
-                                                        </div>
-                                                        <Button className="w-full" onClick={() => handleSave('upi')} disabled={isSaving}>
-                                                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                            Save UPI Settings
-                                                        </Button>
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            </Card>
-                                        </Accordion>
-                                    </CardContent>
-                                </Card>
-
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>USDT Deposit Settings</CardTitle>
-                                        <CardDescription>Manage deposit addresses and QR codes for each network.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <Accordion type="single" collapsible defaultValue="BEP20" className="w-full">
-                                            {(['BEP20', 'TRC20', 'ERC20'] as const).map((network) => (
-                                                <AccordionItem value={network} key={network}>
-                                                    <AccordionTrigger>{network}</AccordionTrigger>
-                                                    <AccordionContent className="space-y-4 pt-4">
-                                                        <div className="grid md:grid-cols-1 gap-6">
-                                                            <FormField
-                                                                control={form.control}
-                                                                name={`depositDetails.${network}.address`}
-                                                                render={({ field }) => (
-                                                                    <FormItem>
-                                                                        <FormLabel>Deposit Address</FormLabel>
-                                                                        <FormControl><Textarea {...field} rows={3} /></FormControl>
-                                                                        <FormMessage />
-                                                                    </FormItem>
-                                                                )}
-                                                            />
-                                                            <div className="space-y-4">
-                                                                <Label>QR Code Preview</Label>
-                                                                <div className="flex justify-center p-2 border rounded-md bg-muted">
-                                                                {watchedValues.depositDetails?.[network]?.qrCodeUrl && <Image src={watchedValues.depositDetails[network].qrCodeUrl} alt={`${network} QR Code`} width={128} height={128} data-ai-hint="qr code" />}
-                                                                </div>
-                                                                <FormItem>
-                                                                    <FormLabel>Upload QR Code</FormLabel>
-                                                                    <FormControl>
-                                                                        <div className='flex items-center gap-2'>
-                                                                            <Input id={`${network}-qr-upload`} type="file" className='hidden' accept="image/png, image/jpeg" onChange={(e) => handleFileChange(e, `depositDetails.${network}.qrCodeUrl`)} />
-                                                                            <Label htmlFor={`${network}-qr-upload`} className='flex-grow'>
-                                                                                <Button asChild variant="outline"><div><FileUp className='mr-2' /> Upload Image</div></Button>
-                                                                            </Label>
-                                                                        </div>
-                                                                    </FormControl>
-                                                                </FormItem>
-                                                            </div>
-                                                        </div>
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            ))}
-                                        </Accordion>
-                                        <Button className="w-full !mt-6" onClick={() => handleSave('deposit')} disabled={isSaving}>
-                                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Save Deposit Details
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Import/Export Settings</CardTitle>
-                                        <CardDescription>Download or upload your site settings as a JSON file.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <Button className="w-full" variant="outline" onClick={handleDownload} disabled={!isInitialized}>
-                                            <Download className="mr-2" />
-                                            Download Settings
-                                        </Button>
-                                        <div>
-                                            <Input id="settings-upload" type="file" className='hidden' accept="application/json" onChange={handleFileUpload} disabled={isSaving} />
-                                            <Label htmlFor='settings-upload' className='w-full'>
-                                                <Button asChild variant="outline" className='w-full' disabled={isSaving}>
-                                                    <div>
-                                                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className='mr-2' />}
-                                                        Upload & Save Settings
+                                            <AccordionItem value="bank">
+                                                <AccordionTrigger>Bank Details</AccordionTrigger>
+                                                <AccordionContent className="space-y-4">
+                                                    <FormField control={form.control} name="bankDetails.holderName" render={({ field }) => (<FormItem><FormLabel>Holder Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)}/>
+                                                    <FormField control={form.control} name="bankDetails.bankName" render={({ field }) => (<FormItem><FormLabel>Bank Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)}/>
+                                                    <FormField control={form.control} name="bankDetails.accountNumber" render={({ field }) => (<FormItem><FormLabel>Account Number</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)}/>
+                                                    <FormField control={form.control} name="bankDetails.ifsc" render={({ field }) => (<FormItem><FormLabel>IFSC</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)}/>
+                                                    <Button className="w-full" onClick={() => handleSave('bank')}>Save Bank</Button>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                            <AccordionItem value="upi">
+                                                <AccordionTrigger>UPI & QR</AccordionTrigger>
+                                                <AccordionContent className="space-y-4">
+                                                    <FormField control={form.control} name="upiId" render={({ field }) => (<FormItem><FormLabel>UPI ID</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)}/>
+                                                    <div className="flex justify-center p-2 border rounded-md">
+                                                        {watchedValues.qrCodeUrl && <Image src={watchedValues.qrCodeUrl} alt="UPI QR" width={128} height={128} />}
                                                     </div>
-                                                </Button>
-                                            </Label>
-                                        </div>
+                                                    <Input id="upi-qr-upload" type="file" className='hidden' accept="image/png, image/jpeg" onChange={(e) => handleFileChange(e, 'qrCodeUrl')} />
+                                                    <Label htmlFor='upi-qr-upload'><Button asChild variant="outline" className="w-full"><div>Upload QR</div></Button></Label>
+                                                    <Button className="w-full" onClick={() => handleSave('upi')}>Save UPI</Button>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        </Accordion>
                                     </CardContent>
                                 </Card>
                             </div>

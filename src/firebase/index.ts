@@ -8,8 +8,18 @@ import { firebaseConfig } from './config';
  * Handles SSR/Client boundaries safely and ensures singleton pattern.
  */
 function getFirebaseInstances() {
-  // Check if we are on the client side and have a valid config
-  if (typeof window === 'undefined' || !firebaseConfig.apiKey) {
+  // Check if we are on the client side
+  if (typeof window === 'undefined') {
+    return {
+      firebaseApp: null,
+      auth: null,
+      firestore: null,
+    };
+  }
+
+  // Check if we have a valid config
+  if (!firebaseConfig.apiKey) {
+    console.warn("Firebase configuration is missing. Ensure environment variables are set.");
     return {
       firebaseApp: null,
       auth: null,

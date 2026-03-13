@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,7 +14,9 @@ import { useToast } from '@/hooks/use-toast';
 import { NETWORKS, PAYMENT_METHODS_BUY } from '@/lib/constants';
 import { Loader2 } from 'lucide-react';
 import { useAuth, useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
-import { collection, addDoc, doc } from 'firebase/firestore';
+import { collection, doc, setDoc } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 type Settings = {
   buyRates?: Record<string, number>;
@@ -28,7 +29,6 @@ export function BuyForm({ disabled }: { disabled?: boolean }) {
   const [isLoading, setIsLoading] = useState(false);
   const conversionInputSource = useRef<'usdt' | 'inr' | null>(null);
 
-  const auth = useAuth();
   const firestore = useFirestore();
   const { user } = useUser();
 
@@ -94,50 +94,30 @@ export function BuyForm({ disabled }: { disabled?: boolean }) {
     }
   }, [inrAmount, currentRate, setValue, usdtAmount]);
 
-  useEffect(() => {
-    if (currentRate && conversionInputSource.current === 'usdt') {
-        setValue('inrAmount', parseFloat((usdtAmount * currentRate).toFixed(2)));
-    } else if (currentRate && conversionInputSource.current === 'inr') {
-        setValue('usdtAmount', parseFloat((inrAmount / currentRate).toFixed(4)));
-    }
-  }, [currentRate, setValue]);
-
   async function onSubmit(values: BuyFormValues) {
+    if (!user || !firestore) return;
     setIsLoading(true);
 
-    if (!user || !firestore) {
-        toast({ title: 'Error', description: 'User not authenticated or database not available.', variant: 'destructive'});
-        setIsLoading(false);
-        return;
-    }
-
-    try {
-        const orderData = {
-            ...values,
-            userId: user.uid,
-            email: user.email || '',
-            usdtAddress: 'Internal Wallet', 
-            country: 'India',
-            type: 'buy',
-            status: 'pending_payment',
-            createdAt: new Date().toISOString(),
-            expiresAt: Date.now() + 3 * 60 * 60 * 1000,
-        };
-        
-        const docRef = await addDoc(collection(firestore, 'buyOrders'), orderData);
-        
-        toast({
-            title: 'Order Created',
-            description: 'Redirecting to payment page...',
+    const orderRef = doc(collection(firestore, 'buyOrders'));
+    const orderData = {
+        ...values,
+        userId: user.uid,
+        email: user.email || '',
+        status: 'pending_payment',
+        createdAt: new Date().toISOString(),
+        expiresAt: Date.now() + 3 * 60 * 60 * 1000,
+    };
+    
+    setDoc(orderRef, orderData).catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+            path: 'buyOrders',
+            operation: 'create',
+            requestResourceData: orderData
         });
-
-        router.push(`/buy/payment/${docRef.id}`);
-
-    } catch (error) {
-        console.error("Error creating buy order: ", error);
-        toast({ title: 'Order Creation Failed', description: 'Could not save your order. Please try again.', variant: 'destructive' });
-        setIsLoading(false);
-    }
+        errorEmitter.emit('permission-error', permissionError);
+    });
+    
+    router.push(`/buy/payment/${orderRef.id}`);
   }
 
   return (
@@ -241,10 +221,6 @@ export function BuyForm({ disabled }: { disabled?: boolean }) {
           )}
         />
         
-        <div className="text-sm text-center text-muted-foreground p-4 bg-secondary rounded-md">
-            USDT will be added to your internal balance within 30 minutes to 3 hours after payment confirmation.
-        </div>
-
         <Button type="submit" className="w-full" disabled={isLoading || settingsLoading || !settings || !user || disabled}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Pay Now

@@ -14,7 +14,9 @@ import { useToast } from '@/hooks/use-toast';
 import { NETWORKS, PAYMENT_METHODS_SELL, CASH_DEPOSIT_BANKS } from '@/lib/constants';
 import { Loader2, Wallet } from 'lucide-react';
 import { useAuth, useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
-import { collection, addDoc, doc, updateDoc, increment } from 'firebase/firestore';
+import { collection, doc, updateDoc, increment, setDoc } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 type Settings = {
   sellRates?: Record<string, number>;
@@ -32,7 +34,6 @@ export function SellForm({ disabled }: { disabled?: boolean }) {
   const [isLoading, setIsLoading] = useState(false);
   const conversionInputSource = useRef<'usdt' | 'inr' | null>(null);
 
-  const auth = useAuth();
   const firestore = useFirestore();
   const { user } = useUser();
 
@@ -47,7 +48,7 @@ export function SellForm({ disabled }: { disabled?: boolean }) {
   }, [firestore, user]);
 
   const { data: settings, isLoading: settingsLoading } = useDoc<Settings>(settingsRef);
-  const { data: profile, isLoading: profileLoading } = useDoc<UserProfile>(profileRef);
+  const { data: profile } = useDoc<UserProfile>(profileRef);
   
   const sellFormSchema = useMemo(() => z.object({
     network: z.enum(NETWORKS as [string, ...string[]], { required_error: 'Please select a network.' }),
@@ -150,85 +151,42 @@ export function SellForm({ disabled }: { disabled?: boolean }) {
       }
     }
   }, [inrAmount, currentRate, setValue, usdtAmount]);
-  
-  useEffect(() => {
-    if (currentRate && conversionInputSource.current === 'usdt') {
-        setValue('inrAmount', parseFloat((usdtAmount * currentRate).toFixed(2)));
-    } else if (currentRate && conversionInputSource.current === 'inr') {
-        setValue('usdtAmount', parseFloat((inrAmount / currentRate).toFixed(4)));
-    }
-  }, [currentRate, setValue]);
-
-  const createInternalNotification = async (userId: string, title: string, message: string, type: 'info' | 'success' | 'warning' | 'error') => {
-    if (!firestore) return;
-    const notifRef = collection(firestore, 'users', userId, 'notifications');
-    await addDoc(notifRef, {
-        userId,
-        title,
-        message,
-        type,
-        read: false,
-        createdAt: new Date().toISOString()
-    });
-  };
 
   async function onSubmit(values: SellFormValues) {
+    if (!user || !firestore) return;
     setIsLoading(true);
-
-    if (!user || !firestore) {
-        toast({ title: 'Error', description: 'User not authenticated or database not available.', variant: 'destructive'});
-        setIsLoading(false);
-        return;
-    }
 
     const currentBalance = profile?.balance || 0;
     if (values.usdtAmount > currentBalance) {
-        toast({ title: 'Insufficient Balance', description: `You only have ${currentBalance} USDT available in your internal wallet.`, variant: 'destructive' });
+        toast({ title: 'Insufficient Balance', description: `You only have ${currentBalance} USDT available.`, variant: 'destructive' });
         setIsLoading(false);
         return;
     }
     
-    try {
-        const orderData = {
-          ...values,
-          userId: user.uid,
-          email: user.email || '',
-          contactNumber: '', 
-          country: 'India',
-          type: 'sell',
-          status: 'payment_processing',
-          createdAt: new Date().toISOString(),
-          expiresAt: Date.now() + 3 * 60 * 60 * 1000,
-        };
-        
-        // 1. Create the order
-        const docRef = await addDoc(collection(firestore, 'sellOrders'), orderData);
-
-        // 2. Deduct the balance
-        if (profileRef) {
-            await updateDoc(profileRef, { balance: increment(-values.usdtAmount) });
-        }
-
-        // 3. Notify user
-        await createInternalNotification(
-            user.uid,
-            'Liquidation Order Initiated',
-            `${values.usdtAmount} USDT has been deducted for your liquidation order #${docRef.id.slice(-6)}. Protocol is being processed.`,
-            'info'
-        );
-        
-        toast({
-            title: 'Order Created',
-            description: 'Balance deducted. Redirecting to confirmation...',
-        });
+    const orderRef = doc(collection(firestore, 'sellOrders'));
+    const orderData = {
+      ...values,
+      userId: user.uid,
+      email: user.email || '',
+      status: 'payment_processing',
+      createdAt: new Date().toISOString(),
+      expiresAt: Date.now() + 3 * 60 * 60 * 1000,
+    };
     
-        router.push(`/sell/confirmation/${docRef.id}`);
+    setDoc(orderRef, orderData).catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+            path: 'sellOrders',
+            operation: 'create',
+            requestResourceData: orderData
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    });
 
-    } catch (error) {
-        console.error("Error creating sell order: ", error);
-        toast({ title: 'Order Creation Failed', description: 'Could not save your order. Please try again.', variant: 'destructive' });
-        setIsLoading(false);
+    if (profileRef) {
+        updateDoc(profileRef, { balance: increment(-values.usdtAmount) });
     }
+
+    router.push(`/sell/confirmation/${orderRef.id}`);
   }
 
   return (
@@ -402,10 +360,6 @@ export function SellForm({ disabled }: { disabled?: boolean }) {
               )}/>
             </div>
           )}
-
-          <div className="text-sm text-center text-muted-foreground p-4 bg-secondary rounded-md">
-              The USDT amount will be deducted from your internal balance immediately. Our internal protocol will process your settlement within institutional timelines.
-          </div>
 
           <Button type="submit" className="w-full h-12 font-black uppercase tracking-widest shadow-xl shadow-destructive/20" variant="destructive" disabled={isLoading || settingsLoading || !settings || !user || disabled}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
