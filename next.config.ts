@@ -3,6 +3,8 @@ import type {NextConfig} from 'next';
 const nextConfig: NextConfig = {
   /* Decommissioned App Hosting (paid) in favor of Static Export (Free Tier) */
   output: 'export',
+  /* Ensure clean URLs for static hosting */
+  trailingSlash: true,
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -10,6 +12,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    /* Static exports do not support the dynamic Image Optimization API (requires paid runtime) */
     unoptimized: true,
     remotePatterns: [
       {
