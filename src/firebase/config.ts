@@ -1,8 +1,13 @@
+/**
+ * Firebase configuration using environment variables.
+ * These must be set in your Vercel project settings or .env file.
+ */
 export const firebaseConfig = {
-  "projectId": "studio-1892322222-bf831",
-  "appId": "1:494610194891:web:fbe14908f2165475e3d64e",
-  "apiKey": "AIzaSyBdcjfidvnzFsrYyHKu7xkRDcMkdqZuB_A",
-  "authDomain": "studio-1892322222-bf831.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "494610194891"
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
 };
