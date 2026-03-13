@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -99,12 +98,18 @@ export function Header() {
                 </div>
               ) : (
                 <div className="flex items-center gap-1 md:gap-2">
-                  <Button size="sm" variant="ghost" asChild className="h-8 px-3 md:h-10">
-                    <Link href="/login">Sign In</Link>
-                  </Button>
-                  {settings?.allowPublicSignup && (
-                    <Button size="sm" asChild className="h-8 px-4 md:h-10 font-bold uppercase tracking-tight">
-                      <Link href="/signup">Sign Up</Link>
+                  {settings?.allowPublicSignup ? (
+                    <>
+                      <Button size="sm" variant="outline" asChild className="h-8 px-3 md:h-10 border-2">
+                        <Link href="/login">Sign In</Link>
+                      </Button>
+                      <Button size="sm" variant="default" asChild className="h-8 px-4 md:h-10 font-bold uppercase tracking-tight">
+                        <Link href="/signup">Sign Up</Link>
+                      </Button>
+                    </>
+                  ) : (
+                    <Button size="sm" variant="default" asChild className="h-8 px-6 md:h-10 font-bold uppercase tracking-tight">
+                      <Link href="/login">Sign In</Link>
                     </Button>
                   )}
                 </div>
