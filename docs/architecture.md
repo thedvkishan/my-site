@@ -1,29 +1,24 @@
-# TetherSwap Zone: Institutional Architecture Overview
+# TetherSwap Zone: Centralized Institutional Architecture
 
-This document outlines the roles of the various technologies integrated into the TetherSwap Zone platform.
+This document outlines the core technologies and their roles within the TetherSwap Zone platform.
 
-## 1. Firebase App Hosting
-**Role: Managed Institutional Runtime**
-- **Managed Next.js 15 Environment**: Provides the secure server-side infrastructure for high-performance trading logic.
-- **Dynamic Routing & SSR**: Powers the institutional terminals with optimized page loads and secure Server Actions.
-- **Scalable Infrastructure**: Automatically manages Google Cloud resources to handle varying institutional trading volumes.
+## 1. Firebase Firestore: Central Institutional Ledger
+**Role: Single Source of Truth**
+- **Data Persistence**: Stores all institutional data including User Profiles, Buy Protocols, Liquidation Orders, and Wallet Credit/Debit history.
+- **Real-time Synchronization**: Powers the instant activity terminal and balance updates via the Firebase Client SDK.
+- **Audit Archiving**: Maintains a permanent record of all administrative remarks and protocol adjustments.
 
-## 2. Firebase Firestore
-**Role: Real-time Institutional Ledger**
-- **Data Persistence**: Stores user profiles, buy/sell protocols, and the permanent administrative audit trail.
-- **Real-time Sync**: Powers the "Activity Terminal" (notifications), allowing users to see balance updates and order status changes instantly via the Client SDK.
-- **Security Rules**: Enforces fine-grained access control directly at the database level.
+## 2. Firebase Authentication: Identity Protocol
+**Role: Secure Access Management**
+- **Institution Access**: Manages secure login for clients and internal administrators.
+- **Sub-Account Provisioning**: Enables the peer-to-peer account creation feature using isolated client-side authentication logic.
 
-## 3. Firebase Authentication
-**Role: Identity & Access Management**
-- **Secure Access**: Manages login protocols for both institutional clients and administrators.
-- **Peer Provisioning**: Enables the "Sub-Account" feature where existing users can provision new members using an isolated client-side auth protocol.
+## 3. Firebase App Hosting: Managed Runtime
+**Role: Scalable Institutional Environment**
+- **Next.js 15 Engine**: Provides the server-side infrastructure for the trading terminals.
+- **Dynamic Routing**: Handles institutional workflows and secure data fetching.
+- **Global Scaling**: Automatically manages Google Cloud resources to ensure 24/7 uptime for exchange operations.
 
-## 4. Next.js 15
-**Role: Institutional Frontend Framework**
-- **App Router**: Uses modern routing for high-performance navigation between trading terminals.
-- **Optimized UI**: Leverages React components with ShadCN UI for an institutional-grade experience.
-
-## 5. Genkit
-**Role: AI Auditing Orchestration**
-- **Institutional Auditing**: Integrated using the Genkit SDK to perform automated auditing and support tasks via the Gemini Pro models.
+## 4. Genkit: AI Auditing Orchestration
+**Role: Automated Support & Oversight**
+- **Intelligent Auditing**: Integrated using Gemini Pro models to assist in transaction verification and institutional support tasks.

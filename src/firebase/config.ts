@@ -1,7 +1,6 @@
 /**
  * Firebase configuration using environment variables.
- * These are required for secure deployment on Vercel.
- * Ensure these variables are set in your Vercel Project Settings.
+ * This is the central configuration for both Auth and Firestore.
  */
 export const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
