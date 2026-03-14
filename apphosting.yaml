@@ -1,3 +1,4 @@
+# Firebase App Hosting Configuration
 # See https://firebase.google.com/docs/app-hosting/configure
 kind: "bundle"
 apiVersion: "v1"
