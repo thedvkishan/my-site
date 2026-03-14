@@ -1,4 +1,3 @@
-
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -25,6 +24,7 @@ function getFirebaseInstances() {
   const hasConfig = !!firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined';
 
   if (!hasConfig) {
+    console.warn("Firebase Configuration Incomplete: Platform operating in offline mode.");
     return {
       firebaseApp: null,
       auth: null,
