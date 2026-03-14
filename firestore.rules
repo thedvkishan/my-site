@@ -4,118 +4,97 @@ service cloud.firestore {
 
     /**
      * CORE PHILOSOPHY
-     * This ruleset implements an administrative-control model where application configuration 
-     * and payment metadata are managed by administrators and consumed by end-users. 
+     * This ruleset implements an administrative-control model for TetherSwap Zone.
      * Security is anchored by a Database-Based Access Control (DBAC) pattern for admins.
-     *
-     * DATA STRUCTURE
-     * All configuration entities (Payment Options, Deposit Addresses, and Global Settings) 
-     * are stored in top-level collections to ensure flat, performant access patterns.
-     * - /inrPaymentOptions: Publicly viewable payment methods for INR.
-     * - /usdtDepositAddresses: Publicly viewable blockchain addresses for USDT.
-     * - /applicationSettings: Singleton document for global app variables.
-     * - /roles_admin: A restricted collection defining user administrative privileges.
-     *
-     * KEY SECURITY DECISIONS
-     * 1. Admin Verification: Admin status is verified by checking for the existence of a 
-     *    document in the `/roles_admin` collection matching the user's UID.
-     * 2. Public Readability: Payment and deposit metadata are readable by all users 
-     *    (including anonymous) to facilitate the onboarding and transaction flow, 
-     *    provided they are marked as 'active'.
-     * 3. Write Protection: All create, update, and delete operations are strictly 
-     *    restricted to verified administrators.
-     * 4. Relational Integrity: On creation, documents must have an internal 'id' field 
-     *    that matches their Firestore document ID to ensure data consistency.
-     *
-     * DENORMALIZATION FOR AUTHORIZATION
-     * The `isActive` flag is denormalized onto every payment and address document. This 
-     * allows for simple, performant rules that determine visibility without needing 
-     * to join data from other collections.
      */
 
     // --- Helper Functions ---
 
-    /**
-     * @description Checks if the request is from a signed-in user (password or anonymous).
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * @description Checks if the authenticated user has an entry in the admin roles collection.
-     */
     function isAdmin() {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
 
-    /**
-     * @description Combines admin check with a requirement that the resource must already exist.
-     */
-    function isExistingAdmin() {
-      return isAdmin() && resource != null;
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     // --- Rules ---
 
     /**
-     * @description Manages admin-configured INR payment methods. Users read active ones; admins manage all.
-     * @path /inrPaymentOptions/{paymentOptionId}
-     * @allow (get) Any user requesting an active payment option.
-     * @deny (create) A non-admin user attempting to add a new bank account.
-     * @principle Admin-only writes with public read access filtered by active status.
+     * @description Global settings (logo, rates, markup).
+     * Publicly readable for the landing page; admin-only writes.
      */
-    match /inrPaymentOptions/{paymentOptionId} {
-      allow get: if resource.data.isActive == true || isAdmin();
-      allow list: if true;
-      allow create: if isAdmin() && request.resource.data.id == paymentOptionId;
-      allow update: if isExistingAdmin() && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingAdmin();
-    }
-
-    /**
-     * @description Manages admin-configured USDT deposit addresses. Users read active ones; admins manage all.
-     * @path /usdtDepositAddresses/{addressId}
-     * @allow (list) An anonymous user viewing available USDT deposit networks.
-     * @deny (update) A user attempting to change the 'address' field of a deposit record.
-     * @principle Validates relational integrity by ensuring internal ID matches path ID on create.
-     */
-    match /usdtDepositAddresses/{addressId} {
-      allow get: if resource.data.isActive == true || isAdmin();
-      allow list: if true;
-      allow create: if isAdmin() && request.resource.data.id == addressId;
-      allow update: if isExistingAdmin() && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingAdmin();
-    }
-
-    /**
-     * @description Stores global application settings (markups, rates, contact info).
-     * @path /applicationSettings/global_settings
-     * @allow (get) An authenticated user fetching the current USDT market rate.
-     * @deny (delete) Any user or admin attempting to delete the global settings singleton.
-     * @principle Singleton protection: only update is allowed for admins; deletion is forbidden.
-     */
-    match /applicationSettings/global_settings {
-      allow get: if isSignedIn();
+    match /settings/{settingId} {
+      allow get: if true;
       allow list: if isAdmin();
-      allow create: if isAdmin();
-      allow update: if isExistingAdmin();
-      allow delete: if false;
+      allow write: if isAdmin();
     }
 
     /**
-     * @description Internal collection used to define which UIDs have administrative privileges.
-     * @path /roles_admin/{userId}
-     * @allow (get) A user checking their own admin status.
-     * @deny (list) A user trying to see the list of all system administrators.
-     * @principle Existence-based authorization (DBAC) for system-wide roles.
+     * @description User profiles and balance clearing.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if true; // Allow initial sign-up
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+
+      match /notifications/{notificationId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isAdmin() || isOwner(userId);
+      }
+    }
+
+    /**
+     * @description Buy/Sell Orders and Wallet transactions.
+     */
+    match /buyOrders/{orderId} {
+      allow read: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn();
+      allow update: if isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 100);
+    }
+
+    match /sellOrders/{orderId} {
+      allow read: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn();
+      allow update: if isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 100);
+    }
+
+    match /deposits/{depositId} {
+      allow read: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn();
+      allow update: if isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 100);
+    }
+
+    match /withdrawals/{withdrawalId} {
+      allow read: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn();
+      allow update: if isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 100);
+    }
+
+    /**
+     * @description Institutional Support Desk.
+     */
+    match /contactMessages/{messageId} {
+      allow create: if true;
+      allow read, list: if isAdmin();
+    }
+
+    /**
+     * @description Admin role ledger.
      */
     match /roles_admin/{userId} {
       allow get: if isSignedIn() && request.auth.uid == userId;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow read, write: if false; // System-managed via console
     }
   }
 }

@@ -1,240 +1,68 @@
 {
   "entities": {
-    "INRPaymentOption": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "INRPaymentOption",
-      "type": "object",
-      "description": "Represents a payment method configured by the admin for users to pay INR into the application when buying USDT. This includes bank details, UPI IDs, and QR codes.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the INRPaymentOption entity."
-        },
-        "methodName": {
-          "type": "string",
-          "description": "The common name of the payment method (e.g., 'UPI', 'IMPS', 'Cash Deposit')."
-        },
-        "type": {
-          "type": "string",
-          "description": "The category of the payment method (e.g., 'UPI', 'Bank Transfer', 'Cash')."
-        },
-        "accountHolderName": {
-          "type": "string",
-          "description": "The name of the account holder for the payment method. (e.g., Bank Account Holder Name or UPI Holder Name)."
-        },
-        "upiId": {
-          "type": "string",
-          "description": "The UPI ID, if the payment method type is 'UPI'."
-        },
-        "bankName": {
-          "type": "string",
-          "description": "The name of the bank, if the payment method type is 'Bank Transfer'."
-        },
-        "accountNumber": {
-          "type": "string",
-          "description": "The bank account number, if the payment method type is 'Bank Transfer'."
-        },
-        "ifscCode": {
-          "type": "string",
-          "description": "The IFSC code for the bank, if the payment method type is 'Bank Transfer'."
-        },
-        "qrCodeUrl": {
-          "type": "string",
-          "description": "URL to the QR code image associated with this payment method, if applicable.",
-          "format": "uri"
-        },
-        "instructions": {
-          "type": "string",
-          "description": "Any specific instructions for using this payment method, especially for 'Cash Deposit'."
-        },
-        "currency": {
-          "type": "string",
-          "description": "The currency handled by this payment option, which is 'INR'."
-        },
-        "isActive": {
-          "type": "boolean",
-          "description": "A flag indicating whether this payment option is currently active and available for users."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the payment option was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp when the payment option was last updated.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "methodName",
-        "type",
-        "accountHolderName",
-        "currency",
-        "isActive",
-        "createdAt",
-        "updatedAt"
-      ]
-    },
-    "USDTDepositAddress": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "USDTDepositAddress",
-      "type": "object",
-      "description": "Represents a USDT deposit address configured by the admin for users to send USDT to the application when selling USDT.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the USDTDepositAddress entity."
-        },
-        "network": {
-          "type": "string",
-          "description": "The blockchain network for this USDT address (e.g., 'BEP20', 'TRC20', 'ERC20')."
-        },
-        "address": {
-          "type": "string",
-          "description": "The actual USDT wallet address for the specified network."
-        },
-        "qrCodeUrl": {
-          "type": "string",
-          "description": "URL to the QR code image for this USDT address.",
-          "format": "uri"
-        },
-        "currency": {
-          "type": "string",
-          "description": "The cryptocurrency handled by this deposit address, which is 'USDT'."
-        },
-        "isActive": {
-          "type": "boolean",
-          "description": "A flag indicating whether this deposit address is currently active and available for users."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the deposit address was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp when the deposit address was last updated.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "network",
-        "address",
-        "qrCodeUrl",
-        "currency",
-        "isActive",
-        "createdAt",
-        "updatedAt"
-      ]
-    },
     "ApplicationSetting": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ApplicationSetting",
       "type": "object",
-      "description": "Stores global application settings that are configurable by the admin, such as exchange rates, contact information, and processing timeouts.",
+      "description": "Stores global app settings like logo URL and exchange rates.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ApplicationSetting entity. Expected to be a singleton, e.g., 'global_settings'."
-        },
-        "buyMarkupPercentage": {
-          "type": "number",
-          "description": "The percentage added to the base USDT market rate when calculating the buying price for users."
-        },
-        "sellMarkupPercentage": {
-          "type": "number",
-          "description": "The percentage subtracted from the base USDT market rate when calculating the selling price for users."
-        },
-        "baseUSDTMarketRateINR": {
-          "type": "number",
-          "description": "The current base market rate of 1 USDT in INR, used for calculations. This value can be a mock rate or an admin-configured value."
-        },
-        "contactSupportEmail": {
-          "type": "string",
-          "description": "The email address where user contact form submissions should be sent.",
-          "format": "email"
-        },
-        "paymentProcessingTimeoutHours": {
-          "type": "number",
-          "description": "The duration in hours that a payment processing or verification step will wait before automatically canceling."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the application settings were created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp when the application settings were last updated.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "buyMarkupPercentage",
-        "sellMarkupPercentage",
-        "baseUSDTMarketRateINR",
-        "contactSupportEmail",
-        "paymentProcessingTimeoutHours",
-        "createdAt",
-        "updatedAt"
-      ]
+        "appLogoUrl": { "type": "string" },
+        "buyRates": { "type": "object" },
+        "sellRates": { "type": "object" },
+        "minBuyAmount": { "type": "number" },
+        "minSellAmount": { "type": "number" },
+        "allowPublicSignup": { "type": "boolean" }
+      }
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "balance": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "on_hold", "banned"] }
+      }
+    },
+    "BuyOrder": {
+      "title": "BuyOrder",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "usdtAmount": { "type": "number" },
+        "inrAmount": { "type": "number" },
+        "status": { "type": "string" }
+      }
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password"]
   },
   "firestore": {
     "structure": [
       {
-        "path": "inrPaymentOptions/{paymentOptionId}",
-        "definition": {
-          "entityName": "INRPaymentOption",
-          "schema": {
-            "$ref": "#/backend/entities/INRPaymentOption"
-          },
-          "description": "Stores admin-configured INR payment methods for users to buy USDT. Users can read active options. Admins have full CRuD access. Includes 'isActive' field for public availability, facilitating secure list operations for non-admin users.",
-          "params": [
-            {
-              "name": "paymentOptionId",
-              "description": "The unique identifier for a specific INR payment option."
-            }
-          ]
-        }
-      },
-      {
-        "path": "usdtDepositAddresses/{addressId}",
-        "definition": {
-          "entityName": "USDTDepositAddress",
-          "schema": {
-            "$ref": "#/backend/entities/USDTDepositAddress"
-          },
-          "description": "Stores admin-configured USDT deposit addresses for users to sell USDT. Users can read active options. Admins have full CRuD access. Includes 'isActive' field for public availability, facilitating secure list operations for non-admin users.",
-          "params": [
-            {
-              "name": "addressId",
-              "description": "The unique identifier for a specific USDT deposit address."
-            }
-          ]
-        }
-      },
-      {
-        "path": "applicationSettings/global_settings",
+        "path": "settings/appSettings",
         "definition": {
           "entityName": "ApplicationSetting",
-          "schema": {
-            "$ref": "#/backend/entities/ApplicationSetting"
-          },
-          "description": "Stores singleton global application settings such as exchange rate markups, contact information, and payment timeouts. Authenticated users can read. Admins have update access to this single document."
+          "schema": { "$ref": "#/backend/entities/ApplicationSetting" },
+          "description": "Global application configuration singleton."
+        }
+      },
+      {
+        "path": "users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": { "$ref": "#/backend/entities/UserProfile" },
+          "description": "Institutional user accounts."
+        }
+      },
+      {
+        "path": "buyOrders/{orderId}",
+        "definition": {
+          "entityName": "BuyOrder",
+          "schema": { "$ref": "#/backend/entities/BuyOrder" },
+          "description": "USDT acquisition records."
         }
       }
-    ],
-    "reasoning": "The Firestore structure is designed to be secure, scalable, and debuggable by strictly adhering to the core design principles. All application settings, INR payment options, and USDT deposit addresses are stored in top-level collections, eliminating hierarchical authorization dependencies. This ensures that security rules are simple, atomic operations (transactions/batches) are robust, and debugging is straightforward.\n\n**Authorization Independence:**\n1.  **INRPaymentOption and USDTDepositAddress:** These collections (`/inrPaymentOptions/{paymentOptionId}` and `/usdtDepositAddresses/{addressId}`) are directly accessible. Authorization for public visibility is handled by the `isActive` field within each document itself. This denormalizes the 'active' status directly into the document, avoiding any need to fetch data from parent documents or other related collections for basic read access. Administrative write access is controlled by a separate, dedicated global admin role collection (`/roles_admin/{userId}` - not explicitly defined in the provided schemas but is a critical component of the security model), which is checked using `request.auth.uid`. This design completely avoids the problematic `get()` calls in security rules.\n2.  **ApplicationSetting:** The `/applicationSettings/global_settings` document is a singleton, residing at the root level. Read access for authenticated users and write access for administrators are determined by the document's own presence and the global admin role, respectively. There are no parent documents to depend on for authorization.\n\n**QAPs (Rules are not Filters):**\n1.  **INRPaymentOption and USDTDepositAddress:** For standard users, `list` operations on these collections will be secured by Firestore rules that explicitly permit reads only for documents where `resource.data.isActive == true`. This enables secure and efficient querying, as Firestore can filter on indexed fields. This segregation of 'active' (publicly readable) from 'inactive' (admin-only) documents within the same collection is safe due to the simple boolean flag. Administrators will have broader read access (e.g., `list` all documents) to manage active/inactive states.\n2.  **ApplicationSetting:** This is a singleton document accessed via `get()`. Rules will ensure authenticated users can read it, and only admins can update it. No `list` operation is typically performed on a singleton, thus QAPs for lists are not relevant here. The secure `get` is straightforward.\n\n**Structural Segregation & Access Modeling:**\n*   All defined entities (`INRPaymentOption`, `USDTDepositAddress`, `ApplicationSetting`) reside in their own top-level collections, ensuring that all documents within a collection share a homogeneous security posture (e.g., all INR payment options follow the same `isActive` and admin-write rules).\n*   The use of `isActive` field standardizes the public availability mechanism.\n*   Global admin roles are implicitly handled via a dedicated `/roles_admin/{userId}` collection (where the existence of a document signifies admin status), adhering to the DBAC principle and using 'existence over content' for role management."
+    ]
   }
 }
