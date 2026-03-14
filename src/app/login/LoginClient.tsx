@@ -3,7 +3,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -28,11 +28,17 @@ export default function LoginPageClient() {
     const [isForgotLoading, setIsForgotLoading] = useState(false);
     const [forgotStep, setForgotStep] = useState<'email' | 'question' | 'reset' | 'success'>('email');
     const [userForReset, setUserForReset] = useState<any>(null);
+    const [mounted, setMounted] = useState(false);
+    
     const auth = useAuth();
     const firestore = useFirestore();
     const redirectTo = searchParams.get('redirect') || '/';
 
-    const isServicesUnavailable = !auth || !firestore;
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const isServicesUnavailable = mounted && (!auth || !firestore);
 
     const form = useForm<LoginFormValues>({
         resolver: zodResolver(loginSchema),
@@ -46,7 +52,7 @@ export default function LoginPageClient() {
 
     async function onLogin(values: LoginFormValues) {
         setIsLoading(true);
-        if (isServicesUnavailable) {
+        if (!auth || !firestore) {
             toast({ 
                 variant: 'destructive', 
                 title: 'Infrastructure Error', 
@@ -57,15 +63,14 @@ export default function LoginPageClient() {
         }
 
         try {
-            const userCredential = await signInWithEmailAndPassword(auth!, values.email, values.password);
+            const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
             const user = userCredential.user;
             
-            // Check user status in Firestore immediately
-            const userDoc = await getDoc(doc(firestore!, 'users', user.uid));
+            const userDoc = await getDoc(doc(firestore, 'users', user.uid));
             const userData = userDoc.data();
             
             if (userData?.status === 'banned') {
-                await signOut(auth!);
+                await signOut(auth);
                 toast({ 
                     variant: 'destructive', 
                     title: 'Access Revoked', 
@@ -157,7 +162,6 @@ export default function LoginPageClient() {
     async function handlePasswordReset(values: ForgotPasswordValues) {
         setIsForgotLoading(true);
         try {
-            // Simulated reset for prototyping logic
             await new Promise(resolve => setTimeout(resolve, 1500));
             setForgotStep('success');
             toast({ title: 'Protocol Updated', description: 'Institutional password has been successfully reset.' });
@@ -200,14 +204,14 @@ export default function LoginPageClient() {
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onLogin)} className="space-y-6">
                             <FormField control={form.control} name="email" render={({ field }) => (
-                                <FormItem><FormLabel className="text-[10px] font-black uppercase">Institutional Email</FormLabel><FormControl><Input placeholder="identity@domain.com" {...field} disabled={isServicesUnavailable} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel className="text-[10px] font-black uppercase">Institutional Email</FormLabel><FormControl><Input placeholder="identity@domain.com" {...field} disabled={!mounted || isServicesUnavailable} /></FormControl><FormMessage /></FormItem>
                             )}/>
                             <FormField control={form.control} name="password" render={({ field }) => (
                                 <FormItem>
                                     <div className="flex items-center justify-between">
                                         <FormLabel className="text-[10px] font-black uppercase">Security Key</FormLabel>
                                         <Dialog onOpenChange={(open) => !open && resetForgotState()}>
-                                            <DialogTrigger asChild><Button variant="link" className="px-0 h-auto text-[10px] font-bold" disabled={isServicesUnavailable}>Recovery Protocol?</Button></DialogTrigger>
+                                            <DialogTrigger asChild><Button variant="link" className="px-0 h-auto text-[10px] font-bold" disabled={!mounted || isServicesUnavailable}>Recovery Protocol?</Button></DialogTrigger>
                                             <DialogContent className="sm:max-w-[425px]">
                                                 <DialogHeader>
                                                     <DialogTitle className="flex items-center gap-2 text-xl font-black uppercase"><KeyRound className="h-5 w-5" /> Account Recovery</DialogTitle>
@@ -290,17 +294,17 @@ export default function LoginPageClient() {
                                             </DialogContent>
                                         </Dialog>
                                     </div>
-                                    <FormControl><Input type="password" placeholder="••••••••" {...field} disabled={isServicesUnavailable} /></FormControl>
+                                    <FormControl><Input type="password" placeholder="••••••••" {...field} disabled={!mounted || isServicesUnavailable} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}/>
                             <FormField control={form.control} name="captcha" render={({ field }) => (
                                 <FormItem className="flex flex-row items-center space-x-3 space-y-0 p-4 border-2 rounded-xl bg-muted/30">
-                                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} disabled={isServicesUnavailable} /></FormControl>
+                                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} disabled={!mounted || isServicesUnavailable} /></FormControl>
                                     <div className="space-y-1 leading-none"><FormLabel className="cursor-pointer text-[10px] font-black uppercase">Protocol Integrity Verification</FormLabel></div>
                                 </FormItem>
                             )}/>
-                            <Button type="submit" className="w-full h-14 font-black uppercase tracking-widest text-lg shadow-xl shadow-primary/20" disabled={isLoading || isServicesUnavailable}>
+                            <Button type="submit" className="w-full h-14 font-black uppercase tracking-widest text-lg shadow-xl shadow-primary/20" disabled={isLoading || !mounted || isServicesUnavailable}>
                                 {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />} 
                                 Sign In Terminal
                             </Button>

@@ -3,7 +3,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -23,8 +23,14 @@ export default function SignupPageClient() {
     const router = useRouter();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    
     const auth = useAuth();
     const firestore = useFirestore();
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const settingsRef = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -86,7 +92,7 @@ export default function SignupPageClient() {
         }
     }
 
-    if (settingsLoading) {
+    if (!mounted || settingsLoading) {
         return (
             <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />

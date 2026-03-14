@@ -21,10 +21,10 @@ function getFirebaseInstances() {
     };
   }
 
-  // Next.js may try to evaluate this module during the build process.
-  // We ensure required keys are present before attempting initialization.
-  if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'undefined') {
-    console.warn("Firebase API Key is missing. Identity and Ledger services will be restricted.");
+  // Ensure config exists before attempting initialization.
+  const hasConfig = !!firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined';
+
+  if (!hasConfig) {
     return {
       firebaseApp: null,
       auth: null,
