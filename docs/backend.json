@@ -10,7 +10,16 @@
         "sellRates": { "type": "object" },
         "minBuyAmount": { "type": "number" },
         "minSellAmount": { "type": "number" },
-        "allowPublicSignup": { "type": "boolean" }
+        "minDepositAmount": { "type": "number" },
+        "minWithdrawalAmount": { "type": "number" },
+        "provisionFee": { "type": "number" },
+        "allowPublicSignup": { "type": "boolean" },
+        "bankDetails": { "type": "object" },
+        "upiId": { "type": "string" },
+        "qrCodeUrl": { "type": "string" },
+        "buyBannerUrl": { "type": "string" },
+        "sellBannerUrl": { "type": "string" },
+        "depositDetails": { "type": "object" }
       }
     },
     "UserProfile": {
@@ -19,8 +28,16 @@
       "properties": {
         "userId": { "type": "string" },
         "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
         "balance": { "type": "number" },
-        "status": { "type": "string", "enum": ["active", "on_hold", "banned"] }
+        "status": { "type": "string", "enum": ["active", "on_hold", "banned"] },
+        "securityQuestion": { "type": "string" },
+        "securityAnswer": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastRemark": { "type": "string" },
+        "lastRemarkDate": { "type": "string" },
+        "remarksHistory": { "type": "array" }
       }
     },
     "BuyOrder": {
@@ -28,41 +45,34 @@
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
+        "email": { "type": "string" },
         "usdtAmount": { "type": "number" },
         "inrAmount": { "type": "number" },
-        "status": { "type": "string" }
+        "status": { "type": "string" },
+        "network": { "type": "string" },
+        "paymentMode": { "type": "string" },
+        "paymentReceiptUrl": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "expiresAt": { "type": "number" },
+        "adminRemark": { "type": "string" }
       }
     }
   },
   "auth": {
-    "providers": ["password"]
+    "providers": ["password", "anonymous"]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "settings/appSettings",
-        "definition": {
-          "entityName": "ApplicationSetting",
-          "schema": { "$ref": "#/backend/entities/ApplicationSetting" },
-          "description": "Global application configuration singleton."
-        }
-      },
-      {
-        "path": "users/{userId}",
-        "definition": {
-          "entityName": "UserProfile",
-          "schema": { "$ref": "#/backend/entities/UserProfile" },
-          "description": "Institutional user accounts."
-        }
-      },
-      {
-        "path": "buyOrders/{orderId}",
-        "definition": {
-          "entityName": "BuyOrder",
-          "schema": { "$ref": "#/backend/entities/BuyOrder" },
-          "description": "USDT acquisition records."
-        }
-      }
-    ]
+    "settings/appSettings": {
+      "schema": { "$ref": "#/backend/entities/ApplicationSetting" },
+      "description": "Global application configuration singleton."
+    },
+    "users/{userId}": {
+      "schema": { "$ref": "#/backend/entities/UserProfile" },
+      "description": "Institutional user accounts."
+    },
+    "buyOrders/{orderId}": {
+      "schema": { "$ref": "#/backend/entities/BuyOrder" },
+      "description": "USDT acquisition records."
+    }
   }
 }

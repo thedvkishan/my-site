@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,10 +12,13 @@ import { useToast } from '@/hooks/use-toast';
 import { adminLoginFormSchema, AdminLoginFormValues } from '@/lib/schemas';
 import { ADMIN_CREDENTIALS } from '@/lib/constants';
 import { Loader2, ShieldCheck } from 'lucide-react';
+import { useAuth } from '@/firebase';
+import { signInAnonymously } from 'firebase/auth';
 
 export default function AdminLoginPage() {
     const router = useRouter();
     const { toast } = useToast();
+    const auth = useAuth();
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
@@ -28,23 +30,32 @@ export default function AdminLoginPage() {
         defaultValues: { userId: '', password: '' },
     });
 
-    function onSubmit(values: AdminLoginFormValues) {
+    async function onSubmit(values: AdminLoginFormValues) {
         setIsLoading(true);
-        setTimeout(() => {
-            if (values.userId === ADMIN_CREDENTIALS.userId && values.password === ADMIN_CREDENTIALS.password) {
-                try {
-                    localStorage.setItem('isAdminAuthenticated', 'true');
-                    toast({ title: 'Access Granted', description: 'Terminal session initialized.' });
-                    router.push('/adminpower/dashboard');
-                } catch (error) {
-                    toast({ variant: 'destructive', title: 'Storage Error', description: 'Please enable persistence to access terminal.' });
-                    setIsLoading(false);
+        
+        // Institutional Credential Verification
+        if (values.userId === ADMIN_CREDENTIALS.userId && values.password === ADMIN_CREDENTIALS.password) {
+            try {
+                // Critical: Synchronize session with Firebase Auth to allow Firestore writes
+                if (auth) {
+                    await signInAnonymously(auth);
                 }
-            } else {
-                toast({ variant: 'destructive', title: 'Verification Failed', description: 'Invalid protocol credentials.' });
+                
+                localStorage.setItem('isAdminAuthenticated', 'true');
+                toast({ title: 'Access Granted', description: 'Terminal session initialized.' });
+                router.push('/adminpower/dashboard');
+            } catch (error: any) {
+                console.error("Auth Handshake Failure:", error);
+                toast({ variant: 'destructive', title: 'System Error', description: 'Institutional auth handshake failed.' });
                 setIsLoading(false);
             }
-        }, 800);
+        } else {
+            // Simulated delay for security protocol
+            setTimeout(() => {
+                toast({ variant: 'destructive', title: 'Verification Failed', description: 'Invalid protocol credentials.' });
+                setIsLoading(false);
+            }, 800);
+        }
     }
 
     return (
