@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -40,6 +41,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { MOCK_SETTINGS } from '@/lib/constants';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type UserProfile = {
   balance?: number;
@@ -118,14 +120,6 @@ export default function Home() {
     prevProfile.current = profile;
   }, [profile, toast, auth, router]);
 
-  if (isUserLoading || settingsLoading || profileLoading) {
-    return (
-        <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
-             <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-    )
-  }
-
   // Use Firestore rates if available, otherwise fallback to defaults
   const buyRates = settings?.buyRates || MOCK_SETTINGS.buyRates;
   const sellRates = settings?.sellRates || MOCK_SETTINGS.sellRates;
@@ -136,7 +130,7 @@ export default function Home() {
     const isOnHold = profile?.status === 'on_hold';
 
     return (
-        <div className="container mx-auto max-w-6xl px-4 py-8 md:py-16 animate-in fade-in duration-1000">
+        <div className="container mx-auto max-w-6xl px-4 py-8 md:py-16 animate-in fade-in duration-700">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">
@@ -150,7 +144,7 @@ export default function Home() {
                             Institutional <span className="text-primary">Hub</span>
                         </h1>
                         <p className="text-muted-foreground md:text-xl font-medium">
-                            Operational Terminal for <span className="text-foreground font-bold">{profile?.name || user.email?.split('@')[0]}</span>
+                            Operational Terminal for <span className="text-foreground font-bold">{profileLoading ? <Skeleton className="h-6 w-32 inline-block" /> : (profile?.name || user.email?.split('@')[0])}</span>
                         </p>
                     </div>
                 </div>
@@ -162,7 +156,11 @@ export default function Home() {
                         </div>
                         <div>
                             <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mb-1">Clearing Balance</p>
-                            <p className="text-4xl font-black text-primary tracking-tight">{(profile?.balance || 0).toLocaleString()} <span className="text-sm font-bold opacity-60">USDT</span></p>
+                            {profileLoading ? (
+                                <Skeleton className="h-10 w-40" />
+                            ) : (
+                                <p className="text-4xl font-black text-primary tracking-tight">{(profile?.balance || 0).toLocaleString()} <span className="text-sm font-bold opacity-60">USDT</span></p>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -191,7 +189,7 @@ export default function Home() {
                             "h-32 flex flex-col items-center justify-center gap-3 transition-all hover:scale-[1.02] hover:shadow-xl border-2 animate-in slide-in-from-bottom-4 duration-500 fill-mode-both",
                             isOnHold && action.label !== 'History' && "opacity-50 grayscale cursor-not-allowed"
                         )}
-                        style={{ animationDelay: `${i * 100}ms` }}
+                        style={{ animationDelay: `${i * 50}ms` }}
                         asChild={!isOnHold || action.label === 'History'}
                     >
                         {isOnHold && action.label !== 'History' ? (
@@ -234,7 +232,11 @@ export default function Home() {
                         <div className="bg-secondary/50 border-2 border-dashed p-6 rounded-2xl flex justify-between items-center group-hover:bg-primary/5 transition-colors">
                             <div>
                                 <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mb-1">Current Bank Rate</p>
-                                <p className="text-4xl font-black tracking-tighter">₹{bankBuyRate.toFixed(2)} <span className="text-sm font-bold text-muted-foreground">/ UNIT</span></p>
+                                {settingsLoading ? (
+                                    <Skeleton className="h-10 w-32" />
+                                ) : (
+                                    <p className="text-4xl font-black tracking-tighter">₹{bankBuyRate.toFixed(2)} <span className="text-sm font-bold text-muted-foreground">/ UNIT</span></p>
+                                )}
                             </div>
                             <div className="bg-primary/10 p-3 rounded-full">
                                 <Activity className="h-6 w-6 text-primary animate-pulse" />
@@ -268,7 +270,11 @@ export default function Home() {
                         <div className="bg-secondary/50 border-2 border-dashed p-6 rounded-2xl flex justify-between items-center group-hover:bg-destructive/5 transition-colors">
                             <div>
                                 <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mb-1">Current Bank Rate</p>
-                                <p className="text-4xl font-black tracking-tighter">₹{bankSellRate.toFixed(2)} <span className="text-sm font-bold text-muted-foreground">/ UNIT</span></p>
+                                {settingsLoading ? (
+                                    <Skeleton className="h-10 w-32" />
+                                ) : (
+                                    <p className="text-4xl font-black tracking-tighter">₹{bankSellRate.toFixed(2)} <span className="text-sm font-bold text-muted-foreground">/ UNIT</span></p>
+                                )}
                             </div>
                             <div className="bg-destructive/10 p-3 rounded-full">
                                 <Activity className="h-6 w-6 text-destructive animate-pulse" />
@@ -297,26 +303,35 @@ export default function Home() {
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-border">
-                            {Object.entries(sellRates || {}).map(([method, rate]) => {
-                                const numericRate = Number(rate);
-                                const diff = numericRate - 95;
-                                const percent = (diff / 95) * 100;
-                                const isPositive = percent >= 0;
-
-                                return (
-                                    <div key={method} className="bg-card p-6 flex flex-col gap-1 hover:bg-muted/30 transition-colors">
-                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{method}</p>
-                                        <p className="text-2xl font-black">₹{numericRate.toFixed(2)}</p>
-                                        <div className={cn(
-                                            "flex items-center gap-1 text-[9px] font-bold",
-                                            isPositive ? "text-green-600" : "text-destructive"
-                                        )}>
-                                            {isPositive ? <TrendingUp className="h-2 w-2" /> : <TrendingDown className="h-2 w-2" />}
-                                            {isPositive ? '+' : ''}{percent.toFixed(2)}%
-                                        </div>
+                            {settingsLoading ? (
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <div key={i} className="bg-card p-6 flex flex-col gap-2">
+                                        <Skeleton className="h-3 w-16" />
+                                        <Skeleton className="h-8 w-24" />
                                     </div>
-                                );
-                            })}
+                                ))
+                            ) : (
+                                Object.entries(sellRates || {}).map(([method, rate]) => {
+                                    const numericRate = Number(rate);
+                                    const diff = numericRate - 95;
+                                    const percent = (diff / 95) * 100;
+                                    const isPositive = percent >= 0;
+
+                                    return (
+                                        <div key={method} className="bg-card p-6 flex flex-col gap-1 hover:bg-muted/30 transition-colors">
+                                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{method}</p>
+                                            <p className="text-2xl font-black">₹{numericRate.toFixed(2)}</p>
+                                            <div className={cn(
+                                                "flex items-center gap-1 text-[9px] font-bold",
+                                                isPositive ? "text-green-600" : "text-destructive"
+                                            )}>
+                                                {isPositive ? <TrendingUp className="h-2 w-2" /> : <TrendingDown className="h-2 w-2" />}
+                                                {isPositive ? '+' : ''}{percent.toFixed(2)}%
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
                         </div>
                     </CardContent>
                 </Card>

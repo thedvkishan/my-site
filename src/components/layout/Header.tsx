@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -11,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useEffect, useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function Header() {
   const { user, isUserLoading } = useUser();
@@ -58,8 +60,8 @@ export function Header() {
                 <div className="flex items-center gap-1.5 md:gap-4">
                   <div className="flex items-center bg-primary/10 px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-primary/20">
                     <Wallet className="h-3.5 w-3.5 mr-1 md:h-4 md:w-4 md:mr-2 text-primary" />
-                    <span className="text-xs md:text-sm font-bold text-primary whitespace-nowrap">
-                      {(profile?.balance || 0).toLocaleString()} USDT
+                    <span className="text-xs md:text-sm font-bold text-primary whitespace-nowrap min-w-[40px]">
+                      {profile === undefined ? <Skeleton className="h-4 w-12" /> : (profile?.balance || 0).toLocaleString()} <span className="text-[10px] ml-0.5">USDT</span>
                     </span>
                   </div>
                   
@@ -69,7 +71,9 @@ export function Header() {
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-10 gap-2 px-2 hover:bg-muted/50">
                         <UserCircle className="h-5 w-5 text-muted-foreground" />
-                        <span className="hidden lg:inline-block font-semibold">{profile?.name || user.email?.split('@')[0]}</span>
+                        <span className="hidden lg:inline-block font-semibold">
+                          {profile === undefined ? <Skeleton className="h-4 w-20" /> : (profile?.name || user.email?.split('@')[0])}
+                        </span>
                         <ChevronDown className="h-4 w-4 text-muted-foreground hidden lg:inline-block" />
                       </Button>
                     </DropdownMenuTrigger>
