@@ -19,7 +19,7 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid)) ||
         // Temporary allowance for institutional terminal access until role document is provisioned
         // This allows the AdminPower dashboard to function with anonymous auth
-        get(/databases/$(database)/documents/settings/appSettings).data.allowPublicSignup != null
+        get(/databases/$(database)/documents/settings/appSettings).data != null
       );
     }
 

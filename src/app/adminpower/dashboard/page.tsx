@@ -17,13 +17,14 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AdminDataView } from '@/components/admin/AdminDataView';
 import { TetherIcon } from '@/components/icons/TetherIcon';
-import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, useUser, useAuth } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { MOCK_SETTINGS, PAYMENT_METHODS_BUY, PAYMENT_METHODS_SELL, NETWORKS } from '@/lib/constants';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { signInAnonymously } from 'firebase/auth';
 
 export type Settings = SettingsFormValues;
 
@@ -33,6 +34,8 @@ export default function AdminDashboardPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     
     const firestore = useFirestore();
+    const auth = useAuth();
+    const { user, isUserLoading } = useUser();
 
     const settingsRef = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -40,7 +43,6 @@ export default function AdminDashboardPage() {
     }, [firestore]);
 
     const { data: storedSettings, isLoading: settingsLoading } = useDoc<Settings>(settingsRef);
-    const { isUserLoading } = useUser();
 
     const isInitialized = !settingsLoading && !isUserLoading;
 
@@ -63,28 +65,36 @@ export default function AdminDashboardPage() {
     });
 
     useEffect(() => {
-        try {
-            const authStatus = localStorage.getItem('isAdminAuthenticated');
-            if (authStatus !== 'true') {
+        const checkAuth = async () => {
+            try {
+                const authStatus = localStorage.getItem('isAdminAuthenticated');
+                if (authStatus !== 'true') {
+                    router.replace('/adminpower/login');
+                } else {
+                    setIsAuthenticated(true);
+                    
+                    // Critical: Ensure Firebase Auth session is active for Firestore writes
+                    if (!isUserLoading && !user && auth) {
+                        await signInAnonymously(auth);
+                    }
+                }
+            } catch (error) {
                 router.replace('/adminpower/login');
-            } else {
-                setIsAuthenticated(true);
             }
-        } catch (error) {
-            router.replace('/adminpower/login');
-        }
-    }, [router]);
+        };
+        checkAuth();
+    }, [router, user, isUserLoading, auth]);
     
     useEffect(() => {
         if (isInitialized) {
             if (storedSettings) {
                 form.reset(storedSettings);
-            } else if (settingsRef) {
+            } else if (settingsRef && user) {
                 // Initialize central database with mock defaults if empty
                 setDoc(settingsRef, MOCK_SETTINGS, { merge: true });
             }
         }
-    }, [isInitialized, storedSettings, form, settingsRef]);
+    }, [isInitialized, storedSettings, form, settingsRef, user]);
 
     const handleLogout = () => {
         localStorage.removeItem('isAdminAuthenticated');
