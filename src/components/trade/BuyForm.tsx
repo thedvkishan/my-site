@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { NETWORKS, PAYMENT_METHODS_BUY } from '@/lib/constants';
+import { NETWORKS, PAYMENT_METHODS_BUY, MOCK_SETTINGS } from '@/lib/constants';
 import { Loader2 } from 'lucide-react';
 import { useAuth, useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
@@ -39,12 +40,14 @@ export function BuyForm({ disabled }: { disabled?: boolean }) {
 
   const { data: settings, isLoading: settingsLoading } = useDoc<Settings>(settingsRef);
 
+  const activeSettings = settings || MOCK_SETTINGS;
+
   const buyFormSchema = useMemo(() => z.object({
     network: z.enum(NETWORKS as [string, ...string[]], { required_error: 'Please select a network.' }),
-    usdtAmount: z.coerce.number().min(settings?.minBuyAmount ?? 100, `Minimum buy amount is ${settings?.minBuyAmount ?? 100} USDT.`),
+    usdtAmount: z.coerce.number().min(activeSettings?.minBuyAmount ?? 100, `Minimum buy amount is ${activeSettings?.minBuyAmount ?? 100} USDT.`),
     inrAmount: z.coerce.number().min(1, 'Amount must be at least 1.'),
     paymentMode: z.enum(PAYMENT_METHODS_BUY as [string, ...string[]], { required_error: 'Please select a payment mode.' }),
-  }), [settings]);
+  }), [activeSettings]);
 
   type BuyFormValues = z.infer<typeof buyFormSchema>;
 
@@ -52,7 +55,7 @@ export function BuyForm({ disabled }: { disabled?: boolean }) {
     resolver: zodResolver(buyFormSchema),
     defaultValues: {
       network: 'BEP20',
-      usdtAmount: 0,
+      usdtAmount: activeSettings?.minBuyAmount || 100,
       inrAmount: 0,
       paymentMode: 'Bank Transfer',
     },
@@ -64,17 +67,17 @@ export function BuyForm({ disabled }: { disabled?: boolean }) {
   const paymentMode = watch('paymentMode');
 
   const currentRate = useMemo(() => {
-    if (!settings || !settings.buyRates) return 0;
-    const rawRate = settings.buyRates[paymentMode];
+    const rates = activeSettings?.buyRates || MOCK_SETTINGS.buyRates;
+    const rawRate = rates[paymentMode];
     return Number(rawRate) || 0;
-  }, [settings, paymentMode]);
+  }, [activeSettings, paymentMode]);
 
   useEffect(() => {
-    if (currentRate && settings?.minBuyAmount && form.getValues('usdtAmount') === 0) {
-        setValue('usdtAmount', settings.minBuyAmount);
-        setValue('inrAmount', parseFloat((settings.minBuyAmount * currentRate).toFixed(2)));
+    if (currentRate && activeSettings?.minBuyAmount && (form.getValues('usdtAmount') === 0 || form.getValues('usdtAmount') === 100)) {
+        setValue('usdtAmount', activeSettings.minBuyAmount);
+        setValue('inrAmount', parseFloat((activeSettings.minBuyAmount * currentRate).toFixed(2)));
     }
-  }, [settings, currentRate, setValue, form]);
+  }, [activeSettings, currentRate, setValue, form]);
 
   useEffect(() => {
     if (conversionInputSource.current === 'usdt' && currentRate) {
@@ -221,7 +224,7 @@ export function BuyForm({ disabled }: { disabled?: boolean }) {
           )}
         />
         
-        <Button type="submit" className="w-full" disabled={isLoading || settingsLoading || !settings || !user || disabled}>
+        <Button type="submit" className="w-full" disabled={isLoading || settingsLoading || !user || disabled}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Pay Now
         </Button>

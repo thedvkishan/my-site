@@ -120,7 +120,7 @@ export default function Home() {
     prevProfile.current = profile;
   }, [profile, toast, auth, router]);
 
-  // Use Firestore rates if available, otherwise fallback to defaults
+  // High-availability fallback logic for rates
   const buyRates = settings?.buyRates || MOCK_SETTINGS.buyRates;
   const sellRates = settings?.sellRates || MOCK_SETTINGS.sellRates;
   const bankBuyRate = Number(buyRates?.['Bank Transfer'] || 0);

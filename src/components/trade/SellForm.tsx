@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { NETWORKS, PAYMENT_METHODS_SELL, CASH_DEPOSIT_BANKS } from '@/lib/constants';
+import { NETWORKS, PAYMENT_METHODS_SELL, CASH_DEPOSIT_BANKS, MOCK_SETTINGS } from '@/lib/constants';
 import { Loader2, Wallet } from 'lucide-react';
 import { useAuth, useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, updateDoc, increment, setDoc } from 'firebase/firestore';
@@ -50,9 +51,11 @@ export function SellForm({ disabled }: { disabled?: boolean }) {
   const { data: settings, isLoading: settingsLoading } = useDoc<Settings>(settingsRef);
   const { data: profile } = useDoc<UserProfile>(profileRef);
   
+  const activeSettings = settings || MOCK_SETTINGS;
+
   const sellFormSchema = useMemo(() => z.object({
     network: z.enum(NETWORKS as [string, ...string[]], { required_error: 'Please select a network.' }),
-    usdtAmount: z.coerce.number().min(settings?.minSellAmount ?? 100, `Minimum sell amount is ${settings?.minSellAmount ?? 100} USDT.`),
+    usdtAmount: z.coerce.number().min(activeSettings?.minSellAmount ?? 100, `Minimum sell amount is ${activeSettings?.minSellAmount ?? 100} USDT.`),
     inrAmount: z.coerce.number().min(1, 'Amount must be at least 1.'),
     paymentMode: z.enum(PAYMENT_METHODS_SELL as [string, ...string[]], { required_error: 'Please select a payment mode.' }),
   }).and(z.discriminatedUnion('paymentMode', [
@@ -96,7 +99,7 @@ export function SellForm({ disabled }: { disabled?: boolean }) {
         accountNumber: z.string().min(8, 'Please enter a valid account number.'),
         ifsc: z.string().min(8, 'Please enter a valid IFSC code.'),
     }),
-  ])), [settings]);
+  ])), [activeSettings]);
   
   type SellFormValues = z.infer<typeof sellFormSchema>;
 
@@ -104,7 +107,7 @@ export function SellForm({ disabled }: { disabled?: boolean }) {
     resolver: zodResolver(sellFormSchema),
     defaultValues: {
       network: 'BEP20',
-      usdtAmount: 0,
+      usdtAmount: activeSettings?.minSellAmount || 100,
       paymentMode: 'Bank Transfer',
       inrAmount: 0,
       upiHolderName: '',
@@ -122,17 +125,17 @@ export function SellForm({ disabled }: { disabled?: boolean }) {
   const paymentMode = watch('paymentMode');
 
   const currentRate = useMemo(() => {
-    if (!settings || !settings.sellRates) return 0;
-    const rawRate = settings.sellRates[paymentMode];
+    const rates = activeSettings?.sellRates || MOCK_SETTINGS.sellRates;
+    const rawRate = rates[paymentMode];
     return Number(rawRate) || 0;
-  }, [settings, paymentMode]);
+  }, [activeSettings, paymentMode]);
 
   useEffect(() => {
-    if (currentRate && settings?.minSellAmount && form.getValues('usdtAmount') === 0) {
-        setValue('usdtAmount', settings.minSellAmount);
-        setValue('inrAmount', parseFloat((settings.minSellAmount * currentRate).toFixed(2)));
+    if (currentRate && activeSettings?.minSellAmount && (form.getValues('usdtAmount') === 0 || form.getValues('usdtAmount') === 100)) {
+        setValue('usdtAmount', activeSettings.minSellAmount);
+        setValue('inrAmount', parseFloat((activeSettings.minSellAmount * currentRate).toFixed(2)));
     }
-  }, [settings, currentRate, setValue, form]);
+  }, [activeSettings, currentRate, setValue, form]);
 
   useEffect(() => {
     if (conversionInputSource.current === 'usdt' && currentRate) {
@@ -361,7 +364,7 @@ export function SellForm({ disabled }: { disabled?: boolean }) {
             </div>
           )}
 
-          <Button type="submit" className="w-full h-12 font-black uppercase tracking-widest shadow-xl shadow-destructive/20" variant="destructive" disabled={isLoading || settingsLoading || !settings || !user || disabled}>
+          <Button type="submit" className="w-full h-12 font-black uppercase tracking-widest shadow-xl shadow-destructive/20" variant="destructive" disabled={isLoading || settingsLoading || !user || disabled}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Sell Now
           </Button>

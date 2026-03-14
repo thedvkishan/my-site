@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -15,6 +16,7 @@ type Settings = {
 export function AppLogo() {
   const firestore = useFirestore();
   const [isClient, setIsClient] = useState(false);
+  const [imageError, setImageError] = useState(false);
   
   useEffect(() => {
     setIsClient(true);
@@ -35,10 +37,10 @@ export function AppLogo() {
     return <Skeleton className="h-6 w-6 rounded-full" />;
   }
   
-  // High-availability fallback logic: Central DB -> Mock Default -> Inline Icon
+  // High-availability fallback logic: Central DB -> Mock Default
   const logoUrl = settings?.appLogoUrl || MOCK_SETTINGS.appLogoUrl;
 
-  if (logoUrl) {
+  if (logoUrl && !imageError) {
       return (
         <div className="relative h-6 w-6">
           <Image 
@@ -48,6 +50,7 @@ export function AppLogo() {
             height={24} 
             className="h-6 w-6 object-contain"
             priority
+            onError={() => setImageError(true)}
           />
         </div>
       );
