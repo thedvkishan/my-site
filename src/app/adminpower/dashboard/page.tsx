@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -77,10 +76,15 @@ export default function AdminDashboardPage() {
     }, [router]);
     
     useEffect(() => {
-        if (isInitialized && storedSettings) {
-            form.reset(storedSettings);
+        if (isInitialized) {
+            if (storedSettings) {
+                form.reset(storedSettings);
+            } else if (settingsRef) {
+                // Initialize central database with mock defaults if empty
+                setDoc(settingsRef, MOCK_SETTINGS, { merge: true });
+            }
         }
-    }, [isInitialized, storedSettings, form]);
+    }, [isInitialized, storedSettings, form, settingsRef]);
 
     const handleLogout = () => {
         localStorage.removeItem('isAdminAuthenticated');
