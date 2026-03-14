@@ -1,0 +1,46 @@
+{
+  "placeholderImages": [
+    {
+      "id": "app-logo-placeholder",
+      "description": "A placeholder for the app logo.",
+      "imageUrl": "https://images.unsplash.com/photo-1563694983011-6f4d90358083?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxsb2dvfGVufDB8fHx8MTc2OTcwNjk2OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "logo"
+    },
+    {
+      "id": "qr-code-placeholder",
+      "description": "A placeholder image of a QR code.",
+      "imageUrl": "https://images.unsplash.com/photo-1571867424488-4565932edb41?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxxciUyMGNvZGV8ZW58MHx8fHwxNzY5NjM3NjcyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "qr code"
+    },
+    {
+      "id": "buy-banner-placeholder",
+      "description": "A banner for buying cryptocurrency.",
+      "imageUrl": "https://images.unsplash.com/photo-1640601580929-0771d14f16bc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjcnlwdG8lMjBidXl8ZW58MHx8fHwxNzY5NzI2ODgyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "crypto buy"
+    },
+    {
+      "id": "sell-banner-placeholder",
+      "description": "A banner for selling cryptocurrency.",
+      "imageUrl": "https://images.unsplash.com/photo-1642543348781-ed9c6d67ed20?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxjcnlwdG8lMjBzZWxsfGVufDB8fHx8MTc2OTcyNjg4Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "crypto sell"
+    },
+    {
+      "id": "bep20-qr-placeholder",
+      "description": "Placeholder QR code for BEP20 address.",
+      "imageUrl": "https://images.unsplash.com/photo-1571867424488-4565932edb41?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxxciUyMGNvZGV8ZW58MHx8fHwxNzY5NjM3NjcyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "qr code"
+    },
+    {
+      "id": "erc20-qr-placeholder",
+      "description": "Placeholder QR code for ERC20 address.",
+      "imageUrl": "https://images.unsplash.com/photo-1571867424488-4565932edb41?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxxciUyMGNvZGV8ZW58MHx8fHwxNzY5NjM3NjcyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "qr code"
+    },
+    {
+      "id": "trc20-qr-placeholder",
+      "description": "Placeholder QR code for TRC20 address.",
+      "imageUrl": "https://images.unsplash.com/photo-1571867424488-4565932edb41?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxxciUyMGNvZGV8ZW58MHx8fHwxNzY5NjM3NjcyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "qr code"
+    }
+  ]
+}

@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -121,8 +120,8 @@ export default function Home() {
   }, [profile, toast, auth, router]);
 
   // High-availability fallback logic for rates
-  const buyRates = settings?.buyRates || MOCK_SETTINGS.buyRates;
-  const sellRates = settings?.sellRates || MOCK_SETTINGS.sellRates;
+  const buyRates = (settings?.buyRates && Object.keys(settings.buyRates).length > 0) ? settings.buyRates : MOCK_SETTINGS.buyRates;
+  const sellRates = (settings?.sellRates && Object.keys(settings.sellRates).length > 0) ? settings.sellRates : MOCK_SETTINGS.sellRates;
   const bankBuyRate = Number(buyRates?.['Bank Transfer'] || 0);
   const bankSellRate = Number(sellRates?.['Bank Transfer'] || 0);
 
@@ -143,9 +142,10 @@ export default function Home() {
                         <h1 className="text-4xl md:text-6xl font-black tracking-tight">
                             Institutional <span className="text-primary">Hub</span>
                         </h1>
-                        <p className="text-muted-foreground md:text-xl font-medium">
+                        {/* Fix: Changed <p> to <div> to avoid hydration error when rendering Skeleton (div) as a descendant */}
+                        <div className="text-muted-foreground md:text-xl font-medium">
                             Operational Terminal for <span className="text-foreground font-bold">{profileLoading ? <Skeleton className="h-6 w-32 inline-block" /> : (profile?.name || user.email?.split('@')[0])}</span>
-                        </p>
+                        </div>
                     </div>
                 </div>
                 <Card className="bg-primary/5 border-primary/20 w-full md:w-auto overflow-hidden relative group border-2 shadow-sm">
