@@ -12,7 +12,7 @@ service cloud.firestore {
 
     /**
      * @description Global settings (logo, rates, limits).
-     * Publicly readable; authenticated-only writes for administrative terminal.
+     * Publicly readable for hydration; authenticated writes for administrative sessions.
      */
     match /settings/{settingId} {
       allow get: if true;
@@ -23,7 +23,7 @@ service cloud.firestore {
      * @description User profiles and internal ledgers.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId) || isSignedIn(); // Admins are signed in via terminal
+      allow get: if isOwner(userId) || isSignedIn();
       allow list: if isSignedIn();
       allow create: if true;
       allow update: if isOwner(userId) || isSignedIn();

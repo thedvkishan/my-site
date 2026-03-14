@@ -31,7 +31,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { useFirestore, useDoc, useMemoFirebase, useUser, useAuth } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { AppLogo } from '@/components/layout/AppLogo';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useRouter } from 'next/navigation';
@@ -61,6 +61,11 @@ export default function Home() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const prevProfile = useRef<UserProfile | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const settingsRef = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -125,6 +130,8 @@ export default function Home() {
   const bankBuyRate = Number(buyRates?.['Bank Transfer'] || 0);
   const bankSellRate = Number(sellRates?.['Bank Transfer'] || 0);
 
+  if (!mounted) return null;
+
   if (user) {
     const isOnHold = profile?.status === 'on_hold';
 
@@ -142,8 +149,10 @@ export default function Home() {
                         <h1 className="text-4xl md:text-6xl font-black tracking-tight">
                             Institutional <span className="text-primary">Hub</span>
                         </h1>
-                        <div className="text-muted-foreground md:text-xl font-medium">
-                            Operational Terminal for <span className="text-foreground font-bold">{profileLoading ? <Skeleton className="h-6 w-32 inline-block" /> : (profile?.name || user.email?.split('@')[0])}</span>
+                        <div className="text-muted-foreground md:text-xl font-medium flex items-center gap-2">
+                            Operational Terminal for <div className="text-foreground font-bold inline-flex">
+                                {profileLoading ? <Skeleton className="h-6 w-32" /> : (profile?.name || user.email?.split('@')[0])}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -158,7 +167,7 @@ export default function Home() {
                             {profileLoading ? (
                                 <Skeleton className="h-10 w-40" />
                             ) : (
-                                <p className="text-4xl font-black text-primary tracking-tight">{(profile?.balance || 0).toLocaleString()} <span className="text-sm font-bold opacity-60">USDT</span></p>
+                                <div className="text-4xl font-black text-primary tracking-tight">{(profile?.balance || 0).toLocaleString()} <span className="text-sm font-bold opacity-60">USDT</span></div>
                             )}
                         </div>
                     </CardContent>
@@ -234,7 +243,7 @@ export default function Home() {
                                 {settingsLoading ? (
                                     <Skeleton className="h-10 w-32" />
                                 ) : (
-                                    <p className="text-4xl font-black tracking-tighter">₹{bankBuyRate.toFixed(2)} <span className="text-sm font-bold text-muted-foreground">/ UNIT</span></p>
+                                    <div className="text-4xl font-black tracking-tighter">₹{bankBuyRate.toFixed(2)} <span className="text-sm font-bold text-muted-foreground">/ UNIT</span></div>
                                 )}
                             </div>
                             <div className="bg-primary/10 p-3 rounded-full">
@@ -272,7 +281,7 @@ export default function Home() {
                                 {settingsLoading ? (
                                     <Skeleton className="h-10 w-32" />
                                 ) : (
-                                    <p className="text-4xl font-black tracking-tighter">₹{bankSellRate.toFixed(2)} <span className="text-sm font-bold text-muted-foreground">/ UNIT</span></p>
+                                    <div className="text-4xl font-black tracking-tighter">₹{bankSellRate.toFixed(2)} <span className="text-sm font-bold text-muted-foreground">/ UNIT</span></div>
                                 )}
                             </div>
                             <div className="bg-destructive/10 p-3 rounded-full">
@@ -461,7 +470,7 @@ export default function Home() {
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
                             <div>
                                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Bank Transfer Rate</p>
-                                <p className="text-3xl font-black">₹{bankBuyRate.toFixed(2)}</p>
+                                <div className="text-3xl font-black">₹{bankBuyRate.toFixed(2)}</div>
                             </div>
                             <Button size="sm" className="rounded-full font-bold px-6" asChild>
                                 <Link href="/login">Sign In to Buy</Link>
@@ -484,7 +493,7 @@ export default function Home() {
                         <div className="bg-secondary/50 border p-6 rounded-2xl flex justify-between items-center">
                             <div>
                                 <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Bank Transfer Rate</p>
-                                <p className="text-3xl font-black">₹{bankSellRate.toFixed(2)}</p>
+                                <div className="text-3xl font-black">₹{bankSellRate.toFixed(2)}</div>
                             </div>
                             <Button variant="destructive" size="sm" className="rounded-full font-bold px-6" asChild>
                                 <Link href="/login">Sign In to Sell</Link>
