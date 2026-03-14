@@ -1,3 +1,4 @@
+
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -12,7 +13,6 @@ import { firebaseConfig } from './config';
  */
 function getFirebaseInstances() {
   // CRITICAL: Defensive check for server-side execution.
-  // Firebase client SDKs MUST NOT initialize during pre-rendering or build time.
   if (typeof window === 'undefined') {
     return {
       firebaseApp: null,
@@ -21,9 +21,10 @@ function getFirebaseInstances() {
     };
   }
 
-  // Check if we have a valid config to prevent initializeApp crashes.
   // Next.js may try to evaluate this module during the build process.
-  if (!firebaseConfig.apiKey) {
+  // We ensure required keys are present before attempting initialization.
+  if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'undefined') {
+    console.warn("Firebase API Key is missing. Identity and Ledger services will be restricted.");
     return {
       firebaseApp: null,
       auth: null,
@@ -42,7 +43,7 @@ function getFirebaseInstances() {
       firestore,
     };
   } catch (error) {
-    // Gracefully handle initialization errors during evaluation
+    console.error("Critical Failure in Firebase Initialization:", error);
     return {
       firebaseApp: null,
       auth: null,
