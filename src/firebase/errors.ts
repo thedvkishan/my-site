@@ -1,6 +1,5 @@
 'use client';
-import { getAuth, type User, type Auth } from 'firebase/auth';
-import { getApps } from 'firebase/app';
+import { getAuth, type User } from 'firebase/auth';
 
 type SecurityRuleContext = {
   path: string;
@@ -77,19 +76,16 @@ function buildAuthObject(currentUser: User | null): FirebaseAuthObject | null {
  */
 function buildRequestObject(context: SecurityRuleContext): SecurityRuleRequest {
   let authObject: FirebaseAuthObject | null = null;
-  
-  // CRITICAL: Defensive check. Only call Firebase SDK functions if we are on the client
-  // and the app is actually initialized. Module evaluation in SSR can trigger this.
-  if (typeof window !== 'undefined' && getApps().length > 0) {
-    try {
-      const firebaseAuth = getAuth();
-      const currentUser = firebaseAuth.currentUser;
-      if (currentUser) {
-        authObject = buildAuthObject(currentUser);
-      }
-    } catch {
-      // Ignore errors if Auth is not yet ready
+  try {
+    // Safely attempt to get the current user.
+    const firebaseAuth = getAuth();
+    const currentUser = firebaseAuth.currentUser;
+    if (currentUser) {
+      authObject = buildAuthObject(currentUser);
     }
+  } catch {
+    // This will catch errors if the Firebase app is not yet initialized.
+    // In this case, we'll proceed without auth information.
   }
 
   return {
