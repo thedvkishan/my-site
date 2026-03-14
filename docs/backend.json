@@ -39,23 +39,6 @@
         "lastRemarkDate": { "type": "string" },
         "remarksHistory": { "type": "array" }
       }
-    },
-    "BuyOrder": {
-      "title": "BuyOrder",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "email": { "type": "string" },
-        "usdtAmount": { "type": "number" },
-        "inrAmount": { "type": "number" },
-        "status": { "type": "string" },
-        "network": { "type": "string" },
-        "paymentMode": { "type": "string" },
-        "paymentReceiptUrl": { "type": "string" },
-        "createdAt": { "type": "string" },
-        "expiresAt": { "type": "number" },
-        "adminRemark": { "type": "string" }
-      }
     }
   },
   "auth": {
@@ -69,10 +52,6 @@
     "users/{userId}": {
       "schema": { "$ref": "#/backend/entities/UserProfile" },
       "description": "Institutional user accounts."
-    },
-    "buyOrders/{orderId}": {
-      "schema": { "$ref": "#/backend/entities/BuyOrder" },
-      "description": "USDT acquisition records."
     }
   }
 }

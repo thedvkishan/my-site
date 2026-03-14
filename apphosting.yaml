@@ -1,5 +1,4 @@
 # Firebase App Hosting configuration
-# Optimized for Institutional Trading Performance
 kind: "bundle"
 apiVersion: "v1"
 runConfig:

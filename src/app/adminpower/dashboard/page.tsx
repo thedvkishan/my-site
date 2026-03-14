@@ -74,6 +74,7 @@ export default function AdminDashboardPage() {
                     setIsAuthenticated(true);
                     
                     // Critical: Ensure Firebase Auth session is active for Firestore writes
+                    // This handles session persistence after refresh
                     if (!isUserLoading && !user && auth) {
                         await signInAnonymously(auth);
                     }
