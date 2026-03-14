@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -40,6 +39,7 @@ import { signOut } from 'firebase/auth';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { MOCK_SETTINGS } from '@/lib/constants';
 
 type UserProfile = {
   balance?: number;
@@ -118,7 +118,7 @@ export default function Home() {
     prevProfile.current = profile;
   }, [profile, toast, auth, router]);
 
-  if (isUserLoading || settingsLoading || profileLoading || !settings) {
+  if (isUserLoading || settingsLoading || profileLoading) {
     return (
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center">
              <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -126,8 +126,11 @@ export default function Home() {
     )
   }
 
-  const bankBuyRate = Number(settings.buyRates?.['Bank Transfer'] || 0);
-  const bankSellRate = Number(settings.sellRates?.['Bank Transfer'] || 0);
+  // Use Firestore rates if available, otherwise fallback to defaults
+  const buyRates = settings?.buyRates || MOCK_SETTINGS.buyRates;
+  const sellRates = settings?.sellRates || MOCK_SETTINGS.sellRates;
+  const bankBuyRate = Number(buyRates?.['Bank Transfer'] || 0);
+  const bankSellRate = Number(sellRates?.['Bank Transfer'] || 0);
 
   if (user) {
     const isOnHold = profile?.status === 'on_hold';
@@ -294,7 +297,7 @@ export default function Home() {
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-border">
-                            {Object.entries(settings.sellRates || {}).map(([method, rate]) => {
+                            {Object.entries(sellRates || {}).map(([method, rate]) => {
                                 const numericRate = Number(rate);
                                 const diff = numericRate - 95;
                                 const percent = (diff / 95) * 100;
@@ -404,7 +407,7 @@ export default function Home() {
             <Button size="lg" className="h-16 px-10 text-xl font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all" asChild>
                 <Link href="/login">Sign In Now</Link>
             </Button>
-            {settings?.allowPublicSignup ? (
+            {(settings?.allowPublicSignup ?? MOCK_SETTINGS.allowPublicSignup) ? (
               <Button size="lg" variant="secondary" className="h-16 px-10 text-xl font-bold rounded-2xl shadow-xl hover:scale-105 transition-all" asChild>
                   <Link href="/signup">Register Now</Link>
               </Button>
