@@ -142,7 +142,6 @@ export default function Home() {
                         <h1 className="text-4xl md:text-6xl font-black tracking-tight">
                             Institutional <span className="text-primary">Hub</span>
                         </h1>
-                        {/* Fix: Changed <p> to <div> to avoid hydration error when rendering Skeleton (div) as a descendant */}
                         <div className="text-muted-foreground md:text-xl font-medium">
                             Operational Terminal for <span className="text-foreground font-bold">{profileLoading ? <Skeleton className="h-6 w-32 inline-block" /> : (profile?.name || user.email?.split('@')[0])}</span>
                         </div>

@@ -57,7 +57,6 @@ export function Header() {
             <>
               {user ? (
                 <div className="flex items-center gap-1.5 md:gap-4">
-                  {/* Fix: Changed <span> to <div> with inline-flex to avoid hydration error with nested Skeletons */}
                   <div className="flex items-center bg-primary/10 px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-primary/20">
                     <Wallet className="h-3.5 w-3.5 mr-1 md:h-4 md:w-4 md:mr-2 text-primary" />
                     <div className="text-xs md:text-sm font-bold text-primary whitespace-nowrap min-w-[40px] flex items-center">
